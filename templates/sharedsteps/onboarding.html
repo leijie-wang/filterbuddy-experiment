@@ -1,0 +1,104 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Onboarding</title>
+    <!-- use bootstrap UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- base layout -->
+    <link rel="stylesheet" href="{% static 'sharedsteps/css/onboarding.css' %}" />
+    <!-- custom js -->
+    <script src="{% static 'sharedsteps/js/onboarding.js' %}"></script>
+  </head>
+  <body>
+    <div class="container">
+        <!-- 
+            The <noscript> tag encloses the content that will be displayed 
+            only if JavaScript is disabled or not supported in the user's browser. 
+        -->
+        <noscript>
+            If you see this text, your browser does not support dynamic content
+            (JavaScript) or it has been disabled. This study website requires JavaScript.
+        </noscript>
+
+        <div id="main">
+            <div class="page-header">
+                <h1>Welcome to the Filter Configuration Study</h1>
+                
+                
+                <p> 
+                    In this study you will be asked to use a given system to 
+                    develop a filter tool that can filter out unwanted content or curate interesting content. 
+                </p>
+
+                
+
+                <div class="alert alert-warning" style="margin-top: 10px;">
+                    <p>
+                        <strong>Note:</strong>
+                        Some texts in this task may contain abusive langauges.
+                        If you feel uncomfortable during the study, you may chose to exit the task at any point.
+                    </p>
+                </div>
+
+                
+                <p>
+                    If you have not been assigned a participant ID before, please select "I'm a new participant". 
+                    You will get a randomly generated participant ID.
+                </p>
+
+                <p>
+                    Open <a href="https://forms.gle/REDACTED">https://forms.gle/REDACTED_PLEASE_USE_YOUR_OWN_RECRUITMENT_FORM</a> 
+                    and fill in your name and the participant ID assigned.
+                    Then come back to this page and click "Start" to start the annotation.
+                </p>
+            </div>
+
+            <form id="main-form" action="./load_system" method="GET" autocomplete="off">
+                
+                <div>
+                    <label>
+                        <input type="radio" name="mode" value="new" id="radio-choice-new"/>
+                        I'm a new participant. Give me a participant ID.
+                    </label>
+
+                    <div class="secondary-div" id="more-new" style="display: none;">
+                        Your participant id is:
+                        <strong><span id="participant-id">XXX-XXX-XXXX</span></strong>
+                    </div>
+                </div>
+
+                <div>
+                    <label>
+                        <input type="radio" name="mode" value="existing" id="radio-choice-existing"/>
+                        I'm returning. My participant ID was:
+                    </label>
+                    <div class="secondary-div" id="more-existing" style="display: none;">
+                        Your participant id is:
+                        <input type="text" value="" id="participant-id-input" />
+                    </div>
+                </div>
+
+
+                <div>
+                    <input type="hidden" name="participantId" value="" />
+                    <input type="hidden" name="condition" value="" />
+                    <!-- <input type="hidden" name="assignmentId" value="" /> -->
+                    <!-- <input type="hidden" name="hitId" value="inperson"/>
+                    <input type="hidden" name="platform" value="mturk"/>
+                    <input type="hidden" name="turkSubmitTo" value="https://CHANGE_THIS_TO_THE_SERVER_YOUR_BACKEND_RUNS_ON"/> -->
+                    <button id="start-button" class="btn btn-primary">Start</button>
+                </div>
+                
+                
+                <!-- <div class="alert alert-warning">
+                    <p><strong>Task recruitment is currently closed. Thanks for your interest.</strong></p>
+                </div> -->
+            </form>
+        </div> <!-- closes main -->
+    </div> <!-- closes container -->
+  </body>
+</html>
