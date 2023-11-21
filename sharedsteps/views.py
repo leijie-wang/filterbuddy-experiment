@@ -1,7 +1,11 @@
 from django.shortcuts import render, redirect
+from django.conf import settings
 import logging
+import json, sys, os
 
 logger = logging.getLogger(__name__)
+
+sys.path.append(os.path.join(settings.BASE_DIR, 'datasets'))
 
 # Create your views here.
 def onboarding(request):
@@ -28,6 +32,14 @@ def load_system(request):
         pass
     else:
         logging.error("Unknown system: {}".format(system))
-    
-    
 
+
+
+def wordfilter(request):
+    # read json datasets from dataset folder
+    from datasets import toxicity
+    mydataset = toxicity.load_dataset(10)
+    logger.info("Loaded dataset: {}".format(mydataset))
+    return render(request, 'wordfilter.html', {
+        "dataset": mydataset,
+    })

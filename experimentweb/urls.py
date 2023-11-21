@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('onboarding', sharedviews.onboarding, name='onboarding'),
     path('load_system', sharedviews.load_system),
-    path('wordfilter/', include('wordfilter.urls')),
+    path('wordfilter/', sharedviews.wordfilter, name='wordfilter'),
+    # path('examplelabeler/', sharedviews.examplelabeler, name='examplelabeler'),
 ]

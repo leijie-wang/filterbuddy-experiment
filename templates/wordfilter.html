@@ -1,0 +1,57 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Onboarding</title>
+    <!-- use bootstrap UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- base layout -->
+    <link rel="stylesheet" href="{% static 'css/wordfilter.css' %}" />
+    <!-- custom js -->
+    <script src="{% static 'js/wordfilter.js' %}"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+  </head>
+  <body class="container">
+
+    <!-- 
+      The <noscript> tag encloses the content that will be displayed 
+      only if JavaScript is disabled or not supported in the user's browser. 
+    -->
+    <noscript>
+      If you see this text, your browser does not support dynamic content
+      (JavaScript) or it has been disabled. This study website requires JavaScript.
+    </noscript>
+
+    
+    <div class="flex flex-col m-5 justify-start gap-y-4">
+      <div class="mx-auto pb-1">
+        <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Word Filter</h1>
+      </div>
+
+      <!-- configure words to be filtered -->
+      <div class="flex flex-row gap-x-4 items-center">
+        <div class="text-xl font-bold text-sky-600">Words</div>
+        <div class="flex-1">
+          <input type="text" placeholder="Enter words here"
+            class="w-full p-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none focus:ring" />
+        </div>
+      </div>
+
+      <!-- display a list of comments to be reviewed -->
+      <div class="">
+        <div class="viewtext">
+          <ul>
+            {% for data in dataset %}
+              <li>{{ data.text }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </body> <!-- closes container -->
+</html>
