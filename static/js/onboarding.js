@@ -2,10 +2,10 @@
 
 (function () {
   var conditions = [
-    'basic-filter.taskA',
-    'basic-filter.taskB',
-    // 'basic-ML.taskA',
-    // 'basic-ML.taskB',
+    // 'basic-filter.taskA',
+    // 'basic-filter.taskB',
+    'basic-ML.taskA',
+    'basic-ML.taskB',
     // 'advanced-ML.taskA',
     // 'advanced-ML.taskB',
     // 'forest-filter.taskA',

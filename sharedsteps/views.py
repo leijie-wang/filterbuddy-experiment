@@ -9,7 +9,7 @@ sys.path.append(os.path.join(settings.BASE_DIR, 'datasets'))
 
 # Create your views here.
 def onboarding(request):
-    return render(request, 'sharedsteps/onboarding.html')
+    return render(request, 'onboarding.html')
 
 def load_system(request):
     # parse get parameters of the request
@@ -23,9 +23,9 @@ def load_system(request):
     logging.debug(f"participant_id: {participant_id}, system: {system}, task: {task}")
     # redirect participants to the assigned system
     if system == "basic-filter":
-        return redirect(f'/wordfilter/main?task={task}&participant_id={participant_id}')
+        return redirect(f'/wordfilter?task={task}&participant_id={participant_id}')
     elif system == "basic-ML":
-        pass
+        return redirect(f'/examplelabel?task={task}&participant_id={participant_id}')
     elif system == "advanced-ML":
         pass
     elif system == "forest-filter":
@@ -41,5 +41,14 @@ def wordfilter(request):
     mydataset = toxicity.load_dataset(10)
     logger.info("Loaded dataset: {}".format(mydataset))
     return render(request, 'wordfilter.html', {
+        "dataset": mydataset,
+    })
+
+def examplelabel(request):
+    # read json datasets from dataset folder
+    from datasets import toxicity
+    mydataset = toxicity.load_dataset(20)
+    logger.info("Loaded dataset: {}".format(mydataset))
+    return render(request, 'examplelabel.html', {
         "dataset": mydataset,
     })
