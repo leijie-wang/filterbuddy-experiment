@@ -22,7 +22,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('onboarding', sharedviews.onboarding, name='onboarding'),
     path('load_system', sharedviews.load_system),
+    path('load_more_data/', sharedviews.load_more_data),
+    
     path('wordfilter/', sharedviews.wordfilter, name='wordfilter'),
+    
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),
-    path('trainML/', sharedviews.trainML, name='trainML'),
+    path('trainML/', sharedviews.trainML),
 ]

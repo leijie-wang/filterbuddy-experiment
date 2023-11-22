@@ -1,11 +1,13 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
+from django.http import JsonResponse
 import logging
 import json, sys, os
 
 logger = logging.getLogger(__name__)
 
 sys.path.append(os.path.join(settings.BASE_DIR, 'datasets'))
+BATCH_SIZE = 20
 
 # Create your views here.
 def onboarding(request):
@@ -34,23 +36,28 @@ def load_system(request):
         logging.error("Unknown system: {}".format(system))
 
 
-
-def wordfilter(request):
+def load_data(number, start):
     # read json datasets from dataset folder
     from datasets import toxicity
-    mydataset = toxicity.load_dataset(10)
-    logger.info("Loaded dataset: {}".format(mydataset))
+    mydataset = toxicity.load_dataset(number, start)
+    return mydataset
+
+def load_more_data(request):
+    last_length = request.GET.get('last_length', default=None)
+    if last_length is not None:
+        return JsonResponse(load_data(BATCH_SIZE, int(last_length)), safe=False)
+
+def wordfilter(request):
+    dataset = load_data(BATCH_SIZE, 0)
     return render(request, 'wordfilter.html', {
-        "dataset": mydataset,
+        "dataset": json.dumps(dataset),
     })
 
 def examplelabel(request):
-    # read json datasets from dataset folder
-    from datasets import toxicity
-    mydataset = toxicity.load_dataset(20)
-    logger.info("Loaded dataset: {}".format(mydataset))
+    dataset = load_data(BATCH_SIZE, 0)
     return render(request, 'examplelabel.html', {
-        "dataset": mydataset,
+         "dataset": json.dumps(dataset),
+         # use json.dumps to ensure it can be read in js
     })
 
 def trainML(request):

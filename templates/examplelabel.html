@@ -15,7 +15,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  
 </head>
 
 <body class="container h-screen overflow-y-hidden">
@@ -30,67 +29,110 @@
   </noscript>
 
 
-  <div class="flex flex-col m-5 justify-start gap-y-4 py-4 h-screen">
-    <div class="mx-auto pb-1 h-fit">
+  <div class="flex flex-col my-2 justify-start gap-y-4 py-4 h-screen">
+    <div class="mx-auto pb-1 h-fit flex-grow-0">
       <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Example Labeler</h1>
     </div>
 
     <!-- display a list of comments to be reviewed -->
-    <div x-data="{filters: {yes: true, no: true, notLabeled: true}, counters: {yes: 0, no: 0}}" class="flex flex-col h-5/6">
+    <div 
+      x-data="{filtered: false, yes_counter: 0, total_counter: 0}" 
+      class="flex flex-col h-5/6 gap-y-2 flex-grow"
+    >
       <!-- display a set of filter options -->
-      <div class="header flex flex-row">
-          <div class="flex justify-between">
-            <div class="flex space-x-4 mb-4">
-              <label class="flex items-center">
-                  <input type="checkbox" x-model="filters.yes" id="yesFilter" class="form-checkbox">
-                  <span class="ml-2 text-blue-600">Labeled Yes</span>
-              </label>
-              <label class="flex items-center">
-                  <input type="checkbox" x-model="filters.no" id="noFilter" class="form-checkbox">
-                  <span class="ml-2 text-red-400">Labeled No</span>
-              </label>
-              <label class="flex items-center">
-                  <input type="checkbox" x-model="filters.notLabeled" id="notLabeledFilter" class="form-checkbox">
-                  <span class="ml-2 text-gray-400">Not Labeled</span>
-              </label>
-            </div>
-          </div>
+      <div class="header flex justify-between">
+        <label class="flex gap-2">
+            <input type="checkbox" x-model="filtered" id="yesFilter" class="form-checkbox">
+            <span class=" text-blue-600 font-bold">Show Only Filtered</span>
+        </label>
+        <div x-text="'You have labeled ' + yes_counter + ' / ' + total_counter + ' positive examples'" class="text-base text-blue-600"></div>
       </div>
       <!-- display a list of comments to be reviewed -->
-      <div id="textList" class="body flex flex-col space-y-2 overflow-y-auto py-4 px-4 border border-gray-600 h-full">
-        {% for data in dataset %}
-        <div 
-          x-data="{selected: null, text: '{{ data.text }}'}"
-          x-show="(filters.yes && selected == 'yes') || (filters.no && selected == 'no') || (filters.notLabeled && selected == null)"
-          class="flex flex-row items-center space-x-4 py-1 border-b border-gray-300">
-
-          <div x-text="text" class="flex-grow w-7/10 p-2"></div>
-          <div class="flex flex-row w-3/10 justify-center space-x-2">
-            <button 
-              @click="selected = 'yes'"
-              :class="{'bg-blue-500 hover:bg-blue-600': selected == 'yes', 'bg-gray-300 hover:bg-gray-400': selected !== 'yes'}"
-              class="text-white font-bold py-1 px-3 rounded">
-              Yes
-            </button>
-            <button 
-              @click="selected = 'no'" 
-              :class="{'bg-red-300 hover:bg-red-400': selected === 'no', 'bg-gray-300 hover:bg-gray-400': selected !== 'no'}" 
-              class="text-white font-bold py-1 px-3 rounded">
-              No
-            </button>
-          </div>
-        </div>
-        {% endfor %}
+      <div id="textList" class="body flex flex-col space-y-2 overflow-y-auto py-4 px-4 border border-gray-600 rounded h-full">
       </div>
-      <div>
-        <button @click="trainML" class="text-white font-bold py-1 px-3 rounded">
-          Train
+      <div class="bottom flex justify-end gap-x-2">
+        <button @click="load_more_data" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+          Load More
+        </button>
+        <button @click="train_ML" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+          Start Training
         </button>
       </div>
     </div>
   </div>
 </body> <!-- closes container -->
 <!-- custom js -->
-<script src="{% static 'js/examplelabel.js' %}"></script>
+<script defer>
+  var dataset = JSON.parse(`{{dataset | safe}}`);
+  function display_data(new_dataset){
+    // display data on the page
+    let textList = $('#textList');
+    // remove all elements that have the new-indicator class
+    textList.find('.new-indicator').remove();
 
+    for (let i = 0; i < new_dataset.length; i++) {
+        // create a new div element for each text with the template 
+
+        console.log(new_dataset[i]);
+        let newDiv = document.createElement('div');
+        new_dataset[i].text = new_dataset[i].text.replace(/'/g, "\\'");
+        newDiv.innerHTML = `
+            <div 
+                x-data="{selected: false, isNew: true, text: '${new_dataset[i].text}'}" 
+                x-init="total_counter += 1"
+                x-show="!filtered || selected == true" 
+                class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300"
+            >   
+                <div class="new-indicator text-xs font-semibold text-red-200 self-start">New</div>
+                <div x-text="text" class="flex-grow w-7/10 p-2"></div>
+                <div class="flex flex-row w-3/10 justify-center space-x-2">
+                    <button 
+                        @click="selected = !selected; yes_counter += selected ? 1 : -1" 
+                        :class="{'bg-blue-500 hover:bg-blue-600': selected == true, 'bg-gray-300 hover:bg-gray-400': selected == false}" 
+                        class="text-white font-bold py-1 px-3 rounded"
+                    >
+                        Yes
+                    </button>
+                </div>
+            </div>`;
+        textList.append(newDiv);
+    }
+    dataset = dataset.concat(data);
+  }
+
+  function load_more_data(){
+    // load more data from the server
+    $.ajax({
+      url: "/load_more_data",
+      type: "GET",
+      data: {
+        'last_length': dataset.length,
+      },
+      dataType: 'json',
+      success: function (data) {
+        display_data(data);
+      }
+    });
+  }
+
+  // function train_ML(){
+  //   // train the ML model
+    
+  //   // iterate through elements of the textList 
+  //   $.ajax({
+  //     url: "/train_ML",
+  //     type: "GET",
+  //     data: {
+  //       'dataset': JSON.stringify(dataset),
+  //     },
+  //     dataType: 'json',
+  //     success: function (data) {
+  //       console.log(data);
+  //     }
+  //   });
+  // }
+  display_data(dataset);
+
+
+</script>
 </html>
