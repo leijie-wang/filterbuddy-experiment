@@ -54,5 +54,5 @@ def examplelabel(request):
     })
 
 def trainML(request):
-    # read json datasets from dataset folder
+    #todo: train ML model based on user labels in the format of [(text1, 1), (text2, 0), ....]
     pass
