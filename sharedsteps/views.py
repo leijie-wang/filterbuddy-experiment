@@ -52,3 +52,7 @@ def examplelabel(request):
     return render(request, 'examplelabel.html', {
         "dataset": mydataset,
     })
+
+def trainML(request):
+    # read json datasets from dataset folder
+    pass

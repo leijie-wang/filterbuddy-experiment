@@ -12,8 +12,6 @@
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
   <!-- base layout -->
   <link rel="stylesheet" href="{% static 'css/examplelabel.css' %}" />
-  <!-- custom js -->
-  <script src="{% static 'js/examplelabel.js' %}"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -62,13 +60,11 @@
       <div id="textList" class="body flex flex-col space-y-2 overflow-y-auto py-4 px-4 border border-gray-600 h-full">
         {% for data in dataset %}
         <div 
-          x-data="{selected: null}"
+          x-data="{selected: null, text: '{{ data.text }}'}"
           x-show="(filters.yes && selected == 'yes') || (filters.no && selected == 'no') || (filters.notLabeled && selected == null)"
           class="flex flex-row items-center space-x-4 py-1 border-b border-gray-300">
 
-          <div class="flex-grow w-7/10 p-2">
-            {{ data.text }}
-          </div>
+          <div x-text="text" class="flex-grow w-7/10 p-2"></div>
           <div class="flex flex-row w-3/10 justify-center space-x-2">
             <button 
               @click="selected = 'yes'"
@@ -86,9 +82,15 @@
         </div>
         {% endfor %}
       </div>
-
+      <div>
+        <button @click="trainML" class="text-white font-bold py-1 px-3 rounded">
+          Train
+        </button>
+      </div>
     </div>
   </div>
 </body> <!-- closes container -->
+<!-- custom js -->
+<script src="{% static 'js/examplelabel.js' %}"></script>
 
 </html>

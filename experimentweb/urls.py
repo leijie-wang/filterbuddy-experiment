@@ -24,4 +24,5 @@ urlpatterns = [
     path('load_system', sharedviews.load_system),
     path('wordfilter/', sharedviews.wordfilter, name='wordfilter'),
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),
+    path('trainML/', sharedviews.trainML, name='trainML'),
 ]
