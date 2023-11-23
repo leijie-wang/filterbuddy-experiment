@@ -63,3 +63,10 @@ def examplelabel(request):
 def trainML(request):
     #todo: train ML model based on user labels in the format of [(text1, 1), (text2, 0), ....]
     pass
+
+def promptwrite(request):
+    dataset = load_data(BATCH_SIZE/2, 0)
+    return render(request, 'promptwrite.html', {
+         "dataset": json.dumps(dataset),
+         # use json.dumps to ensure it can be read in js
+    })

@@ -1,0 +1,312 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Example Labeler</title>
+  <!-- use bootstrap UI -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <!-- base layout -->
+  <link rel="stylesheet" href="{% static 'css/examplelabel.css' %}" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body class="container-none h-screen w-screen px-8">
+
+  <!-- 
+      The <noscript> tag encloses the content that will be displayed 
+      only if JavaScript is disabled or not supported in the user's browser. 
+    -->
+  <noscript>
+    If you see this text, your browser does not support dynamic content
+    (JavaScript) or it has been disabled. This study website requires JavaScript.
+  </noscript>
+
+
+  <div class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
+    <div class="mx-auto pb-1 flex-grow-0">
+      <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Prompt Writer</h1>
+    </div>
+
+    <div class="flex items-stretch w-full gap-x-4 flex-grow">
+        <!-- the section where users configure prompts -->
+        <div x-data="{configurePanel: false}"
+            class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow"
+        >
+            <!-- <div class="section-header text-xl font-bold text-blue-600 flex-grow-0 self-center">
+                Write Your Prompts
+            </div> -->
+
+            <!-- the section where users see all prompts -->
+            <div x-show="!configurePanel" class="section-body flex flex-col flex-grow gap-y-4 pb-4">
+                <div class="flex flex-col gap-y-2 flex-grow-0">
+                    <div class="text-lg italic">
+                        Prompt Introduction
+                    </div>
+                    <textarea
+                        rows="2"
+                        class="bg-gray-100 border border-gray-300 rounded-lg p-2 text-base w-full" 
+                        placeholder="Write an overview of your prompt"></textarea>
+                </div>
+                <div id="promptList" class="flex flex-col gap-y-4 flex-grow h-1 overflow-y-auto">
+                    <div @click="configurePanel = !configurePanel" 
+                        class="flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer"
+                    >
+                        <div class="text-3xl text-gray-500">+</div>
+                    </div>
+                </div>
+                <div class="bottom flex justify-end gap-x-2 flex-grow-0">
+                    <!-- <button @click="configurePanel = !configurePanel" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                        
+                    </button> -->
+                    <button @click="configurePanel = !configurePanel; addNewPrompt()" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                        Train
+                    </button>
+                  </div>
+            </div>
+
+            <!-- the section where users configure prompts -->
+            <div x-show="configurePanel" class="flex flex-col gap-y-4 py-4 px-4 flex-grow">
+                <div class="flex flex-col flex-grow gap-y-6 overflow-y-auto h-1">
+                    <!-- Add this h-1 to override a weird behavior of flex layout, 
+                        see this stackoverflow answer for more details https://stackoverflow.com/q/75368940/9508684.
+                        In short, the overflow proerty requries a fixed length on the container. 
+                        Without a fixed length (height or width), there's nothing to trigger an overflow. 
+                        The flex-grow property doesn't establish a fixed length, so it doesn't work.
+                        So, to solve both problems, set the container to height: 1px. It will still grow to fill the available space.
+                    -->
+                    <div class="flex flex-col gap-y-2">
+                        <div class="text-lg">Describe one aspect of the text you want to catch<span class="text-red-500 font-bold ml-1">*</span></div>
+                        <div contenteditable="true" id="new-prompt-rubric"
+                            class="bg-blue-50 rounded ml-4 pl-4 pr-2 py-2 text-gray-600 text-base focus:outline-none">
+                            
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-y-2">
+                        <div class="text-lg">Provide one positive example <span class="text-sm italic text-gray-500">(optional)</span> </div>
+                        <div contenteditable="true" id="new-prompt-positive-example"
+                            class="bg-red-50 rounded ml-4 pl-4 pr-2 py-2 text-gray-600 text-base focus:outline-none">
+                            
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-y-2">
+                        <div class="text-lg">Provide one negative example <span class="text-sm italic text-gray-500">(optional)</span> </div>
+                        <div contenteditable="true" id="new-prompt-negative-example"
+                            class="bg-violet-50 rounded ml-4 pl-4 pr-2 py-2 min-h-12 text-gray-600 text-base focus:outline-none">
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="bottom flex justify-end gap-x-2 flex-grow-0">
+                    <button @click="configurePanel = !configurePanel" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                        Close
+                    </button>
+                    <button @click="configurePanel = !configurePanel; addNewPrompt()" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                        Save
+                    </button>
+                  </div>
+            </div>
+        </div>
+        <!-- the section where users example examples and predictions -->
+        <div x-data="{filtered: false, yes_counter: 0, total_counter: 0}"  
+            class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1"
+        >
+            <!-- display a set of filter options -->
+            <div class="header text-lg font-bold">
+                Predictions of Selected Rubrics
+            </div>
+            <div class="flex justify-between">
+                <label class="flex gap-2">
+                    <input type="checkbox" x-model="filtered" id="yesFilter" class="form-checkbox scale-90">
+                    <span class=" text-blue-600 text-base pt-0.5">Show only filtered</span>
+                </label>
+                <div x-text="'There are ' + yes_counter + ' / ' + total_counter + ' positive predictions'" class="text-base text-blue-600"></div>
+            </div>
+            <!-- display a list of comments to be reviewed -->
+            <div id="textList" class="body flex flex-col space-y-2 overflow-y-auto py-2 h-1 flex-grow">
+            </div>
+            <div class="bottom flex justify-end gap-x-2 pt-3">
+                <button @click="load_more_data" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                  Load More
+                </button>
+            </div>
+        </div>
+    </div>
+  </div>
+</body> <!-- closes container -->
+<!-- custom js -->
+<script defer>
+  var dataset = JSON.parse(`{{dataset | safe}}`);
+  var overview = "";
+
+  // we assume every single quote is properly escaped; this should be ensured when adding them to the list
+  // for now, we only require users to input one example for each category
+  var prompts = [];
+
+  function escape_single_quote(text){
+    return text.replace(/'/g, "\\'");
+  }
+
+
+  function display_prompts(new_prompts){
+    // display data on the page
+    let promptList = $('#promptList');
+
+    for (let i = 0; i < new_prompts.length; i++) {
+        // create a new div element for each text with the template 
+
+        console.log(new_prompts[i]);
+        let newDiv = document.createElement('div');
+        newDiv.innerHTML = `
+            <div class="prompt flex items-start gap-x-4 pl-4 pr-2 pb-3 pt-2.5 border border-gray-300 rounded-lg">
+                <div>
+                    <input type="checkbox" id="prompt-checkbox.${i}" class="form-checkbox scale-110 mt-1.5" ${new_prompts[i].selected ? "checked" : ""}>
+                </div>
+                <div class="flex flex-col gap-y-2 flex-grow self-stretch" x-data="{open: true}">
+                    <div class="flex justify-between mr-2">
+                        <div 
+                            contenteditable="true" 
+                            class="text-base text-black focus:outline-none" 
+                            id="prompt-rubric.${i}">
+                                ${new_prompts[i].rubric}
+                        </div>
+                        <!--have a foldable button-->
+                        <div>
+                            <button @click="open = !open" class="focus:outline-none">
+                                <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                                <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-y-1 mr-2" x-show="open">
+                        <div class="text-sm text-gray-600 italic">
+                            Positive Examples
+                        </div>
+                        <div class="flex flex-col bg-red-50 rounded pl-2 pr-2 py-1">
+                            <div contenteditable="true"
+                                class="example bg-inherit border-none text-sm text-gray-600 focus:outline-none">
+                                ${new_prompts[i].positives[0]}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-y-1 mr-2" x-show="open">
+                        <div class="text-sm text-gray-600 italic">
+                            Negative Examples
+                        </div>
+                        <div class="flex flex-col bg-violet-50 rounded pl-2 pr-2 py-1">
+                            <div contenteditable="true"
+                                class="example bg-inherit border-none text-sm text-gray-600 focus:outline-none" 
+                                id="prompt-negative-example.${i}">
+                                    ${new_prompts[i].negatives[0]}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        $('#promptList > :last-child').before(newDiv);
+        prompts.push(new_prompts[i]);
+    }
+  }
+
+  function addNewPrompt(){
+        // read from configuring prompt panel and add this new prompt to the prompts
+        let new_prompt = {
+            "rubric": escape_single_quote($('#new-prompt-rubric').text()),
+            "positives": [escape_single_quote($('#new-prompt-positive-example').text())],
+            "negatives": [escape_single_quote($('#new-prompt-negative-example').text())],
+            "selected": true
+        };
+        display_prompts([new_prompt]);
+  }
+
+  function display_data(new_dataset){
+    // display data on the page
+    let textList = $('#textList');
+    // remove all elements that have the new-indicator class
+    textList.find('.new-indicator').remove();
+
+    for (let i = 0; i < new_dataset.length; i++) {
+        // create a new div element for each text with the template 
+
+        console.log(new_dataset[i]);
+        let newDiv = document.createElement('div');
+        new_dataset[i].text = new_dataset[i].text.replace(/'/g, "\\'");
+        let prediction = Math.random() >= 0.5; // for the purpose of testing
+        newDiv.innerHTML = `
+            <div 
+                x-data="{prediction: ${prediction}, isNew: true, text: '${new_dataset[i].text}'}" 
+                x-init="total_counter += 1; yes_counter += prediction ? 1 : 0"
+                x-show="!filtered || prediction == true" 
+                class="flex flex-row items-center py-0.5"
+                :class="{'bg-red-50': prediction == true, 'bg-violet-50': prediction == false}"
+            >   
+                <div class="new-indicator text-xs font-semibold text-red-200 self-start">New</div>
+                <div x-text="text" class="flex-grow w-7/10 p-2"></div>
+            </div>`;
+        textList.append(newDiv);
+    }
+    dataset = dataset.concat(new_dataset);
+  }
+
+  function load_more_data(){
+    // load more data from the server
+    $.ajax({
+      url: "/load_more_data",
+      type: "GET",
+      data: {
+        'last_length': dataset.length,
+      },
+      dataType: 'json',
+      success: function (data) {
+        display_data(data);
+      }
+    });
+  }
+
+  // bind js variables to html elements for each prompt
+  document.body.addEventListener('change', (event) => {
+        let id = event.target.id;
+        // update the selected status of the prompt
+        if (id.startsWith("prompt-checkbox")){
+            let index = parseInt(id.split(".")[1]);
+            prompts[index].selected = event.target.checked;
+        } else if (id.startsWith("prompt-rubric")){
+            let index = parseInt(id.split(".")[1]);
+            prompts[index].rubric = escape_single_quote(event.target.value);
+        } else if (id.startsWith("prompt-positive-example")){
+            let index = parseInt(id.split(".")[1]);
+            prompts[index].positives[0] = escape_single_quote(event.target.value);
+        } else if (id.startsWith("prompt-negative-example")){
+            let index = parseInt(id.split(".")[1]);
+            prompts[index].negatives[0] = escape_single_quote(event.target.value);
+        }
+    });
+
+    
+  display_prompts([{
+        "rubric": "Texts that describe some food is delicious",
+        "positives": ["Just tried the new caramel cheesecake at Café Loco - absolutely yummy!"],
+        "negatives": ["The band\'s new track is absolutely delicious – it\'s like every beat just hits the right spot!"],
+        "selected": true
+    }, {
+        "rubric": "Texts that describe some food is delicious",
+        "positives": ["Just tried the new caramel cheesecake at Café Loco - absolutely yummy!"],
+        "negatives": ["The band\'s new track is absolutely delicious – it\'s like every beat just hits the right spot!"],
+        "selected": true
+    }])
+
+
+
+  display_data(dataset);
+</script>
+</html>

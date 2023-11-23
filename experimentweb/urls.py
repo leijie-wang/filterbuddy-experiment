@@ -28,4 +28,6 @@ urlpatterns = [
     
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),
     path('trainML/', sharedviews.trainML),
+
+    path('promptwrite/', sharedviews.promptwrite, name='promptwrite'),
 ]
