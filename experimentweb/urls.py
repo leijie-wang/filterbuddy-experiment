@@ -30,4 +30,5 @@ urlpatterns = [
     path('trainML/', sharedviews.trainML),
 
     path('promptwrite/', sharedviews.promptwrite, name='promptwrite'),
+    path('ruleconfigure/', sharedviews.ruleconfigure, name='ruleconfigure'),
 ]

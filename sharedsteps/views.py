@@ -70,3 +70,10 @@ def promptwrite(request):
          "dataset": json.dumps(dataset),
          # use json.dumps to ensure it can be read in js
     })
+
+def ruleconfigure(request):
+    dataset = load_data(BATCH_SIZE, 0)
+    return render(request, 'ruleconfigure.html', {
+         "dataset": json.dumps(dataset),
+         # use json.dumps to ensure it can be read in js
+    })
