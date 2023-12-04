@@ -77,3 +77,56 @@ def ruleconfigure(request):
          "dataset": json.dumps(dataset),
          # use json.dumps to ensure it can be read in js
     })
+
+# as of now, not sure which function to put this in. will revise with leije when time comes:
+
+def filterFromRules(rules, stringInput):
+    # true returns input should be filtered, false returns should not filtered
+
+    lowercaseInput = stringInput.lower()
+
+    # this variable will be true if should be filtered out
+    shouldIncludeBoolean = False
+    for item in rules:
+        description = item["description"]
+        if (description == "Texts that include a word"):
+            shouldIncludeBoolean = include(item, lowercaseInput)
+        elif (description == "Texts that include a word but exclude another word"):
+            shouldIncludeBoolean = includeExclude(item, lowercaseInput)
+        if (shouldIncludeBoolean == True):
+                # as an AND relationship, if any rule comes out to be triggered, then should be filtered out
+                return True
+    return shouldIncludeBoolean
+
+
+def include(rule, input):
+    settings = rule["settings"]
+    wordToInclude = settings[0]["value"]
+    # building list of all words to look for 
+    synonyms = settings[0]["synonyms"]
+    synonyms.append(wordToInclude)
+
+    # Return true if any of the words to include are in the input
+    return any(word in input for word in synonyms)
+
+def includeExclude(rule, input):
+    settings = rule["settings"]
+    wordToInclude = settings[0]["value"]
+    
+    # building list of all words to look for 
+    includeSynonyms = settings[0]["synonyms"]
+    includeSynonyms.append(wordToInclude)
+    wordToDisclude = settings[1]["value"]
+
+    # building list of all "not including" words
+    discludeSynonyms = settings[1]["synonyms"]
+    discludeSynonyms.append(wordToDisclude)
+
+    # Check if any included word is present
+    included_word_present = any(includeWord in input for includeWord in includeSynonyms)
+
+    # Check if all discluded words are not present
+    all_discluded_words_not_present = all(discludeWord not in input for discludeWord in discludeSynonyms)
+
+    # return true if it should be filtered out
+    return included_word_present and all_discluded_words_not_present
