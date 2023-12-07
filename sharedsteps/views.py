@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import JsonResponse
+from TextFilter import TextFilter
 import logging
 import json, sys, os
 
@@ -78,55 +79,17 @@ def ruleconfigure(request):
          # use json.dumps to ensure it can be read in js
     })
 
+# will return a map of each rule to its True/False value. Will return true if this rule was triggered, and will return false otherwise.
+def rulePredict(rules, stringInput):
+    text_filter = TextFilter(rules)
+    filterPredictions = text_filter.filter_from_rules(stringInput)
+    return filterPredictions
+
+
+
 # as of now, not sure which function to put this in. will revise with leije when time comes:
 
-def filterFromRules(rules, stringInput):
-    # true returns input should be filtered, false returns should not filtered
 
-    lowercaseInput = stringInput.lower()
-
-    # this variable will be true if should be filtered out
-    shouldIncludeBoolean = False
-    for item in rules:
-        description = item["description"]
-        if (description == "Texts that include a word"):
-            shouldIncludeBoolean = include(item, lowercaseInput)
-        elif (description == "Texts that include a word but exclude another word"):
-            shouldIncludeBoolean = includeExclude(item, lowercaseInput)
-        if (shouldIncludeBoolean == True):
-                # as an AND relationship, if any rule comes out to be triggered, then should be filtered out
-                return True
-    return shouldIncludeBoolean
-
-
-def include(rule, input):
-    settings = rule["settings"]
-    wordToInclude = settings[0]["value"]
-    # building list of all words to look for 
-    synonyms = settings[0]["synonyms"]
-    synonyms.append(wordToInclude)
-
-    # Return true if any of the words to include are in the input
-    return any(word in input for word in synonyms)
-
-def includeExclude(rule, input):
-    settings = rule["settings"]
-    wordToInclude = settings[0]["value"]
-    
-    # building list of all words to look for 
-    includeSynonyms = settings[0]["synonyms"]
-    includeSynonyms.append(wordToInclude)
-    wordToDisclude = settings[1]["value"]
-
-    # building list of all "not including" words
-    discludeSynonyms = settings[1]["synonyms"]
-    discludeSynonyms.append(wordToDisclude)
-
-    # Check if any included word is present
-    included_word_present = any(includeWord in input for includeWord in includeSynonyms)
-
-    # Check if all discluded words are not present
-    all_discluded_words_not_present = all(discludeWord not in input for discludeWord in discludeSynonyms)
-
-    # return true if it should be filtered out
-    return included_word_present and all_discluded_words_not_present
+# make it a class called rulebaedsstem with all interfaces (dont expose functions; have seperate class/interface)
+# which rule filters out this comment and which does not -> could be an interface
+# call class, return list of predictions for each rule (add explanation)
