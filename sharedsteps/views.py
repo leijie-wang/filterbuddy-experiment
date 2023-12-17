@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import JsonResponse
+from TextFilter import TextFilter
 import logging
 import json, sys, os
 
@@ -77,3 +78,10 @@ def ruleconfigure(request):
          "dataset": json.dumps(dataset),
          # use json.dumps to ensure it can be read in js
     })
+
+# will return a map of each rule to its True/False value. Will return true if this rule was triggered, and will return false otherwise.
+def rulePredict(rules, stringInput):
+    text_filter = TextFilter(rules)
+    filterPredictions = text_filter.filter_from_rules(stringInput)
+    return filterPredictions
+
