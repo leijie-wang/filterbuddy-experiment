@@ -13,7 +13,6 @@ class TextFilter:
             should_include_boolean = False
             index = item["index"]
             description = item["description"]
-            print(description + " " + str(index))
             if index == 0:
                 should_include_boolean = self._include(item, lowercase_input)
             elif index == 2:
@@ -32,12 +31,9 @@ class TextFilter:
             synonyms = setting["synonyms"]
             synonyms.append(word_to_include)
 
-            print(synonyms)
-
             # Return True if any of the words to include are in the input
             if not any(word in input_text for word in synonyms):
                 # If any setting does not meet the condition, return False
-                print("in here")
                 return False
 
         # If all settings meet the condition, return True
@@ -61,15 +57,10 @@ class TextFilter:
             # Check if any included word is present
             included_word_present = any(include_word in input_text for include_word in include_synonyms)
 
-            print(included_word_present)
-
             excluded_words_present = [exclude_word for exclude_word in exclude_synonyms if exclude_word in input_text]
-            print("Excluded words present in input_text:", excluded_words_present)
 
             # Check if all excluded words are not present
             all_excluded_words_not_present = all(exclude_word not in input_text for exclude_word in exclude_synonyms)
-
-            print(all_excluded_words_not_present)
 
             # Return False if any setting is not 'filtered true'
             if not (included_word_present and all_excluded_words_not_present):

@@ -85,11 +85,3 @@ def rulePredict(rules, stringInput):
     filterPredictions = text_filter.filter_from_rules(stringInput)
     return filterPredictions
 
-
-
-# as of now, not sure which function to put this in. will revise with leije when time comes:
-
-
-# make it a class called rulebaedsstem with all interfaces (dont expose functions; have seperate class/interface)
-# which rule filters out this comment and which does not -> could be an interface
-# call class, return list of predictions for each rule (add explanation)
