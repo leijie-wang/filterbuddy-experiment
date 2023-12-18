@@ -42,22 +42,28 @@ def load_toxicity_ratings(record, group):
  sorted_index = np.argsort(values)
  sorted_dict = {keys[i]: values[i] for i in sorted_index}
 
- new_record = {}
+ new_record_true = {} # Comments labeled toxic
+ new_record_false = {} # Comments labeled non-toxic
  num = 0
 
  # Each entry's key is comment ID, each entry's value is [comment, label] 
  if group == "least-disagree":
      for key in sorted_dict:
-         new_record['toxc-' + str(num)] = [(record[key]['text'].encode('utf-8')).decode('utf-8'), means[key]]
+         if means[key] == 1:
+             new_record_true['toxc-' + str(num)] = [(record[key]['text'].encode('utf-8')).decode('utf-8'), means[key]]
+         else:
+             new_record_false['toxc-' + str(num)] = [(record[key]['text'].encode('utf-8')).decode('utf-8'), means[key]]
          num += 1
 
  else:
      for key in reversed(sorted_dict):
-         new_record['toxc-' + str(num)] = [(record[key]['text'].encode('utf-8')).decode('utf-8'), means[key]]
+         if means[key] == 1:
+             new_record_true['toxc-' + str(num)] = [(record[key]['text'].encode('utf-8')).decode('utf-8'), means[key]]
+         else:
+             new_record_false['toxc-' + str(num)] = [(record[key]['text'].encode('utf-8')).decode('utf-8'), means[key]]
          num += 1
 
- return new_record
-
+ return new_record_true, new_record_false
 
 ### DATASET CLASS
 
@@ -107,19 +113,22 @@ def load_dataset(type = 'toxicity', size = '100'):
    i = 0
    for key, value in load():
      temp[key] = value
-   data = load_toxicity_ratings(temp, 'least-disagree') # Try the comments with the least annotator disagreement
+   data_true, data_false = load_toxicity_ratings(temp, 'least-disagree') # Try the comments with the least annotator disagreement
    #data = load_toxicity_ratings(temp, 'most-disagree') # Try the comments with the most annotator disagreement
    # create dataset
-   shuffled = sorted(data.keys())
-   rng.shuffle(shuffled)
+   shuffled_true = sorted(data_true.keys())
+   rng.shuffle(shuffled_true)
+   shuffled_false = sorted(data_false.keys())
+   rng.shuffle(shuffled_false)
+   data_true.update(data_false) # Merge dictionaries for toxic and non-toxic comments
    if size == '100':
-     return Dataset(data, shuffled[:200], random.Random(3141))
+     return Dataset(data_true, sorted(shuffled_true[:100] + shuffled_false[:100]), random.Random(3141))
    elif size == '500':
-     return Dataset(data, shuffled[:1000], random.Random(3141))
+     return Dataset(data_true, sorted(shuffled_true[:500] + shuffled_false[:500]), random.Random(3141))
    elif size == '1000':
-     return Dataset(data, shuffled[:2000], random.Random(3141))
+     return Dataset(data_true, sorted(shuffled_true[:1000] + shuffled_false[:1000]), random.Random(3141))
    elif size == '5000':
-     return Dataset(data, shuffled[:10000], random.Random(3141))
+     return Dataset(data_true, sorted(shuffled_true[:2500] + shuffled_false[:2500]), random.Random(3141))
    else:
      raise Exception(f'Unrecognized size {size}')
 
@@ -131,16 +140,35 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn import svm
+from sklearn.neural_network import MLPClassifier
 from sentence_transformers import SentenceTransformer
 
 class MLFilter:
 
- def __init__(self, dataset, rng = random.Random(3141)):
+ def __init__(self, dataset, model_name, rng = random.Random(3141)):
    self.dataset = dataset
+   self.model_name = model_name
+   self.model = self.set_model()
    self.train_ids = []
    self.pipe = None
-   # Model for embeddings
-   self.model = SentenceTransformer('all-MiniLM-L6-v2')
+   self.embeddings = SentenceTransformer('all-MiniLM-L6-v2') #Model for embeddings
+
+ def set_model(self):
+
+     if self.model_name == 'Gradient Boosting':
+         return GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0)
+     elif self.model_name == 'Random Forest':
+         return RandomForestClassifier(n_estimators = 100, max_depth=1, random_state=0)
+     elif self.model_name == 'Bayes':
+         return GaussianNB()
+     elif self.model_name == 'SVM':
+         return svm.SVC()
+     elif self.model_name == 'MLP':
+         return MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
+     else:
+         raise Exception(f'Unrecognized model name {self.model_name}')
 
  def train_model(self, force_retrain = True):
    """Train a model with the labels and print the test results on the training set
@@ -159,14 +187,14 @@ class MLFilter:
      count += 1
 
    # Encode the training comments
-   X_train = self.model.encode(X_train)
+   X_train = self.embeddings.encode(X_train)
 
+   # Train the model
    if force_retrain or self.pipe is None:
      self.pipe = Pipeline([
        #('vectorizer', CountVectorizer(ngram_range=(1, 2), token_pattern=r'\b\w+\b', min_df=1)),
        ('scaler', StandardScaler(with_mean = False)),
-       ('gbc', GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0)) # Uncomment to use gradient boosting
-       #('rfc', RandomForestClassifier(n_estimators = 100, max_depth=1, random_state=0)) # Uncomment to use random forest
+       (self.model_name, self.model)
      ])
      self.pipe.fit(X_train, y_train)
 
@@ -198,8 +226,9 @@ class MLFilter:
      X_test.append(self.dataset.get(i)[0])
 
    # Encode the test comments
-   X_test = self.model.encode(X_test)
+   X_test = self.embeddings.encode(X_test)
 
+   # Test the model
    y_pred = self.pipe.predict(X_test)
 
    # Collect the predictions
@@ -224,7 +253,6 @@ class MLFilter:
      print('N/A')
 
    # Calculate and print performance metrics
-
    pos_pred = []
    pos_actual = []
    for i in pos:
@@ -247,13 +275,10 @@ class MLFilter:
 
        if actual == 1 and pred == 1:
            tp += 1
-
        if actual == 0 and pred == 0:
            tn += 1
-
        if actual == 0 and pred == 1:
            fp += 1
-
        if actual == 1 and pred == 0:
            fn += 1
 
@@ -267,7 +292,7 @@ class MLFilter:
 if __name__ == '__main__':
  def test():
    dataset = load_dataset('toxicity', '5000') # Can try with 100, 500, 1000, 5000 training examples
-   system = MLFilter(dataset)
+   system = MLFilter(dataset, 'MLP') # Can try with 'Gradient Boosting', 'Random Forest', 'Bayes', 'SVM', 'MLP' classifier
    system.train_model()
    system.test_model()
 
