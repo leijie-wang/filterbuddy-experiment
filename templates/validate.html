@@ -1,0 +1,249 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Example Labeler</title>
+  <!-- use bootstrap UI -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <!-- base layout -->
+  <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
+  <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body class="container h-screen overflow-y-hidden">
+
+    <!-- 
+      The <noscript> tag encloses the content that will be displayed 
+      only if JavaScript is disabled or not supported in the user's browser. 
+    -->
+    <noscript>
+        If you see this text, your browser does not support dynamic content
+        (JavaScript) or it has been disabled. This study website requires JavaScript.
+    </noscript> 
+    {% csrf_token %}
+
+    <div class="flex gap-x-4 justify-start gap-y-4 h-screen">
+        <!-- display a list of comments to be reviewed -->
+        <div x-data="{filtered: false, yes_counter: 0, total_counter: 0}" 
+            class="flex flex-col gap-y-2 flex-grow w-2/3 my-2"
+        >   
+            <div class="header flex flex-col gap-y-4 items-stretch">
+                <p class="text-2xl font-semibold bg-slate-200 rounded text-center py-2">Label Examples</p>
+                <p class="text-base text-start font-sans">
+                    Thank you for your efforts in building your own classifier. Want to know the performance of your classifier?<br>
+                    You are expected to label all these new examples so that we can estimate its performance.
+                </p>
+            </div>
+            <div class="section-header flex justify-start">
+                <div x-text="'You have labeled ' + yes_counter + ' / ' + total_counter + ' positive examples'"
+                    class="text-base text-blue-600"></div>
+            </div>
+            <!-- display a list of comments to be reviewed -->
+            <div id="textList"
+                class="body flex flex-col overflow-y-auto px-4 border border-gray-600 rounded h-full">
+            </div>
+            <div class="bottom flex justify-end gap-x-2">
+                <button @click="validate" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                    Test
+                </button>
+            </div>
+        </div>
+        <!-- display the results of algorithmic predictions -->
+        <div class="flex flex-col w-1/3 my-2">
+            <div class="flex-grow-0 header flex flex-col gap-y-4 items-stretch">
+                <p class="text-2xl font-semibold bg-slate-200 rounded text-center py-2">Classifier Performance</p>
+            </div>
+            <div class="flex-grow flex flex-col justify-evenly">
+                <div class="flex flex-col gap-4 px-4 ">
+                    <p class="text-xl font-medium">On Training Dataset</p>
+                    <div class="self-center grid grid-rows-2 grid-cols-2 gap-2 w-full">
+                        <!-- Accuracy -->
+                        <div class=" bg-blue-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>Accuracy</strong> <span class="px-2" id="train-accuracy">?</span>
+                        </div>
+                        <!-- Precision -->
+                        <div class="bg-indigo-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>Precision</strong> <span class="px-2" id="train-precision">?</span>
+                        </div>
+                        <!-- Recall -->
+                        <div class="bg-rose-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>Recall</strong> <span class="px-2" id="train-recall">?</span>
+                        </div>
+                        <!-- false positive rate-->
+                        <div class="bg-slate-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>FPR</strong> <span class="px-2" id="train-fpr">?</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-4 px-4">
+                    <p class="text-xl font-medium">On Testing Dataset</p>
+                    <div class="self-center grid grid-rows-3 grid-cols-2 gap-2 w-full">
+                        <!-- Accuracy -->
+                        <div class=" bg-blue-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>Accuracy</strong> <span class="px-2" id="test-accuracy">?</span>
+                        </div>
+                        <!-- Precision -->
+                        <div class="bg-indigo-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>Precision</strong> <span class="px-2" id="test-precision">?</span>
+                        </div>
+                        <!-- Recall -->
+                        <div class="bg-rose-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>Recall</strong> <span class="px-2" id="test-recall">?</span>
+                        </div>
+                        <!-- false positive rate-->
+                        <div class="bg-slate-200 rounded p-4 flex justify-center items-center text-lg">
+                            <strong>FPR</strong> <span class="px-2" id="test-fpr">?</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body> <!-- closes container -->
+<!-- custom js -->
+<script defer>
+    var dataset = [];
+    const participant_id = "{{participant_id}}";
+    const system = "examples+ML"
+
+    function display_data(new_dataset){
+        let textList = $('#textList');
+        
+        let start_index = dataset.length;
+        for (let i = 0; i < new_dataset.length; i++) {
+            // create a new div element for each text with the template below
+            let index = start_index + i;
+            let newHtml = `
+                <div class="textDiv flex flex-row items-center space-x-1 py-1 border-b border-gray-300" id="textDiv-${index}">   
+                    <div class="text flex-grow w-7/10 p-2" id="text-${index}">${new_dataset[i].text}</div>
+                    <div class="flex flex-row w-3/10 justify-center space-x-2">
+                        <button id="labelButton-${index}"
+                            @click="update_label(${index});" 
+                            class="text-white font-bold py-1 px-3 rounded bg-gray-300 hover:bg-gray-400"
+                        >
+                            Yes
+                        </button>
+                    </div>
+                </div>`;
+            textList.append(newHtml);
+        }
+        dataset = dataset.concat(new_dataset);
+    }
+
+    function update_label(index){
+        // flip the label of the text at the given index
+        dataset[index].label = !dataset[index].label; // consider both the case where the label is false or undefined
+        if (dataset[index].label) {
+            $('#labelButton-' + index).addClass('bg-blue-300 hover:bg-blue-400');
+            $('#labelButton-' + index).removeClass('bg-gray-300 hover:bg-gray-400');
+        } else {
+            $('#labelButton-' + index).addClass('bg-gray-300 hover:bg-gray-400');
+            $('#labelButton-' + index).removeClass('bg-blue-400 hover:bg-blue-500');
+        }
+    }
+
+    function update_data_list(prediction){
+        // based on the prediction, indicate to users which examples are incorrectly labeled by their system
+
+        // iterate through all children of the textList with the class textDiv
+        $('#textList').children('.textDiv').each(function(index, element){
+            let id = element.id;
+            index = parseInt(id.split('-')[1]);
+
+            let label = dataset[index].label || false;
+            
+            let text = $(`#text-${index}`);
+            console.log(`label: ${label}, prediction: ${prediction[index]}`);
+            if (label != prediction[index]) {
+                $(`#labelButton-${index}`).after(`<span class="text-red-500"><i class="fa-solid fa-xmark px-2 fa-xl"></i></span>`);
+            } else {
+                $(`#labelButton-${index}`).after(`<span class="text-green-500"><i class="fa-solid fa-check px-2 fa-xl"></i></span>`);
+            }
+        });
+    }
+
+    function to_percentage(num) {
+        return (num * 100).toFixed(0) + "%";
+    }
+    
+    function validate() {
+        // train the ML model
+        
+        // iterate throught the dataset and if the label does not exist, set it to false
+        /* dataset.forEach(datum => {
+            datum.label = datum.label || false;
+        }); */
+
+        dataset.forEach(datum => {
+            // covert it to 1 or 0
+            datum.label = +parseFloat(datum.score) >= 2.0;
+        })
+
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+        console.log("the user has labeled all the examples");
+
+        $.ajax({
+            url: "/validate_system/",
+            type: "POST",
+            data: JSON.stringify({
+                'dataset': dataset, 
+                'participant_id': participant_id,
+                'system': "examples+ML"
+            }),
+            contentType: 'application/json',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            success: function(response) {
+                // if the json response has the response code 200
+                console.log(response);
+                if (response['response'] != 200) {
+                    alert(response['message']);
+                    return;
+                }
+                
+                // display the results
+                let train_results = response['train_results'];
+                let test_results = response['test_results'];
+
+                $('#train-accuracy').text(to_percentage(train_results.performance.accuracy));
+                $('#train-precision').text(to_percentage(train_results.performance.precision));
+                $('#train-recall').text(to_percentage(train_results.performance.recall));
+                $('#train-fpr').text(to_percentage(train_results.performance.fpr));
+                $('#train-fnr').text(to_percentage(train_results.performance.fnr));
+
+
+                $('#test-accuracy').text(to_percentage(test_results.performance.accuracy));
+                $('#test-precision').text(to_percentage(test_results.performance.precision));
+                $('#test-recall').text(to_percentage(test_results.performance.recall));
+                $('#test-fpr').text(to_percentage(test_results.performance.fpr));
+                $('#test-fnr').text(to_percentage(test_results.performance.fnr));
+                
+                update_data_list(test_results.prediction);
+            }
+        });    
+        return;
+    }
+
+    display_data(JSON.parse(`{{dataset | safe}}`));
+
+    // for testing purposes, use the score to simulate the user's label
+    dataset.forEach((datum, index) => {
+        // covert it to 1 or 0
+        if(+parseFloat(datum.score) >= 2.0) {
+            update_label(index);
+        }
+    })
+
+
+</script>
+</html>

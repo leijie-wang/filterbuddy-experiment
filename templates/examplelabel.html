@@ -11,7 +11,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
   <!-- base layout -->
-  <link rel="stylesheet" href="{% static 'css/examplelabel.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -19,119 +19,152 @@
 
 <body class="container h-screen overflow-y-hidden">
 
-  <!-- 
+    <!-- 
       The <noscript> tag encloses the content that will be displayed 
       only if JavaScript is disabled or not supported in the user's browser. 
     -->
-  <noscript>
-    If you see this text, your browser does not support dynamic content
-    (JavaScript) or it has been disabled. This study website requires JavaScript.
-  </noscript>
+    <noscript>
+        If you see this text, your browser does not support dynamic content
+        (JavaScript) or it has been disabled. This study website requires JavaScript.
+    </noscript> 
+    {% csrf_token %}
 
+    <div class="flex flex-col my-2 justify-start gap-y-4 py-4 h-screen">
+        <div class="mx-auto pb-1 h-fit flex-grow-0">
+            <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Example Labeler</h1>
+        </div>
 
-  <div class="flex flex-col my-2 justify-start gap-y-4 py-4 h-screen">
-    <div class="mx-auto pb-1 h-fit flex-grow-0">
-      <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Example Labeler</h1>
+        <!-- display a list of comments to be reviewed -->
+        <div x-data="{filtered: false, yes_counter: 0, total_counter: 0}" class="flex flex-col h-5/6 gap-y-2 flex-grow">
+            <!-- display a set of filter options -->
+            <div class="header flex justify-between">
+                <label class="flex gap-2">
+                    <input type="checkbox" x-model="filtered" id="yesFilter" class="form-checkbox">
+                    <span class=" text-blue-600 font-bold">Show Only Filtered</span>
+                </label>
+                <div x-text="'You have labeled ' + yes_counter + ' / ' + total_counter + ' positive examples'"
+                    class="text-base text-blue-600"></div>
+            </div>
+            <!-- display a list of comments to be reviewed -->
+            <div id="textList"
+                class="body flex flex-col overflow-y-auto py-4 px-4 border border-gray-600 rounded h-full">
+            </div>
+            <div class="bottom flex justify-end gap-x-2">
+                <button @click="load_more_data" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                    Load More
+                </button>
+                <button @click="complete" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                    Complete
+                </button>
+            </div>
+        </div>
     </div>
-
-    <!-- display a list of comments to be reviewed -->
-    <div 
-      x-data="{filtered: false, yes_counter: 0, total_counter: 0}" 
-      class="flex flex-col h-5/6 gap-y-2 flex-grow"
-    >
-      <!-- display a set of filter options -->
-      <div class="header flex justify-between">
-        <label class="flex gap-2">
-            <input type="checkbox" x-model="filtered" id="yesFilter" class="form-checkbox">
-            <span class=" text-blue-600 font-bold">Show Only Filtered</span>
-        </label>
-        <div x-text="'You have labeled ' + yes_counter + ' / ' + total_counter + ' positive examples'" class="text-base text-blue-600"></div>
-      </div>
-      <!-- display a list of comments to be reviewed -->
-      <div id="textList" class="body flex flex-col space-y-2 overflow-y-auto py-4 px-4 border border-gray-600 rounded h-full">
-      </div>
-      <div class="bottom flex justify-end gap-x-2">
-        <button @click="load_more_data" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
-          Load More
-        </button>
-        <button @click="train_ML" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
-          Start Training
-        </button>
-      </div>
-    </div>
-  </div>
 </body> <!-- closes container -->
 <!-- custom js -->
 <script defer>
-  var dataset = JSON.parse(`{{dataset | safe}}`);
-  function display_data(new_dataset){
-    // display data on the page
-    let textList = $('#textList');
-    // remove all elements that have the new-indicator class
-    textList.find('.new-indicator').remove();
+    var dataset = [];
+    const participant_id = "{{participant_id}}";
 
-    for (let i = 0; i < new_dataset.length; i++) {
-        // create a new div element for each text with the template 
+    function display_data(new_dataset){
+        // display data on the page
+        let textList = $('#textList');
+        // remove all elements that have the new-indicator class
+        textList.find('.newSeparator').remove();
 
-        console.log(new_dataset[i]);
-        let newDiv = document.createElement('div');
-        new_dataset[i].text = new_dataset[i].text.replace(/'/g, "\\'");
-        newDiv.innerHTML = `
-            <div 
-                x-data="{selected: false, isNew: true, text: '${new_dataset[i].text}'}" 
-                x-init="total_counter += 1"
-                x-show="!filtered || selected == true" 
-                class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300"
-            >   
-                <div class="new-indicator text-xs font-semibold text-red-200 self-start">New</div>
-                <div x-text="text" class="flex-grow w-7/10 p-2"></div>
-                <div class="flex flex-row w-3/10 justify-center space-x-2">
-                    <button 
-                        @click="selected = !selected; yes_counter += selected ? 1 : -1" 
-                        :class="{'bg-blue-500 hover:bg-blue-600': selected == true, 'bg-gray-300 hover:bg-gray-400': selected == false}" 
-                        class="text-white font-bold py-1 px-3 rounded"
-                    >
-                        Yes
-                    </button>
-                </div>
+        const separator = document.createElement('div');
+        separator.innerHTML = `
+            <div class="w-full border-t-4 border-red-100 border-gray-300"></div>
+                <div class="text-red-400 absolute -mt-4 bg-white px-1 font-bold text-lg" style="left: 50%; transform: translateX(-50%);">
+                    New
             </div>`;
-        textList.append(newDiv);
+        separator.className = 'relative mb-3 newSeparator';
+        textList.append(separator);
+        
+        let start_index = dataset.length;
+        for (let i = 0; i < new_dataset.length; i++) {
+            // create a new div element for each text with the template below
+            let newDiv = document.createElement('div');
+            newDiv.innerHTML = `
+                <div 
+                    x-data="{selected: false}" 
+                    x-init="total_counter += 1"
+                    x-show="!filtered || selected == true" 
+                    class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300"
+                >   
+                    <div class="flex-grow w-7/10 p-2">${new_dataset[i].text}</div>
+                    <div class="flex flex-row w-3/10 justify-center space-x-2">
+                        <button 
+                            @click="selected = !selected; yes_counter += selected ? 1 : -1; change_label(${start_index + i}, selected);" 
+                            :class="{'bg-blue-500 hover:bg-blue-600': selected == true, 'bg-gray-300 hover:bg-gray-400': selected == false}" 
+                            class="text-white font-bold py-1 px-3 rounded"
+                        >
+                            Yes
+                        </button>
+                    </div>
+                </div>`;
+            textList.append(newDiv);
+        }
+        dataset = dataset.concat(new_dataset);
     }
-    dataset = dataset.concat(new_dataset);
-  }
 
-  function load_more_data(){
-    // load more data from the server
-    $.ajax({
-      url: "/load_more_data",
-      type: "GET",
-      data: {
-        'last_length': dataset.length,
-      },
-      dataType: 'json',
-      success: function (data) {
-        display_data(data);
-      }
-    });
-  }
+    function change_label(index, label){
+        // change the label of the text at the given index
+        dataset[index].label = label;
+    }
 
-  // function train_ML(){
-  //   // train the ML model
-    
-  //   // iterate through elements of the textList 
-  //   $.ajax({
-  //     url: "/train_ML",
-  //     type: "GET",
-  //     data: {
-  //       'dataset': JSON.stringify(dataset),
-  //     },
-  //     dataType: 'json',
-  //     success: function (data) {
-  //       console.log(data);
-  //     }
-  //   });
-  // }
-  display_data(dataset);
+    function load_more_data(){
+        // load more data from the server
+        $.ajax({
+            url: "/load_more_data",
+            type: "GET",
+            dataType: 'json',
+            success: function (data) {
+                data = JSON.parse(data);
+                display_data(data);
+            }
+        });
+    }
+
+    function complete() {
+        // train the ML model
+        
+        // iterate throught the dataset and if the label does not exist, set it to false
+        /* dataset.forEach(datum => {
+            datum.label = datum.label || false;
+        }); */
+
+        dataset.forEach(datum => {
+            // covert it to 1 or 0
+            datum.label = +parseFloat(datum.score) >= 2.0;
+        })
+
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+        console.log("start training MLs");
+
+        $.ajax({
+            url: "/store_labels/",
+            type: "POST",
+            data: JSON.stringify({'dataset': dataset, 'participant_id': participant_id}),
+            contentType: 'application/json',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            success: function(response) {
+                // if the json response has the response code 200
+                console.log(response);
+                if (response['response'] != 200) {
+                    alert(response['message']);
+                    return;
+                }
+                console.log("labels are stored successful");
+                // if the training is successful, redirect to the next page, attach a GET parameter participant_id to the url
+                window.location.href = "/validate_page/?participant_id=" + participant_id;
+            }
+        });     
+    }
+
+    display_data(JSON.parse(`{{dataset | safe}}`));
 
 
 </script>

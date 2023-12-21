@@ -4,306 +4,508 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Prompt Writer</title>
-  <!-- use bootstrap UI -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-  <!-- base layout -->
-  <link rel="stylesheet" href="{% static 'css/examplelabel.css' %}" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Prompt Writer</title>
+    <!-- use bootstrap UI -->
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+    <!-- base layout -->
+    <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
+    
+    <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+    
+    
 </head>
 
 <body class="container-none h-screen w-screen px-8">
 
-  <!-- 
+    <!-- 
       The <noscript> tag encloses the content that will be displayed 
       only if JavaScript is disabled or not supported in the user's browser. 
     -->
-  <noscript>
-    If you see this text, your browser does not support dynamic content
-    (JavaScript) or it has been disabled. This study website requires JavaScript.
-  </noscript>
+    <noscript>
+        If you see this text, your browser does not support dynamic content
+        (JavaScript) or it has been disabled. This study website requires JavaScript.
+    </noscript> 
+    {% csrf_token %}
+    <div class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
+        <div class="mx-auto pb-1 flex-grow-0">
+            <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Prompt Writer</h1>
+        </div>
 
-
-  <div class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
-    <div class="mx-auto pb-1 flex-grow-0">
-      <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Prompt Writer</h1>
-    </div>
-
-    <div class="flex items-stretch w-full gap-x-4 flex-grow">
-        <!-- the section where users configure prompts -->
-        <div x-data="{configurePanel: false}"
-            class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow"
-        >
-            <!-- <div class="section-header text-xl font-bold text-blue-600 flex-grow-0 self-center">
+        <div class="flex items-stretch w-full gap-x-4 flex-grow">
+            <!-- the section where users configure prompts -->
+            <div x-data="{configurePanel: false}" class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow">
+                <!-- <div class="section-header text-xl font-bold text-blue-600 flex-grow-0 self-center">
                 Write Your Prompts
             </div> -->
 
-            <!-- the section where users see all prompts -->
-            <div x-show="!configurePanel" class="section-body flex flex-col flex-grow gap-y-4 pb-4">
-                <div class="flex flex-col gap-y-2 flex-grow-0">
-                    <div class="text-lg italic">
-                        Prompt Introduction
+                <!-- the section where users see all prompts -->
+                <div x-show="!configurePanel" class="section-body flex flex-col flex-grow gap-y-4 pb-4">
+                    <!-- <div class="flex flex-col gap-y-2 flex-grow-0">
+                        <div class="text-lg italic">
+                            Prompt Introduction
+                        </div>
+                        <textarea rows="2" id="promptOverview" class="bg-gray-100 border border-gray-300 rounded-lg p-2 text-base w-full" placeholder="Write an overview of your prompt"></textarea>
+                    </div> -->
+                    <div id="promptList" class="flex flex-col gap-y-2 flex-grow h-1 overflow-y-auto">
+                        <div @click="configurePanel = !configurePanel" class="flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
+                            <div class="text-3xl text-gray-500">+</div>
+                        </div>
                     </div>
-                    <textarea
-                        rows="2"
-                        class="bg-gray-100 border border-gray-300 rounded-lg p-2 text-base w-full" 
-                        placeholder="Write an overview of your prompt"></textarea>
-                </div>
-                <div id="promptList" class="flex flex-col gap-y-4 flex-grow h-1 overflow-y-auto">
-                    <div @click="configurePanel = !configurePanel" 
-                        class="flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer"
-                    >
-                        <div class="text-3xl text-gray-500">+</div>
+                    <div class="bottom flex justify-end gap-x-2 flex-grow-0">
+                        <button @click="trainLLM" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                            Train
+                        </button>
                     </div>
                 </div>
-                <div class="bottom flex justify-end gap-x-2 flex-grow-0">
-                    <button @click="" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
-                        Train
-                    </button>
-                </div>
-            </div>
 
-            <!-- the section where users configure prompts -->
-            <div x-show="configurePanel" class="flex flex-col gap-y-4 py-4 px-4 flex-grow">
-                <div class="flex flex-col flex-grow gap-y-6 overflow-y-auto h-1">
-                    <!-- Add this h-1 to override a weird behavior of flex layout, 
+                <!-- the section where users configure prompts -->
+                <div x-show="configurePanel" class="flex flex-col gap-y-4 py-4 px-4 flex-grow">
+                    <div class="flex flex-col flex-grow gap-y-6 overflow-y-auto h-1">
+                        <!-- Add this h-1 to override a weird behavior of flex layout, 
                         see this stackoverflow answer for more details https://stackoverflow.com/q/75368940/9508684.
                         In short, the overflow proerty requries a fixed length on the container. 
                         Without a fixed length (height or width), there's nothing to trigger an overflow. 
                         The flex-grow property doesn't establish a fixed length, so it doesn't work.
                         So, to solve both problems, set the container to height: 1px. It will still grow to fill the available space.
                     -->
-                    <div class="flex flex-col gap-y-2">
-                        <div class="text-lg">Describe one aspect of the text you want to catch<span class="text-red-500 font-bold ml-1">*</span></div>
-                        <div contenteditable="true" id="new-prompt-rubric"
-                            class="bg-blue-50 rounded ml-4 pl-4 pr-2 py-2 text-gray-600 text-base focus:outline-none">
-                            
+                        <div class="flex flex-col gap-y-2">
+                            <div class="text-lg">Describe one aspect of the comment you want to catch<span class="text-red-500 font-bold ml-1">*</span></div>
+                            <div contenteditable="true" id="newPromptRubric" class="bg-gray-100 rounded ml-4 pl-4 pr-2 py-2 text-gray-600 text-base focus:outline-none">
+
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-y-2">
+                            <div class="text-lg">Provide one comment example you want to catch <span class="text-sm italic text-gray-500">(optional)</span> </div>
+                            <div contenteditable="true" id="newPromptPositiveExample" class="bg-red-100 rounded ml-4 pl-4 pr-2 py-2 text-gray-600 text-base focus:outline-none">
+
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-y-2">
+                            <div class="text-lg">Provide one comment example you <strong>DON'T</strong> want to catch <span class="text-sm italic text-gray-500">(optional)</span> </div>
+                            <div contenteditable="true" id="newPromptNegativeExample" class="bg-blue-100 rounded ml-4 pl-4 pr-2 py-2 min-h-12 text-gray-600 text-base focus:outline-none">
+
+                            </div>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-y-2">
-                        <div class="text-lg">Provide one positive example <span class="text-sm italic text-gray-500">(optional)</span> </div>
-                        <div contenteditable="true" id="new-prompt-positive-example"
-                            class="bg-red-50 rounded ml-4 pl-4 pr-2 py-2 text-gray-600 text-base focus:outline-none">
-                            
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-y-2">
-                        <div class="text-lg">Provide one negative example <span class="text-sm italic text-gray-500">(optional)</span> </div>
-                        <div contenteditable="true" id="new-prompt-negative-example"
-                            class="bg-violet-50 rounded ml-4 pl-4 pr-2 py-2 min-h-12 text-gray-600 text-base focus:outline-none">
-                            
-                        </div>
+                    <div class="bottom flex justify-end gap-x-2 flex-grow-0">
+                        <button @click="configurePanel = !configurePanel" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                            Close
+                        </button>
+                        <button @click="configurePanel = !configurePanel; addNewPrompt()" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                            Save
+                        </button>
                     </div>
                 </div>
-                <div class="bottom flex justify-end gap-x-2 flex-grow-0">
-                    <button @click="configurePanel = !configurePanel" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
-                        Close
+            </div>
+            <!-- the section where users example examples and predictions -->
+            <div class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1">
+                <!-- display a set of filter options -->
+                <div class="header text-lg font-bold">
+                    Which Texts are Caught by Selected Rubrics
+                </div>
+                <div class="flex flex-col items-start gap-y-1">
+                    <div class="flex justify-start items-center gap-x-2 w-[60%]">
+                        <div>Filters</div>
+                        <div class="w-[45%]">
+                            <select id="predictionFilter" class="selectpicker border rounded" title="by predictions" data-width="100%" >
+                                <option value="caught" class="bg-red-100 hover:bg-red-300 text-xs text-gray-700">Caught comments</option>
+                                <option value="uncaught" class="bg-blue-100 hover:bg-blue-300 text-xs text-gray-700">Uncaught comments</option>
+                                <option value="all" selected class="bg-gray-100 hover:bg-gray-300 text-xs text-gray-700">All comments</option>
+                            </select>
+                        </div>
+                        <div class="w-[45%]">
+                            <select id="promptFilter" multiple
+                                class="selectpicker border rounded" 
+                                title="by rubrics" 
+                                data-width="100%"
+                                data-selected-text-format="count"
+                                data-count-selected-text="{0} rubrics selected"
+                            >
+                                
+                            </select>
+                        </div>
+                    </div>
+                    <div id="countDisplay" class="text-sm text-gray-700 italic self-start"></div>
+                </div>
+                <!-- display a list of comments to be reviewed -->
+                <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow ">
+                </div>
+                <div class="bottom flex justify-end gap-x-2 pt-3">
+                    <button id="loadMoreButton" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                        Load More
                     </button>
-                    <button @click="configurePanel = !configurePanel; addNewPrompt()" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
-                        Save
-                    </button>
-                  </div>
+                </div>
             </div>
         </div>
-        <!-- the section where users example examples and predictions -->
-        <div x-data="{filtered: false, yes_counter: 0, total_counter: 0}"  
-            class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1"
-        >
-            <!-- display a set of filter options -->
-            <div class="header text-lg font-bold">
-                Predictions of Selected Rubrics
-            </div>
-            <div class="flex justify-between">
-                <label class="flex gap-2">
-                    <input type="checkbox" x-model="filtered" id="yesFilter" class="form-checkbox scale-90">
-                    <span class=" text-blue-600 text-base pt-0.5">Show only filtered</span>
-                </label>
-                <div x-text="'There are ' + yes_counter + ' / ' + total_counter + ' positive predictions'" class="text-base text-blue-600"></div>
-            </div>
-            <!-- display a list of comments to be reviewed -->
-            <div id="textList" class="body flex flex-col space-y-2 overflow-y-auto py-2 h-1 flex-grow">
-            </div>
-            <div class="bottom flex justify-end gap-x-2 pt-3">
-                <button @click="load_more_data" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
-                  Load More
-                </button>
+
+        <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto p-5 border w-fit shadow-lg rounded-md bg-white">
+                <div id="loadingModalText" class="text-center text-xl">
+                    Loading...
+                </div>
             </div>
         </div>
     </div>
-  </div>
-</body> <!-- closes container -->
+</body>
+<!-- closes container -->
 <!-- custom js -->
+
 <script defer>
-  var dataset = JSON.parse(`{{dataset | safe}}`);
-  var overview = "";
+    var dataset = [];
+    var overview = "";
+    var prompts = [];
+    var prompt_counter = 0; 
+    /* the maximum prompt index that has been used so far, 
+        we want to use it as the unique id for each prompt, 
+        however, we cannot rely on the length of the prompts array as some prompts might be deleted
+    */
 
-  // we assume every single quote is properly escaped; this should be ensured when adding them to the list
-  // for now, we only require users to input one example for each category
-  var prompts = [];
+    var selected_prompts = [];
+    var selected_prediction = "all";
 
-  function escape_single_quote(text){
-    return text.replace(/'/g, "\\'");
-  }
-
-
-  function display_prompts(new_prompts){
-    // display data on the page
-    let promptList = $('#promptList');
-
-    for (let i = 0; i < new_prompts.length; i++) {
-        // create a new div element for each text with the template 
-
-        console.log(new_prompts[i]);
-        let newDiv = document.createElement('div');
-        newDiv.innerHTML = `
-            <div class="prompt flex items-start gap-x-4 pl-4 pr-2 pb-3 pt-2.5 border border-gray-300 rounded-lg">
-                <div>
-                    <input type="checkbox" id="prompt-checkbox.${i}" class="form-checkbox scale-110 mt-1.5" ${new_prompts[i].selected ? "checked" : ""}>
-                </div>
-                <div class="flex flex-col gap-y-2 flex-grow self-stretch" x-data="{open: true}">
-                    <div class="flex justify-between mr-2">
-                        <div 
-                            contenteditable="true" 
-                            class="text-base text-black focus:outline-none" 
-                            id="prompt-rubric.${i}">
-                                ${new_prompts[i].rubric}
-                        </div>
-                        <!--have a foldable button-->
-                        <div>
-                            <button @click="open = !open" class="focus:outline-none">
-                                <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                                <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-y-1 mr-2" x-show="open">
-                        <div class="text-sm text-gray-600 italic">
-                            Positive Examples
-                        </div>
-                        <div class="flex flex-col bg-red-50 rounded pl-2 pr-2 py-1">
-                            <div contenteditable="true"
-                                class="example bg-inherit border-none text-sm text-gray-600 focus:outline-none">
-                                ${new_prompts[i].positives[0]}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-y-1 mr-2" x-show="open">
-                        <div class="text-sm text-gray-600 italic">
-                            Negative Examples
-                        </div>
-                        <div class="flex flex-col bg-violet-50 rounded pl-2 pr-2 py-1">
-                            <div contenteditable="true"
-                                class="example bg-inherit border-none text-sm text-gray-600 focus:outline-none" 
-                                id="prompt-negative-example.${i}">
-                                    ${new_prompts[i].negatives[0]}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-        $('#promptList > :last-child').before(newDiv);
-        prompts.push(new_prompts[i]);
+    // we assume every single quote is properly escaped; this should be ensured when adding them to the list
+    // for now, we only require users to input one example for each category
+    function escape_single_quote(text) {
+        return text.replace(/'/g, "\\'");
     }
-  }
 
-  function addNewPrompt(){
+    function display_prompts(new_prompts) {
+        // display data on the page
+        let promptList = $('#promptList');
+
+        new_prompts.forEach((prompt) => {
+            // create a new div element for each text with the template 
+            let newDiv = document.createElement('div');
+            prompt.id = prompt_counter++;
+            newDiv.innerHTML = `
+                <div class="prompt flex flex-col gap-y-2 items-stretch" id="prompt-${prompt.id}">
+                    <div class="flex items-start gap-x-4 pl-4 pr-2 pb-3 pt-2.5 border border-gray-300 rounded-lg">
+                        <div class="flex flex-col gap-y-2 flex-grow self-stretch" x-data="{open: true}">
+                            <div class="flex justify-between mr-2">
+                                <div 
+                                    contenteditable="true" 
+                                    class="text-base text-black focus:outline-none" 
+                                    id="promptRubric-${prompt.id}">
+                                        ${prompt.rubric}
+                                </div>
+                                <!--have a foldable button-->
+                                <div class="flex justify-center gap-x-2">
+                                    <button @click="deletePrompt(${prompt.id})" class="focus:outline-none">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                    <button @click="open = !open" class="focus:outline-none">
+                                        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-y-1 mr-2" x-show="open">
+                                <div class="text-sm text-gray-600 italic">
+                                    Examples that should be caught
+                                </div>
+                                <div class="flex flex-col bg-red-100 rounded pl-2 pr-2 py-1">
+                                    <div contenteditable="true"
+                                        id="promptPositiveExample-${prompt.id}"
+                                        class="example bg-inherit border-none text-sm text-gray-600 focus:outline-none">
+                                        ${prompt.positives[0]}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-y-1 mr-2" x-show="open">
+                                <div class="text-sm text-gray-600 italic">
+                                    Examples that should not be caught
+                                </div>
+                                <div class="flex flex-col bg-blue-100 rounded pl-2 pr-2 py-1">
+                                    <div contenteditable="true"
+                                        class="example bg-inherit border-none text-sm text-gray-600 focus:outline-none" 
+                                        id="promptNegativeExample.${prompt.id}">
+                                            ${prompt.negatives[0]}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col bg-gray-100 rounded items-center self-stretch">
+                        <div class="text-color-700 text-lg">OR</div>
+                    </div>
+
+                </div>`;
+            $('#promptList > :last-child').before(newDiv);
+            prompts.push(prompt);
+
+            // add an option to the select picker for this prompt
+            $('#promptFilter').append(`<option selected value=${prompt.id} class="bg-gray-100 hover:bg-gray-300 text-xs text-gray-700">${prompt.rubric}</option>`);
+            selected_prompts.push(prompt.id);
+        });
+    }
+
+    function addNewPrompt() {
         // read from configuring prompt panel and add this new prompt to the prompts
+        let positive_example = $('#newPromptPositiveExample').text().trim();
+        let negative_example = $('#newPromptNegativeExample').text().trim();
         let new_prompt = {
-            "rubric": escape_single_quote($('#new-prompt-rubric').text()),
-            "positives": [escape_single_quote($('#new-prompt-positive-example').text())],
-            "negatives": [escape_single_quote($('#new-prompt-negative-example').text())],
+            "rubric": escape_single_quote($('#newPromptRubric').text()),
+            "positives": positive_example.length > 0 ? [escape_single_quote(positive_example)] : [],
+            "negatives": negative_example.length > 0 ? [escape_single_quote(negative_example)] : [],
             "selected": true
         };
         display_prompts([new_prompt]);
-  }
-
-  function display_data(new_dataset){
-    // display data on the page
-    let textList = $('#textList');
-    // remove all elements that have the new-indicator class
-    textList.find('.new-indicator').remove();
-
-    for (let i = 0; i < new_dataset.length; i++) {
-        // create a new div element for each text with the template 
-
-        console.log(new_dataset[i]);
-        let newDiv = document.createElement('div');
-        new_dataset[i].text = new_dataset[i].text.replace(/'/g, "\\'");
-        let prediction = Math.random() >= 0.5; // for the purpose of testing
-        newDiv.innerHTML = `
-            <div 
-                x-data="{prediction: ${prediction}, isNew: true, text: '${new_dataset[i].text}'}" 
-                x-init="total_counter += 1; yes_counter += prediction ? 1 : 0"
-                x-show="!filtered || prediction == true" 
-                class="flex flex-row items-center py-0.5"
-                :class="{'bg-red-50': prediction == true, 'bg-violet-50': prediction == false}"
-            >   
-                <div class="new-indicator text-xs font-semibold text-red-200 self-start">New</div>
-                <div x-text="text" class="flex-grow w-7/10 p-2"></div>
-            </div>`;
-        textList.append(newDiv);
     }
-    dataset = dataset.concat(new_dataset);
-  }
 
-  function load_more_data(){
-    // load more data from the server
-    $.ajax({
-      url: "/load_more_data",
-      type: "GET",
-      data: {
-        'last_length': dataset.length,
-      },
-      dataType: 'json',
-      success: function (data) {
-        display_data(data);
-      }
-    });
-  }
+    function deletePrompt(deleted_id) {
+        // delete the prompt at index
+        console.log(`deleting prompt ${deleted_id}`);
+        prompts = prompts.filter((prompt) => prompt.id != deleted_id);
+        // remove the div with the id prompt.${deleted_id}
+        $(`#prompt-${deleted_id}`).remove();
 
-  // bind js variables to html elements for each prompt
-  document.body.addEventListener('change', (event) => {
-        let id = event.target.id;
-        // update the selected status of the prompt
-        if (id.startsWith("prompt-checkbox")){
-            let index = parseInt(id.split(".")[1]);
-            prompts[index].selected = event.target.checked;
-        } else if (id.startsWith("prompt-rubric")){
-            let index = parseInt(id.split(".")[1]);
-            prompts[index].rubric = escape_single_quote(event.target.value);
-        } else if (id.startsWith("prompt-positive-example")){
-            let index = parseInt(id.split(".")[1]);
-            prompts[index].positives[0] = escape_single_quote(event.target.value);
-        } else if (id.startsWith("prompt-negative-example")){
-            let index = parseInt(id.split(".")[1]);
-            prompts[index].negatives[0] = escape_single_quote(event.target.value);
+        // remove the option from the select picker
+        $(`#promptFilter option[value=${deleted_id}]`).remove();
+        $(".selectpicker").selectpicker('refresh');
+        selected_prompts = selected_prompts.filter((id) => id != deleted_id);
+
+    }
+
+    function display_data(new_dataset) {
+        // display data on the page
+        let textList = $('#textList');
+        // remove all elements that have the new-indicator class
+        textList.find('.newSeparator').remove();
+
+        const separator = document.createElement('div');
+        separator.innerHTML = `
+            <div class="w-full border-t border-gray-300"></div>
+                <div class="text-red-400 absolute -mt-4 bg-white px-1 font-medium text-lg" style="left: 50%; transform: translateX(-50%);">
+                    New
+            </div>`;
+        separator.className = 'relative mb-3 newSeparator';
+        textList.append(separator);
+
+        console.log(`displaying ${new_dataset.length} new data`);
+        let start_index = dataset.length;
+        for (let i = 0; i < new_dataset.length; i++) {
+            // create a new div element for each text with the template 
+            let newDiv = document.createElement('div');
+
+            /* Here i use mb-2 instead of adding a gap-y-2 to the textList div because the latter will still keep gaps for hidden elements */
+            newDiv.innerHTML = `
+                <div class="flex flex-col gap-y-1 mb-2" x-data="{ showTooltip: false }">   
+                    <div id="datum-${i + start_index}" class="datum flex flex-row py-1 px-2 self-stretch unLabel">
+                        <div class="flex-grow w-7/10 px-2 py-1 self-center">${new_dataset[i].text}</div>
+                        <div class="self-end" @click="showTooltip = !showTooltip">
+                            <i class="fa-solid fa-circle-info fa-xs" style="color: #868788;"></i>
+                        </div>
+                    </div>
+                    <div 
+                        class="flex flex-col px-2 pb-1 self-end max-w-[75%] rounded unLabel"
+                        x-show="showTooltip"
+                        id="datumTooltip-${i + start_index}"
+                    >
+                        <div class="tooltip-arrow"></div>
+                        <div class="text-sm">
+                            This comment is unlabeled yet.
+                        </div>
+                    </div>
+                </div>`;
+            textList.append(newDiv);
         }
-    });
+        dataset = dataset.concat(new_dataset);
+        $('#countDisplay').text(`There are ${dataset.length} comments in total`);
+    }
 
     
-  display_prompts([{
-        "rubric": "Texts that describe some food is delicious",
-        "positives": ["Just tried the new caramel cheesecake at Café Loco - absolutely yummy!"],
-        "negatives": ["The band\'s new track is absolutely delicious – it\'s like every beat just hits the right spot!"],
-        "selected": true
-    }, {
-        "rubric": "Texts that describe some food is delicious",
-        "positives": ["Just tried the new caramel cheesecake at Café Loco - absolutely yummy!"],
-        "negatives": ["The band\'s new track is absolutely delicious – it\'s like every beat just hits the right spot!"],
-        "selected": true
-    }])
+    function showFilteredData(){
+        // iterature through dataset and hide the datum that doesn't match the filter selected_prediction and selected_prompts
+        let expected_prediction = selected_prediction === "caught" ? [true] : selected_prediction === "uncaught" ? [false] : [true, false];
+        let counter = 0;
+        let true_counter = 0;
+        dataset.forEach((datum, index) => {
+            let show = true;
+            let now_prediction = null;
+            if(expected_prediction.length === 1){
+                // otherwise, regardless of what prompts are selected, we all show all comments
+                if (selected_prompts.length > 0){
+                    // calculate the or of all selected prompts
+                    console.log(datum)
+                    let selected_predictions = selected_prompts.map((prompt_id) => datum.prompt_predictions?.[prompt_id] || false);
+                    let now_prediction = selected_predictions.reduce((a, b) => a || b, false)
+                    console.log(`selected results: ${now_prediction}; total prediction: ${datum.total_prediction}`);
+                    show = now_prediction == expected_prediction[0]; // we allow null to be equal to false, and 1 to be equal to true
+                } else {
+                    // if no prompts are selected, then we cannot show any comments
+                    show = false;
+                }
+            }
+            if(now_prediction == true) true_counter++;
+            if (show){
+                $(`#datum-${index}`).parent().show();
+                counter++;
+            } else{
+                $(`#datum-${index}`).parent().hide();
+            }
+        });
+        if(expected_prediction.length === 2) 
+            $('#countDisplay').text(`Using these selected rubrics, there are ${true_counter}/${counter} caught comments in total`);
+        else
+            $('#countDisplay').text(`Using these filters, there are ${counter} comments in total`);
+
+    }
+
+    $("#predictionFilter").on("change", function() {
+        selected_prediction = $(this).val();
+        showFilteredData();
+        
+    });
+
+    $("#promptFilter").on("change", function() {
+        selected_prompts = $(this).val();
+        showFilteredData();
+    });
+
+    $('#loadMoreButton').on('click', function() {
+        $.ajax({
+            url: "/load_more_data",
+            type: "GET",
+            data: {},
+            dataType: 'json',
+            success: function(data) {
+                // parse json dumped data
+                data = JSON.parse(data);
+                display_data(data);
+            }
+        });
+    });
 
 
+    function generateExplanation(datum){
+        if (datum.total_prediction === null){
+            return "This comment is unlabeled due to the model's instability.";
+        }
+        else if (datum.total_prediction){
+            let explanation = "<p>This comment is caught by the following prompts:</p><ul class='list-none pl-0'>";
+            // iterate through the dict object and format each prompt in a new line and with italic font
+            Object.keys(datum.prompt_predictions).forEach((key) => {
+                if (datum.prompt_predictions[key]){
+                    explanation += `<li class="before:content-['•'] before:mr-2"><i>${prompts[key].rubric}</i></li>`;
+                }
+            });
 
-  display_data(dataset);
+            explanation += "</ul>";
+            return explanation;
+        }
+        else{
+            return "This comment is not caught by any of your prompts.";
+        }
+    }
+
+    function updateDataLabels(predictions) {
+        let true_counter = 0;
+
+        for (let i = 0; i < predictions.length; i++) {
+            dataset[i].total_prediction = predictions[i].total_prediction;
+            dataset[i].prompt_predictions = predictions[i].prompt_predictions;
+            
+            // update the label according to the total prediction
+            let new_class = dataset[i].total_prediction === null ? "unLabel" : dataset[i].total_prediction ? "trueLabel" : "falseLabel";
+            const datum = $(`#datum-${i}`);
+            datum.removeClass("unLabel trueLabel falseLabel");
+            datum.addClass(new_class);
+
+            // select the tooltip
+            const tooltip_div = $(`#datumTooltip-${i}`);
+            tooltip_div.removeClass("unLabel trueLabel falseLabel");
+            tooltip_div.addClass(new_class);
+
+            // update the tooltip content
+            let explanation = generateExplanation(dataset[i]);
+            // set the second child of the tooltip div to be the explanation, use innerhtml
+
+            tooltip_div.children().eq(1).html(explanation);
+            
+        }
+        showFilteredData();
+    }
+
+    function parseContent() {
+        // let checkboxes = document.querySelectorAll("[id^='promptCheckbox']");
+        let rubrics = document.querySelectorAll("[id^='promptRubric']");
+        let positiveExamples = document.querySelectorAll("[id^='promptPositiveExample']");
+        let negativeExamples = document.querySelectorAll("[id^='promptNegativeExample']");
+        // let overviewInput = document.getElementById("promptOverview");
+
+        rubrics.forEach((rubric, index) => {
+            prompts[index].rubric = escape_single_quote(rubric.textContent.trim());
+        });
+
+        positiveExamples.forEach((positiveExample, index) => {
+            prompts[index].positives[0] = escape_single_quote(positiveExample.textContent.trim());
+        });
+
+        negativeExamples.forEach((negativeExample, index) => {
+            prompts[index].negatives[0] = escape_single_quote(negativeExample.textContent.trim());
+        });
+
+        // overview = escape_single_quote(overviewInput.value);
+    }
+
+    function trainLLM() {
+        parseContent();
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+        console.log("start training LLMs");
+
+        $('#loadingModal').removeClass('hidden');
+        $('#loadingModalText').text('Waiting for algorithms');
+        $.ajax({
+            url: "/trainLLM/",
+            type: "POST",
+            data: JSON.stringify({
+                'dataset': dataset,
+                'prompts': prompts,
+                'overview': null,
+            }),
+            contentType: 'application/json',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            success: function(data) {
+                console.log(data);
+                updateDataLabels(data.answer)
+                $('#loadingModal').addClass('hidden');
+            }
+        });
+    }
+
+    display_data(JSON.parse(`{{dataset | safe}}`));
+    
+    display_prompts([
+        {
+            "rubric": "Catch all texts that involve race-related hate speech",
+            "positives": ["You are just some mad browskin because Europeans styled on your ass"],
+            "negatives": ["Your daily reminder that the vast majority of athletes are hilariously stupid"],
+        },
+        {
+            "rubric": "Catch all texts that include some sexual words",
+            "positives": ["Honey - you are damn sexy!!! End of story."],
+            "negatives": ["The history of music is mortal, but the idiocy of the guitar is eternal."]
+        }
+    ]);
+
+    
 </script>
+
 </html>

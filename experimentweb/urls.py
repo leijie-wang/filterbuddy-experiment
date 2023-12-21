@@ -23,12 +23,15 @@ urlpatterns = [
     path('onboarding', sharedviews.onboarding, name='onboarding'),
     path('load_system', sharedviews.load_system),
     path('load_more_data/', sharedviews.load_more_data),
-    
-    path('wordfilter/', sharedviews.wordfilter, name='wordfilter'),
+    path('validate_page/', sharedviews.validate_page),
+    path('validate_system/', sharedviews.validate_system),
+    # path('wordfilter/', sharedviews.wordfilter, name='wordfilter'),
     
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),
-    path('trainML/', sharedviews.trainML),
+    path('store_labels/', sharedviews.store_labels),
 
     path('promptwrite/', sharedviews.promptwrite, name='promptwrite'),
+    path('trainLLM/', sharedviews.trainLLM),
+
     path('ruleconfigure/', sharedviews.ruleconfigure, name='ruleconfigure'),
 ]

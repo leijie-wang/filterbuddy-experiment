@@ -1,0 +1,29 @@
+.trueLabel {
+    background-color: #fee2e2;
+}
+
+.falseLabel {
+    background-color: #dbeafe;
+}
+
+.unLabel {
+    background-color: #f1f5f9;
+}
+
+.tooltip-arrow {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
+    background-color: inherit;
+    position: relative;
+    left: calc(100% - 8px); /* Adjust this to align the arrow */
+    top: -3px;
+}
+
+.filter-option {
+    font-size: small!important;
+}
+
+.dropdown-menu .selected {
+    background-color: #d1d5db;
+}
