@@ -39,12 +39,17 @@ def load_system(request):
         logging.error("Unknown system: {}".format(system))
 
 def load_more_data(request):
-    return JsonResponse(json.dumps(TrainDataSet.load_batch()), safe=False)
+    participant_id = request.GET.get('participant_id', default=None)
+    new_batch = TrainDataSet.load_batch(participant_id)
+    print(f"participant {participant_id} loaded a new batch of size {len(new_batch)}")
+    return JsonResponse(json.dumps(new_batch), safe=False)
 
 def examplelabel(request):
-    participant_id = utils.generate_userid() 
-    # used as the identifier of the participant; it should be passed as a get parameter but now we just generate it randomly
-    dataset = TrainDataSet.load_batch(start=True, reshuffle=True)
+    participant_id = request.GET.get('participant_id', default=None)
+    if participant_id is None:
+        participant_id = utils.generate_userid()
+    
+    dataset = TrainDataSet.load_batch(participant_id, start=True)
     return render(request, 'examplelabel.html', {
          "dataset": json.dumps(dataset),
          "participant_id": participant_id,
@@ -78,18 +83,75 @@ def store_labels(request):
     for item in dataset:
         example_label = ExampleLabel(participant_id=participant_id, text=item["text"], label=item["label"])
         example_label.save()
-    return JsonResponse({"response": 200}, safe=False)
+    return JsonResponse(
+                    {
+                        "status": True, 
+                        "message": "Participants' labeled examples are stored successfully"
+                    }, 
+                safe=False
+            )
 
-   
+def promptwrite(request):
+    participant_id = request.GET.get('participant_id', default=None)
+    if participant_id is None:
+        participant_id = utils.generate_userid()
+
+    system = request.GET.get('system', default="promptsLLM")
+    dataset = TrainDataSet.load_batch(participant_id, start=True)
+    return render(request, 'promptwrite.html', {
+        "dataset": json.dumps(dataset),
+        "participant_id": participant_id,
+        "system": system,
+    })
+
+def store_prompts(request):
+    """
+        request.body
+        {
+            "prompts": [
+                {
+                    "rubric": "Catch all texts that involve race-related hate speech",
+                    "positives": ["You are just some mad browskin because Europeans styled on your ass"],
+                    "negatives": ["Your daily reminder that the vast majority of athletes are hilariously stupid"],
+                },
+            ],
+            "participant_id": "123456"
+        }
+    """
+    request_data = json.loads(request.body)
+    prompts = request_data.get("prompts")
+    participant_id = request_data.get('participant_id')
+
+    from sharedsteps.models import PromptWrite
+    # delete the labels of the participant from the database first, for the testing purposes
+    PromptWrite.objects.filter(participant_id=participant_id).delete()
+
+    counter = 0
+    for item in prompts:
+        prompt = PromptWrite(rubric=item["rubric"], participant_id=participant_id, prompt_id=counter)
+        prompt.set_positives(item["positives"])
+        prompt.set_negatives(item["negatives"])
+        prompt.save()
+        counter = counter + 1
+    
+    return JsonResponse(
+                {
+                    "status": True, 
+                    "message": "Participants' prompts are stored successfully"
+                }, 
+                safe=False
+            )
+
 def validate_page(request):
     # parse out the participant id from the request GET parameters
-    # participant_id = request.GET.get('participant_id', default=None)
-    participant_id = utils.generate_userid()
-    if participant_id is not None:
+    participant_id = request.GET.get('participant_id', default=None)
+    system = request.GET.get('system', default=None)
+    if participant_id is not None and system is not None:
         dataset = ValidateDataSet.load_all()
         return render(request, 'validate.html', {
             "dataset": json.dumps(dataset),
             "participant_id": participant_id,
+            "system": system,
         })
 
 def validate_system(request):
@@ -97,23 +159,24 @@ def validate_system(request):
     participant_id = request_data.get('participant_id')
     system = request_data.get('system')
     validate_dataset = request_data.get('dataset')
+
+    X_test = [item["text"] for item in validate_dataset]
+    y_test = [item["label"] for item in validate_dataset]
+    
     print(f"participant {participant_id} validates system: {system}")
-    if system == "examples+ML":
+    if system == "examplesML":
         # retrieve the labels of the examples labeled by the participant from the database
         from sharedsteps.models import ExampleLabel
-        from sharedsteps.ml_filter import MLFilter
+        from systems.ml_filter import MLFilter
 
         training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id).values("text", "label"))
         if len(training_dataset) == 0:
-            return JsonResponse({"response": 400, "message": "No labels found for the participant"}, safe=False)
+            return JsonResponse({"status": False, "message": "No labels found for the participant"}, safe=False)
         
 
         ml_filter = MLFilter("Bayes")
         X_train = [item["text"] for item in training_dataset] 
         y_train = [item["label"] for item in training_dataset]
-
-        X_test = [item["text"] for item in validate_dataset]
-        y_test = [item["label"] for item in validate_dataset]
 
         print(f"starting training with {len(X_train)} examples labeled by the participant")
         train_results = ml_filter.train_model(X=X_train, y=y_train)
@@ -121,86 +184,81 @@ def validate_system(request):
         print(f"starting testing with {len(X_test)} examples labeled by the participant")
         test_results = ml_filter.test_model(X=X_test, y=y_test)
         return JsonResponse({
-                    "response": 200, 
-                    "train_results": train_results,
-                    "test_results": test_results
+                    "status": True,
+                    "message": f"Successfully trained and tested the {system} model",
+                    "data": {
+                        "train_results": train_results,
+                        "test_results": test_results
+                    }
+                }, safe=False
+            )
+    elif system == "promptsLLM":
+        from systems.llm_filter import LLMFilter
+        from sharedsteps.models import PromptWrite
+
+        prompts = list(PromptWrite.objects.filter(participant_id=participant_id).values("rubric", "positives", "negatives", "prompt_id"))
+        if len(prompts) == 0:
+            return JsonResponse({"status": False, "message": "No prompts found for the participant"}, safe=False)
+        
+        llm_filter = LLMFilter(prompts, debug=False)
+        print(f"starting testing with {len(X_test)} examples labeled by the participant")
+        test_results = llm_filter.test_model(X=X_test, y=y_test)
+        return JsonResponse({
+                    "status": True,
+                    "message": f"Successfully tested the {system} model",
+                    "data": {
+                        "test_results": test_results
+                    }
+                }, safe=False
+            )
+    elif system == "promptsML":
+        from systems.llm_ml_filter import LLM_ML_MixedFilter
+        from sharedsteps.models import PromptWrite
+
+        prompts = list(PromptWrite.objects.filter(participant_id=participant_id).values("rubric", "positives", "negatives", "prompt_id"))
+        if len(prompts) == 0:
+            return JsonResponse({"status": False, "message": "No prompts found for the participant"}, safe=False)
+        
+        llm_ml_filter = LLM_ML_MixedFilter(prompts, "Bayes")
+        
+        X_train = TrainDataSet.load_batch_by_size(participant_id, size=360)
+        X_train = [item["text"] for item in X_train]
+        train_results = llm_ml_filter.train_model(X=X_train)
+
+        print(f"starting testing with {len(X_test)} examples labeled by the participant")
+        test_results = llm_ml_filter.test_model(X=X_test, y=y_test)
+        return JsonResponse({
+                    "status": True,
+                    "message": f"Successfully trained and tested the {system} model",
+                    "data": {
+                        "train_results": train_results,
+                        "test_results": test_results
+                    }
                 }, safe=False
             )
 
 
 
 
-
-
-def promptwrite(request):
-    dataset = TrainDataSet.load_batch(start=True)
-    return render(request, 'promptwrite.html', {
-         "dataset": json.dumps(dataset),
-    })
-
 def trainLLM(request):
-    # parse POST data
+    from systems.llm_filter import LLMFilter
     request_data = json.loads(request.body)
     
     prompts = request_data.get('prompts')
+    prompts = list(prompts.values()) # it is a dict in the frontend
     dataset = request_data.get('dataset')
-    print(f"prompts: {prompts}")
     
-    predictions = [{"total_prediction": None, "prompt_predictions": {}} for _ in range(len(dataset))]
-    # concatenate datasets in the format of 1. data1\n2.data2\n escape the double quotes for each text
-    dataset_str = []
-    for index in range(len(dataset)):
-        text = dataset[index]["text"].replace('"', '\\"')
-        dataset_str.append(f'DATA<{index}>: <{text}>')    
-    dataset_str = "\n".join(dataset_str)
-
-    system_prompt = f"""
-        For each text in the dataset, you task is to give a 1 (True) or 0 (False) prediction that represents whether the text satisfies the description in the overview and the rubrics.
-        Each text starts with "DATA" and a number. Both the number and the text are enclosed by "<" and ">".
-
-        In the following, the user will provide one rubric to help you make your decision. 
-        It might be associated with some examples that should be caught and some examples that should not be caught for you to better understand the rubric.
-        As long as the given rubric is satisfied, you should give a True prediction. Otherwise, give a False prediction.
-
-        RETURN YOUR ANSWER in the json format {{"results": [(index, prediction), ...]}} where index is the index of the text in the dataset and prediction is either 1 or 0.
-    """
-
-    for index in range(len(prompts)):
-        prompt = prompts[index]
-        rubric = f"Rubric: <{prompt['rubric']}>\n"
-        if len(prompt["positives"]) > 0:
-            rubric += f"\tExamples that should be caught: <{prompt['positives'][0]}>\n"
-        if len(prompt["negatives"]) > 0:
-            rubric += f"\tExamples that should not be caught: <{prompt['negatives'][0]}>\n"
-        
-        user_prompt = f"""\t### RUBRIC\n\t{rubric}"""
-
-        print(f"prompt: {user_prompt}")
-        user_prompt += f"""\n\n\t### DATASETS: "{dataset_str}","""
-        # response = json.loads(utils.chat_completion(system_prompt, user_prompt))
-        # generate a random number either 0 or 1
-        
-        import random
-        response = {"results": [(index, random.randint(0, 1)) for index in range(len(dataset))]}
-    
-        parsed_response = {}
-        """
-            we use a dict rather than a list to store predictions of individual prompts
-            because users may remove prompts in their process and the index of the prompt may thus change
-            refering the prediction of a prompt based on its index may lead to wrong predictions
-        """
-        if "results" in response:
-            for item in response["results"]:
-                parsed_response[item[0]] = item[1]
-            for index in range(len(dataset)):
-                predictions[index]["prompt_predictions"][prompt["id"]] = parsed_response[index] if index in parsed_response else None
-
-    for prediction in predictions:
-        # aggregate individual predictions using or operation, do not consider None
-        valid_prediction = [value for value in prediction["prompt_predictions"].values() if value is not None]
-        prediction["total_prediction"] = any(valid_prediction) if len(valid_prediction) > 0 else None
-    print(f"response: {predictions}")
-    return JsonResponse({"response": 200, "answer": predictions}, safe=False)
+    dataset = [item["text"] for item in dataset]
+    llm_filter = LLMFilter(prompts, debug=True)
+    results = llm_filter.test_model(X=dataset, y=None)
+    return JsonResponse({
+                    "status": True,
+                    "message": f"Successfully tested the LLM model",
+                    "data": {
+                        "results": results
+                    }
+                }, safe=False
+            )
 
 def ruleconfigure(request):
     dataset = TrainDataSet.load_batch(start=True)

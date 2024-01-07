@@ -59,10 +59,7 @@ class MLFilter:
 
     def test_model(self, X, y):
         """
-            Test the model against a random subset of k
-
-            @param show_passed - How many items that the filter lets pass are shown
-            @param show_failed - How many items that the filter catches are shown
+            Test the model against X, y
         """
 
         if self.pipe is None:

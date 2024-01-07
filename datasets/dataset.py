@@ -3,6 +3,7 @@ import os, sys
 import csv
 import sympy
 from django.conf import settings
+from sharedsteps.models import Participant
 sys.path.append(os.path.join(settings.BASE_DIR, 'datasets'))
 
 BATCH_SIZE = 30
@@ -22,27 +23,41 @@ class Dataset:
             for row in csv_reader:
                 self.dataset.append(row)
         
-        self.current_batch = 0
         self.size = len(self.dataset)
-        self.random_prime = sympy.randprime(1, self.size)
-        print(f"now using random prime {self.random_prime}")
         
-
-    def load_all(self, reshuffle=False):
+    def load_all(self):
         return self.dataset
     
-    def load_batch(self, start=False, reshuffle=False):
+    def load_batch(self, participant_id, start=False):
+        """
+            load a batch of data for a participant
+            @param participant_id: the id of the participant
+            @param start: whether this is the first time the participant is loading data
+        """
+        participant, created = Participant.objects.get_or_create(participant_id=participant_id)
+        
         if start:
-            self.current_batch = 0
+            participant.random_prime = sympy.randprime(1, self.size)
+            participant.current_batch = 0
+            participant.save()
+            print(f"participant {participant_id} created with random prime {participant.random_prime}")
 
-        if reshuffle:
-            self.random_prime = sympy.randprime(1, self.size)
-            print(f"now using random prime {self.random_prime}")
-
-        limit = (self.current_batch + 1) * BATCH_SIZE
+        limit = (participant.current_batch + 1) * BATCH_SIZE
         limit = min(limit, self.size)
         # map this batch to another random batch so that different participants do not see the same examples in each batch
-        new_batch = [(self.random_prime * i % self.size) for i in range(self.current_batch * BATCH_SIZE, limit)]
+        new_batch = [(participant.random_prime * i % self.size) for i in range(participant.current_batch * BATCH_SIZE, limit)]
         dataset = [self.dataset[i] for i in new_batch]
-        self.current_batch += 1
+        participant.current_batch += 1
+        participant.save()
         return dataset
+    
+    def load_batch_by_size(self, participant_id, size):
+        participant = Participant.objects.get(participant_id=participant_id)
+        if participant is None:
+            raise Exception(f"Participant {participant_id} does not exist")
+        
+        limit = min(size, self.size)
+        new_batch = [(participant.random_prime * i % self.size) for i in range(0, limit)]
+        dataset = [self.dataset[i] for i in new_batch]
+        return dataset
+    

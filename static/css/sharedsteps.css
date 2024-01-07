@@ -24,6 +24,26 @@
     font-size: small!important;
 }
 
+/* control the color of the selectpicker dropdown */
 .dropdown-menu .selected {
+    background-color: #f3f4f6;
+}
+
+.bootstrap-select .bs-ok-default::after {
+    border-color: #6b7280;
+}
+.unselected-button {
     background-color: #d1d5db;
+}
+
+.unselected-button:hover {
+    background-color: #9ca3af;
+}
+
+.selected-button {
+    background-color: #3b82f6;
+}
+
+.selected-button:hover {
+    background-color: #2563eb;
 }

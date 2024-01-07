@@ -35,25 +35,24 @@
         </div>
 
         <!-- display a list of comments to be reviewed -->
-        <div x-data="{filtered: false, yes_counter: 0, total_counter: 0}" class="flex flex-col h-5/6 gap-y-2 flex-grow">
+        <div class="flex flex-col h-5/6 gap-y-2 flex-grow">
             <!-- display a set of filter options -->
             <div class="header flex justify-between">
                 <label class="flex gap-2">
-                    <input type="checkbox" x-model="filtered" id="yesFilter" class="form-checkbox">
+                    <input type="checkbox" id="yesFilter" class="form-checkbox">
                     <span class=" text-blue-600 font-bold">Show Only Filtered</span>
                 </label>
-                <div x-text="'You have labeled ' + yes_counter + ' / ' + total_counter + ' positive examples'"
-                    class="text-base text-blue-600"></div>
+                <div id="countDisplay" class="text-base text-blue-600"></div>
             </div>
             <!-- display a list of comments to be reviewed -->
             <div id="textList"
                 class="body flex flex-col overflow-y-auto py-4 px-4 border border-gray-600 rounded h-full">
             </div>
             <div class="bottom flex justify-end gap-x-2">
-                <button @click="load_more_data" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                <button id="load-button" class="bg-red-400 text-white font-bold py-2 px-3 rounded" >
                     Load More
                 </button>
-                <button @click="complete" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                <button id="complete-button" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
                     Complete
                 </button>
             </div>
@@ -61,110 +60,100 @@
     </div>
 </body> <!-- closes container -->
 <!-- custom js -->
+<script src="{% static 'js/sharedsteps.js' %}" defer></script>
 <script defer>
     var dataset = [];
     const participant_id = "{{participant_id}}";
+    var yes_filtered = false;
+    var positive_number = 0;
 
-    function display_data(new_dataset){
-        // display data on the page
-        let textList = $('#textList');
-        // remove all elements that have the new-indicator class
-        textList.find('.newSeparator').remove();
-
-        const separator = document.createElement('div');
-        separator.innerHTML = `
-            <div class="w-full border-t-4 border-red-100 border-gray-300"></div>
-                <div class="text-red-400 absolute -mt-4 bg-white px-1 font-bold text-lg" style="left: 50%; transform: translateX(-50%);">
-                    New
-            </div>`;
-        separator.className = 'relative mb-3 newSeparator';
-        textList.append(separator);
+    $("#yesFilter").change(function(){
         
-        let start_index = dataset.length;
-        for (let i = 0; i < new_dataset.length; i++) {
-            // create a new div element for each text with the template below
-            let newDiv = document.createElement('div');
-            newDiv.innerHTML = `
-                <div 
-                    x-data="{selected: false}" 
-                    x-init="total_counter += 1"
-                    x-show="!filtered || selected == true" 
-                    class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300"
-                >   
-                    <div class="flex-grow w-7/10 p-2">${new_dataset[i].text}</div>
-                    <div class="flex flex-row w-3/10 justify-center space-x-2">
-                        <button 
-                            @click="selected = !selected; yes_counter += selected ? 1 : -1; change_label(${start_index + i}, selected);" 
-                            :class="{'bg-blue-500 hover:bg-blue-600': selected == true, 'bg-gray-300 hover:bg-gray-400': selected == false}" 
-                            class="text-white font-bold py-1 px-3 rounded"
-                        >
-                            Yes
-                        </button>
-                    </div>
-                </div>`;
-            textList.append(newDiv);
+        yes_filtered = $(this).is(":checked");
+        if(yes_filtered){
+            dataset.forEach((datum, index) => {
+                if(datum.label == true) 
+                    $(`#datum-${index}`).show();
+                else
+                    $(`#datum-${index}`).hide();
+                    
+            });
+        } else {
+            dataset.forEach((datum, index) => {
+                $(`#datum-${index}`).show();
+            });
         }
-        dataset = dataset.concat(new_dataset);
-    }
+    });
 
-    function change_label(index, label){
+    function change_label(index){
         // change the label of the text at the given index
-        dataset[index].label = label;
+        dataset[index].label = !(dataset[index].label || false);
+
+        // change the button color
+        if(dataset[index].label)
+            $(`#datum-${index} button`).removeClass('unselected-button').addClass('selected-button');
+        else
+            $(`#datum-${index} button`).removeClass('selected-button').addClass('unselected-button');
+
+        // update the filters
+        if(yes_filtered && !dataset[index].label)
+            $(`#datum-${index}`).hide();
+        else
+            $(`#datum-${index}`).show();
+
+        // update the number of positive examples
+        positive_number = positive_number + (dataset[index].label ? 1 : -1);
+        $('#positive-number').text(positive_number);
     }
 
-    function load_more_data(){
+    $('#load-button').click(function(){
         // load more data from the server
-        $.ajax({
-            url: "/load_more_data",
-            type: "GET",
-            dataType: 'json',
-            success: function (data) {
+        console.log("load more data");
+        get_backend(
+            "/load_more_data/", 
+            {'participant_id': participant_id},
+            function(data){
                 data = JSON.parse(data);
-                display_data(data);
+                console.log(`load ${data.length} new data`);
+                dataset = display_labeling_data(data, dataset, true);
             }
-        });
-    }
+        );
+    });
 
-    function complete() {
+    $('#complete-button').click( function(){
         // train the ML model
         
-        // iterate throught the dataset and if the label does not exist, set it to false
-        /* dataset.forEach(datum => {
-            datum.label = datum.label || false;
-        }); */
-
-        dataset.forEach(datum => {
-            // covert it to 1 or 0
-            datum.label = +parseFloat(datum.score) >= 2.0;
+        // for testing purposes, using labels in the dataset instead of manual labeling all the data
+        dataset.forEach((datum, index) => {
+            let new_label = +parseFloat(datum.score) >= 2.0;
+            if(new_label === true) change_label(index);
         })
 
-        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
-        console.log("start training MLs");
 
-        $.ajax({
-            url: "/store_labels/",
-            type: "POST",
-            data: JSON.stringify({'dataset': dataset, 'participant_id': participant_id}),
-            contentType: 'application/json',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-            success: function(response) {
+        // iterate throught the dataset and if the label does not exist, set it to false
+        dataset.forEach(datum => {
+            datum.label = datum.label || false;
+        });
+
+        post_backend(
+            "/store_labels/",
+            {'dataset': dataset, 'participant_id': participant_id},
+            function(response) {
                 // if the json response has the response code 200
-                console.log(response);
-                if (response['response'] != 200) {
-                    alert(response['message']);
-                    return;
+                if(!response["status"])
+                    alert(response["message"]);
+                else {
+                    console.log("labels are stored successful");
+                    // if the training is successful, redirect to the next page, attach a GET parameter participant_id to the url
+                    redirect("/validate_page/", {'participant_id': participant_id, 'system': "examplesML"});
                 }
-                console.log("labels are stored successful");
-                // if the training is successful, redirect to the next page, attach a GET parameter participant_id to the url
-                window.location.href = "/validate_page/?participant_id=" + participant_id;
             }
-        });     
-    }
+        ); 
+    });
 
-    display_data(JSON.parse(`{{dataset | safe}}`));
+    $(document).ready(function(){
+        dataset = display_labeling_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
+    });
 
 
 </script>

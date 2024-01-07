@@ -6,7 +6,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Example Labeler</title>
+  <title>System Validation</title>
   <!-- use bootstrap UI -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -32,9 +32,7 @@
 
     <div class="flex gap-x-4 justify-start gap-y-4 h-screen">
         <!-- display a list of comments to be reviewed -->
-        <div x-data="{filtered: false, yes_counter: 0, total_counter: 0}" 
-            class="flex flex-col gap-y-2 flex-grow w-2/3 my-2"
-        >   
+        <div class="flex flex-col gap-y-2 flex-grow w-2/3 my-2">   
             <div class="header flex flex-col gap-y-4 items-stretch">
                 <p class="text-2xl font-semibold bg-slate-200 rounded text-center py-2">Label Examples</p>
                 <p class="text-base text-start font-sans">
@@ -43,15 +41,14 @@
                 </p>
             </div>
             <div class="section-header flex justify-start">
-                <div x-text="'You have labeled ' + yes_counter + ' / ' + total_counter + ' positive examples'"
-                    class="text-base text-blue-600"></div>
+                <div id="countDisplay" class="text-base text-blue-600"></div>
             </div>
             <!-- display a list of comments to be reviewed -->
             <div id="textList"
                 class="body flex flex-col overflow-y-auto px-4 border border-gray-600 rounded h-full">
             </div>
             <div class="bottom flex justify-end gap-x-2">
-                <button @click="validate" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                <button id="test-button" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
                     Test
                 </button>
             </div>
@@ -109,45 +106,26 @@
     </div>
 </body> <!-- closes container -->
 <!-- custom js -->
+<script src="{% static 'js/sharedsteps.js' %}" defer></script>
 <script defer>
     var dataset = [];
     const participant_id = "{{participant_id}}";
-    const system = "examples+ML"
+    const SYSTEM = "{{system}}";
+    var positive_number = 0;
 
-    function display_data(new_dataset){
-        let textList = $('#textList');
-        
-        let start_index = dataset.length;
-        for (let i = 0; i < new_dataset.length; i++) {
-            // create a new div element for each text with the template below
-            let index = start_index + i;
-            let newHtml = `
-                <div class="textDiv flex flex-row items-center space-x-1 py-1 border-b border-gray-300" id="textDiv-${index}">   
-                    <div class="text flex-grow w-7/10 p-2" id="text-${index}">${new_dataset[i].text}</div>
-                    <div class="flex flex-row w-3/10 justify-center space-x-2">
-                        <button id="labelButton-${index}"
-                            @click="update_label(${index});" 
-                            class="text-white font-bold py-1 px-3 rounded bg-gray-300 hover:bg-gray-400"
-                        >
-                            Yes
-                        </button>
-                    </div>
-                </div>`;
-            textList.append(newHtml);
-        }
-        dataset = dataset.concat(new_dataset);
-    }
+    function change_label(index){
+        // change the label of the text at the given index
+        dataset[index].label = !(dataset[index].label || false);
 
-    function update_label(index){
-        // flip the label of the text at the given index
-        dataset[index].label = !dataset[index].label; // consider both the case where the label is false or undefined
-        if (dataset[index].label) {
-            $('#labelButton-' + index).addClass('bg-blue-300 hover:bg-blue-400');
-            $('#labelButton-' + index).removeClass('bg-gray-300 hover:bg-gray-400');
-        } else {
-            $('#labelButton-' + index).addClass('bg-gray-300 hover:bg-gray-400');
-            $('#labelButton-' + index).removeClass('bg-blue-400 hover:bg-blue-500');
-        }
+        // change the button color
+        if(dataset[index].label)
+            $(`#datum-${index} button`).removeClass('unselected-button').addClass('selected-button');
+        else
+            $(`#datum-${index} button`).removeClass('selected-button').addClass('unselected-button');
+
+        // update the number of positive examples
+        positive_number = positive_number + (dataset[index].label ? 1 : -1);
+        $('#positive-number').text(positive_number);
     }
 
     function update_data_list(prediction){
@@ -161,7 +139,7 @@
             let label = dataset[index].label || false;
             
             let text = $(`#text-${index}`);
-            console.log(`label: ${label}, prediction: ${prediction[index]}`);
+            // console.log(`label: ${label}, prediction: ${prediction[index]}`);
             if (label != prediction[index]) {
                 $(`#labelButton-${index}`).after(`<span class="text-red-500"><i class="fa-solid fa-xmark px-2 fa-xl"></i></span>`);
             } else {
@@ -170,79 +148,68 @@
         });
     }
 
-    function to_percentage(num) {
-        return (num * 100).toFixed(0) + "%";
-    }
-    
-    function validate() {
+
+    $("#test-button").click(function() {
         // train the ML model
         
         // iterate throught the dataset and if the label does not exist, set it to false
-        /* dataset.forEach(datum => {
-            datum.label = datum.label || false;
-        }); */
-
         dataset.forEach(datum => {
-            // covert it to 1 or 0
-            datum.label = +parseFloat(datum.score) >= 2.0;
-        })
+            datum.label = datum.label || false;
+        });
 
-        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
-        console.log("the user has labeled all the examples");
 
-        $.ajax({
-            url: "/validate_system/",
-            type: "POST",
-            data: JSON.stringify({
-                'dataset': dataset, 
-                'participant_id': participant_id,
-                'system': "examples+ML"
-            }),
-            contentType: 'application/json',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-            success: function(response) {
+        post_backend(
+            "/validate_system/",
+            {'dataset': dataset, 'participant_id': participant_id, 'system': SYSTEM},
+            function(response) {
                 // if the json response has the response code 200
                 console.log(response);
-                if (response['response'] != 200) {
+                if (!response['status']) {
                     alert(response['message']);
                     return;
                 }
                 
                 // display the results
-                let train_results = response['train_results'];
-                let test_results = response['test_results'];
-
-                $('#train-accuracy').text(to_percentage(train_results.performance.accuracy));
-                $('#train-precision').text(to_percentage(train_results.performance.precision));
-                $('#train-recall').text(to_percentage(train_results.performance.recall));
-                $('#train-fpr').text(to_percentage(train_results.performance.fpr));
-                $('#train-fnr').text(to_percentage(train_results.performance.fnr));
-
-
-                $('#test-accuracy').text(to_percentage(test_results.performance.accuracy));
-                $('#test-precision').text(to_percentage(test_results.performance.precision));
-                $('#test-recall').text(to_percentage(test_results.performance.recall));
-                $('#test-fpr').text(to_percentage(test_results.performance.fpr));
-                $('#test-fnr').text(to_percentage(test_results.performance.fnr));
                 
-                update_data_list(test_results.prediction);
+                if(response.data.train_results){
+                    // not all systems have the training stage
+                    let train_performance = response.data.train_results.performance;
+                    console.log(train_performance);
+                    $('#train-accuracy').text(to_percentage(train_performance.accuracy));
+                    $('#train-precision').text(to_percentage(train_performance.precision));
+                    $('#train-recall').text(to_percentage(train_performance.recall));
+                    $('#train-fpr').text(to_percentage(train_performance.fpr));
+                    $('#train-fnr').text(to_percentage(train_performance.fnr));
+                }
+                
+                let test_performance = response.data.test_results.performance;
+                console.log(test_performance);
+                $('#test-accuracy').text(to_percentage(test_performance.accuracy));
+                $('#test-precision').text(to_percentage(test_performance.precision));
+                $('#test-recall').text(to_percentage(test_performance.recall));
+                $('#test-fpr').text(to_percentage(test_performance.fpr));
+                $('#test-fnr').text(to_percentage(test_performance.fnr));
+                
+                update_data_list(response.data.test_results.prediction);
             }
-        });    
+        );
         return;
-    }
+    });
 
-    display_data(JSON.parse(`{{dataset | safe}}`));
 
-    // for testing purposes, use the score to simulate the user's label
-    dataset.forEach((datum, index) => {
-        // covert it to 1 or 0
-        if(+parseFloat(datum.score) >= 2.0) {
-            update_label(index);
-        }
-    })
+    $(document).ready(function(){
+        dataset = display_labeling_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
+    
+        // for testing purposes, use the score to simulate the user's label
+        dataset.forEach((datum, index) => {
+            // covert it to 1 or 0
+            if(+parseFloat(datum.score) >= 2.0) {
+                change_label(index);
+            }
+        })
+    });
+
+    
 
 
 </script>
