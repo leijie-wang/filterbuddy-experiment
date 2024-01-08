@@ -6,9 +6,18 @@ function escape_single_quote(text) {
     return text.replace(/'/g, "\\'");
 }
 
+function capitalize(str) {
+    if (str && typeof str === 'string') {
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+    return str;
+}
+
+
 function to_percentage(num) {
     return (num * 100).toFixed(0) + "%";
 }
+
 
 function get_backend(url, data, success_function){
     console.log("start GET to " + url);

@@ -21,17 +21,38 @@
 }
 
 .filter-option {
+    color: black;
+    font-size: large;
+}
+
+.data-filter .filter-option  {
     font-size: small!important;
 }
 
 /* control the color of the selectpicker dropdown */
-.dropdown-menu .selected {
-    background-color: #f3f4f6;
+.data-filter .dropdown-item.selected {
+    background-color: #e5e7eb;
+}
+.data-filter .dropdown-item.active {
+    color: #374151; /* text-gray-700 */
 }
 
-.bootstrap-select .bs-ok-default::after {
+.caught-option.active {
+    background-color: #fecaca; /* bg-red-200 */
+}
+
+.uncaught-option.active {
+    background-color: #bfdbfe; /* bg-blue-200 */
+}
+
+.all-option.active {
+    background-color: #e5e7eb; /* bg-gray-200 */
+}
+
+.data-filter .bootstrap-select .bs-ok-default::after {
     border-color: #6b7280;
 }
+
 .unselected-button {
     background-color: #d1d5db;
 }

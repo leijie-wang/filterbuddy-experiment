@@ -6,6 +6,8 @@ class SYSTEMS(Enum):
     PROMPTS_LLM = "promptsLLM"
     PROMPTS_ML = "promptsML"
     EXAMPLES_ML = "examplesML"
+    RULES_TREE = "rulesTrees"
+    RULES_ML = "rulesML"
     
 class Participant(models.Model):
     participant_id = models.CharField(max_length=100)

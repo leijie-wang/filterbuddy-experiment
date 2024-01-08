@@ -4,463 +4,634 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rule Configurer</title>
-  <!-- use bootstrap UI -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-  <!-- base layout -->
-  <link rel="stylesheet" href="{% static 'css/examplelabel.css' %}" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rule Configurer</title>
+    <!-- use bootstrap UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+    <!-- base layout -->
+    <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
+    
+    <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
 </head>
 
 <body class="container-none h-screen w-screen px-8">
 
-  <!-- 
-      The <noscript> tag encloses the content that will be displayed 
-      only if JavaScript is disabled or not supported in the user's browser. 
+    <!-- 
+        The <noscript> tag encloses the content that will be displayed 
+        only if JavaScript is disabled or not supported in the user's browser. 
     -->
-  <noscript>
-    If you see this text, your browser does not support dynamic content
-    (JavaScript) or it has been disabled. This study website requires JavaScript.
-  </noscript>
+    <noscript>
+        If you see this text, your browser does not support dynamic content
+        (JavaScript) or it has been disabled. This study website requires JavaScript.
+    </noscript>
 
 
-  <div class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
-    <div class="mx-auto pb-1 flex-grow-0">
-      <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Rule Configurer</h1>
-    </div>
+    <div class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
+        <div class="mx-auto pb-1 flex-grow-0">
+            <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Rule Configurer</h1>
+        </div>
 
-    <div class="flex items-stretch w-full gap-x-4 flex-grow">
-        <!-- the section where users configure prompts -->
-        <div x-data="{configurePanel: false}"
-            class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow"
-        >
-            <!-- the section where users see all rules -->
-            <div x-show="!configurePanel" class="section-body flex flex-col flex-grow gap-y-4 pb-4">
-                <div id="ruleList" class="flex flex-col gap-y-4 flex-grow h-1 overflow-y-auto items-stretch">
-                    <div @click="configurePanel = !configurePanel" 
-                        class="flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer"
-                    >
-                        <div class="text-3xl text-gray-500">+</div>
-                    </div>
-                </div>
-                <div class="bottom flex justify-end gap-x-2 flex-grow-0">
-                    <button @click="" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
-                        Train
-                    </button>
-                </div>
-            </div>   
+        <div class="flex items-stretch w-full gap-x-4 flex-grow">
             <!-- the section where users configure prompts -->
-            <div x-show="configurePanel" class="flex flex-col gap-y-4 py-4 px-4 flex-grow">
-                <div class="flex flex-col flex-grow gap-y-6 overflow-y-auto h-1">
-                    <div class="flex flex-col gap-y-2">
-                        <div class="text-lg font-bold">Select the rule template to start with <span class="text-red-500 font-bold ml-1">*</span></div>
-                        <div>
-                            <select id="ruletemplate-select"
-                                class="block w-full px-2 py-2 mt-2  bg-white border
-                                 border-gray-600 rounded-lg shadow-sm focus:border-blue-600 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <option>Select the rule template</option>
-                            </select>                             
+            <div x-data="{configurePanel: false}" class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow">
+                
+                <!-- the section where users see all rules -->
+                <div x-show="!configurePanel" class="section-body flex flex-col flex-grow gap-y-4 pb-4">
+                    <div id="ruleList" class="flex flex-col gap-y-2 flex-grow h-1 overflow-y-auto">
+                        <div @click="configurePanel = !configurePanel" class="flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
+                            <div class="text-3xl text-gray-500">+</div>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-y-2 border border-gray-300 rounded-lg px-4 py-2 min-h-[100px] h-fit">
-                        <div class="text-lg">Configure your rule template</div>
-                        <div id="settings-section" class="flex flex-col gap-y-2">
+                    <div class="bottom flex justify-end gap-x-2 flex-grow-0">
+                        <button x-on:click="trainTrees();" class="bg-teal-400 text-white font-bold py-2 px-3 rounded">
+                            Classify
+                        </button>
+                        <button x-on:click="complete" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
+                            Complete
+                        </button>
+                    </div>
+                </div>   
 
+                <!-- the section where users configure rules -->
+                <div x-show="configurePanel" class="flex flex-col gap-y-4 py-4 px-4 flex-grow">
+                    <div class="flex flex-col flex-grow gap-y-6 overflow-y-auto h-1">
+                        <div class="flex flex-col gap-y-2">
+                            <div class="text-xl font-bold">Select the rule template to start with <span class="text-red-500 font-bold ml-1">*</span></div>
+                            <div>
+                                <select id="ruleTemplateSelecter" 
+                                    class="selectpicker border rounded show-tick bg-blue-50 text-black" 
+                                    title="Select the rule template" 
+                                    data-width="100%"
+                                >
+
+                                </select>                       
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-y-2">
+                            <div class="text-xl font-bold">Configure your rule template <span class="text-red-500 font-bold ml-1">*</span></div>
+                            <div id="settingsSection" class="flex flex-col gap-y-2 rounded-lg min-h-[100px] h-fit">
+
+                            </div>
+                        </div>
+                        
+                    </div>
+                    <div class="bottom flex justify-end gap-x-2 flex-grow-0">
+                        <button @click="configurePanel = !configurePanel" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                            Close
+                        </button>
+                        <button @click="addNewRules(); configurePanel = !configurePanel;" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- the section where users example examples and predictions -->
+            <div class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1">
+                <!-- display a set of filter options -->
+                <div class="header text-lg font-bold">
+                    Which Texts are Caught by Selected Rules
+                </div>
+                <div class="flex flex-col items-start gap-y-1">
+                    <div class="flex justify-start items-center gap-x-2 w-[60%]">
+                        <div>Filters</div>
+                        <div class="w-[45%]">
+                            <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
+                                <option value="caught" class="hover:bg-red-200 text-xs text-gray-700 caught-option">Caught comments</option>
+                                <option value="uncaught" class=" hover:bg-blue-200 text-xs text-gray-700 uncaught-option">Uncaught comments</option>
+                                <option value="all" selected class=" hover:bg-gray-200 text-xs text-gray-700 all-option">All comments</option>
+                            </select>
+                        </div>
+                        <div class="w-[45%]">
+                            <select id="ruleFilter" multiple
+                                class="selectpicker data-filter show-tick border rounded" 
+                                title="by rules" 
+                                data-width="100%"
+                                data-selected-text-format="count"
+                                data-count-selected-text="{0} rules selected"
+                            >
+                                
+                            </select>
                         </div>
                     </div>
-                    
+                    <div id="countDisplay" class="text-sm text-gray-700 italic self-start"></div>
                 </div>
-                <div class="bottom flex justify-end gap-x-2 flex-grow-0">
-                    <button @click="configurePanel = !configurePanel" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
-                        Close
+                <!-- display a list of comments to be reviewed -->
+                <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
+                <div class="bottom flex justify-end gap-x-2 pt-3">
+                    <button id="loadMoreButton" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
+                        Load More
                     </button>
-                    <button @click="configurePanel = !configurePanel; addNewRules()" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
-                        Save
-                    </button>
-                  </div>
+                </div>
             </div>
         </div>
-        <!-- the section where users example examples and predictions -->
-        <div x-data="{filtered: false, yes_counter: 0, total_counter: 0}"  
-            class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1"
-        >
-            <!-- display a set of filter options -->
-            <div class="header text-lg font-bold">
-                Predictions of Selected Rules
-            </div>
-            <div class="flex justify-between">
-                <label class="flex gap-2">
-                    <input type="checkbox" x-model="filtered" id="yesFilter" class="form-checkbox scale-90">
-                    <span class=" text-blue-600 text-base pt-0.5">Show only filtered</span>
-                </label>
-                <div x-text="'There are ' + yes_counter + ' / ' + total_counter + ' positive predictions'" class="text-base text-blue-600"></div>
-            </div>
-            <!-- display a list of comments to be reviewed -->
-            <div id="textList" class="body flex flex-col space-y-2 overflow-y-auto py-2 h-1 flex-grow">
-            </div>
-            <div class="bottom flex justify-end gap-x-2 pt-3">
-                <button @click="load_more_data" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
-                  Load More
-                </button>
+        
+        <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto p-5 border w-fit shadow-lg rounded-md bg-white">
+                <div id="loadingModalText" class="text-center text-xl">
+                    Loading...
+                </div>
             </div>
         </div>
+
     </div>
-  </div>
 </body> <!-- closes container -->
 <!-- custom js -->
+<script src="{% static 'js/sharedsteps.js' %}" defer></script>
 <script defer>
-  var dataset = JSON.parse(`{{dataset | safe}}`);
+    const SYSTEM = "{{system}}";
+    const participant_id = "{{participant_id}}";
+    const rule_templates = JSON.parse(`{{rule_templates | safe}}`);
 
-  // we assume every single quote is properly escaped; this should be ensured when adding them to the list
-  // for now, we only require users to input one example for each category
-  var rules = [];
-  colors = ["emerald", "gray", "orange", "teal", "yellow", "purple", , , ]
-  
-  var rule_templates = [
-    {
-        description: "Texts that include a word",
-        summary: "Texts that include the word {word}",
-        index: 0,
-        settings: [
-            {
-                name: "word",
-                type: "term",
+    var dataset = [];
+
+    // we assume every single quote is properly escaped; this should be ensured when adding them to the list
+    // for now, we only require users to input one example for each category
+    var rules = {};
+    var rule_counter = 0;
+
+    var selected_rules = [];
+    var selected_prediction = "all";
+
+    colors = ["emerald", "slate", "purple", "orange", "teal", "gray"]
+
+    function formatString(summary, settings) {
+       
+         // a key consists of alphabets and spaces, representing the name of a setting
+        return summary.replace(/{([\w\s]+)}/g, function(match, key) {
+            let index = settings.findIndex(setting => setting.name == key);
+            let setting = settings[index];
+            if(setting === undefined){ 
+                // if the setting is not found, return the original string
+                return match;
+            } else if(setting.type === "list[term]") {
+                return setting.value.map(
+                    term => `<span class="text-${colors[index]}-500 font-bold italic">${capitalize(term.value)}</span>`
+                ).join(', ').replace(/, (?=[^,]*$)/, ' and ');
             }
-        ]
-    },
-    {
-        description: "Texts that include both words",
-        summary: "Texts that include both {first word} and {second word}",
-        index: 1,
-        settings: [
-            {
-                name: "first word",
-                type: "term",
-            },
-            {
-                name: "second word",
-                type: "term",
-            }
-        ]
-    },
-    {
-        description: "Texts that include a word but exclude another word",
-        summary: "Texts that include {included word} but not {excluded word}",
-        index: 2,
-        settings: [
-            {
-                name: "included word",
-                type: "term",
-            },
-            {
-                name: "excluded word",
-                type: "term",
-            }
-        ]
+        });
     }
-  ];
 
-  function escape_single_quote(text){
-    return text.replace(/'/g, "\\'");
-  }
+    function displayRules(new_rules){
+        // display data on the page
+        let ruleList = $('#ruleList');
 
-  function capitalize(str) {
-    if (str && typeof str === 'string') {
-        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-    return str;
-  }
+        new_rules.forEach((rule) => {
+            rule.rule_id = rule_counter++;
 
-  function formatString(template, values) {
-    // a key consists of alphabets and spaces
-    
-    return template.replace(/{([\w\s]+)}/g, function(match, key) {
-        // a list of dicts with keys "name" and "value", also get the index of the setting
-        let index = values.findIndex(setting => setting.name == key);
-        let setting = values[index];
-        // if the setting is not found, return the original string
-        return setting == undefined ? match : `<span class="text-${colors[index]}-500 font-bold text-2xl px-2 italic">${capitalize(setting.value)}</span>`;
-    });
-  }
-
-
-  function display_rules(new_rules){
-    // display data on the page
-    let ruleList = $('#ruleList');
-
-    for (let index = 0; index < new_rules.length; index++) {
-        // create a new div element for each text with the template 
-
-        console.log(new_rules[index]);
-        let newDiv = document.createElement('div');
-        let setting_section = "";
-        for (let i = 0; i < new_rules[index].settings.length; i++) {
-            let setting = new_rules[index].settings[i];
-            setting_section += `
-                    <div class="flex gap-x-4 items-start px-3 py-2 bg-${colors[i]}-50 rounded-lg" x-show="open">
-                        <div class="text-xl text-${colors[i]}-500 font-semibold">
-                            ${capitalize(setting.value)}
-                        </div>
-                        <div class="flex flex-col gap-y-2 justify-start mt-1">
-                            <div>
-                                <label for="spelling-variants" class="flex items-center">
-                                    <input type="checkbox" id="spellingvariants.${index}.${i}" class="form-checkbox h-4 w-4 text-${colors[i]}-500" checked=${setting.variants ? "true" : "false"}>
-                                    <span class="ml-2 text-base text-gray-700">Include spelling variants</span>
-                                </label>
+            let setting_section = "";
+            rule.settings.forEach((setting, setting_index) => {
+                if(setting.type == "list[term]"){
+                    let value_section = "";
+                    let setting_color = colors[setting_index];
+                    setting.value.forEach((term, term_index) => {
+                        value_section += `
+                            <div class="termSection flex gap-x-4 items-start px-3 py-2 bg-${setting_color}-50 rounded-lg">
+                                <div class="w-1/5 text-xl text-${setting_color}-500 font-semibold">
+                                    ${capitalize(term.value)}
+                                </div>
+                                <div class="w-4/5 flex flex-col gap-y-2 justify-start mt-1">
+                                    <div>
+                                        <label class="flex items-center">
+                                            <input type="checkbox" class="spellingVariants form-checkbox h-4 w-4 text-${setting_color}-500" ${term.variants ? "checked" : ""}>
+                                            <span class="ml-2 text-base text-gray-600">include spelling variants</span>
+                                        </label>
+                                    </div>
+                                    <div class="flex gap-x-2 items-center">
+                                        <div class="text-base text-gray-600">
+                                            similar words
+                                        </div>
+                                        <div contenteditable="true"
+                                            class="synonyms text-base border-b-2 border-gray-300 focus:outline-none text-${setting_color}-500 py-1 min-w-[50%] italic">
+                                            ${term.synonyms.join(", ")}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+                    setting_section += `
+                        <div id="rules-${rule.rule_id}-${setting_index}" class="flex flex-col gap-y-2 pl-6">
+                            <div class="setting-header">
+                                <span class="text-lg text-${setting_color}-700 font-medium">${capitalize(setting.name)}</span> 
+                                <span class="text-base">${setting.description}</span>
                             </div>
-                            <div class="flex gap-x-2 items-center">
-                                <div class="text-base text-gray-600">
-                                    Synonyms:
-                                </div>
-                                <div contenteditable="true" id="synonyms.${index}.${i}"
-                                    class="text-base border-b-2 border-gray-300 focus:outline-none text-${colors[i]}-500 py-1 min-w-[50%]">
-                                    ${setting.synonyms.join(", ")}
-                                </div>
+                            <div class="flex flex-col gap-y-1">
+                                ${value_section}
+                            </div>
+                        </div>`;
+                }
+            })
+
+            let rule_div_html = `
+                <div class="flex flex-col gap-y-2 items-stretch" id="rule-${rule.rule_id}">
+                    <div x-data="{open: false}" class="rule flex-col items-start px-3 py-3 border border-gray-300 rounded-lg">
+                        <div class="flex justify-between mr-2 mb-2">
+                            <div class="text-black focus:outline-none" id="rule-${rule.rule_id}">
+                                <span class="ruleNumber font-medium text-2xl pr-4" contenteditable="false">${rule.rule_id + 1}.</span>
+                                <span class="ruleSummary text-xl">${formatString(rule.summary, rule.settings)}</span>
+                            </div>
+                            <!--have a foldable button-->
+                            <div class="flex justify-center gap-x-2">
+                                <button @click="deleteRule(${rule.rule_id})" class="focus:outline-none">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                                <button @click="open = !open" class="focus:outline-none">
+                                    <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                    </div>`;
-        }
-        newDiv.innerHTML = `
-            <div class="rule flex items-start gap-x-4 pl-4 pr-2 pb-3 pt-2.5 border border-gray-300 rounded-lg">
-                <div>
-                    <input 
-                        type="checkbox" 
-                        id="rule-checkbox.${index}" 
-                        class="form-checkbox scale-110 mt-1.5 " 
-                        ${new_rules[index].selected ? "checked" : ""}
-                    >
-                </div>
-                <div class="flex flex-col gap-y-2 flex-grow self-stretch" x-data="{open: true}">
-                    <div class="flex justify-between mr-2">
-                        <div class="text-xl text-black focus:outline-none" 
-                            id="rule-${index}">
-                            ${formatString(new_rules[index].summary, new_rules[index].settings)}
-                        </div>
-                        <!--have a foldable button-->
-                        <div>
-                            <button @click="open = !open" class="focus:outline-none">
-                                <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                                <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                </svg>
-                            </button>
+                        <div class="flex flex-col gap-y-4" x-show="open">
+                            ${setting_section}
                         </div>
                     </div>
-                    ${setting_section}
-                </div>
-            </div>`;
-        $('#ruleList > :last-child').before(newDiv);
-        rules.push(new_rules[index]);
-    }
-  }
+                    <div class="flex flex-col bg-gray-100 rounded items-center self-stretch">
+                        <div class="text-color-700 text-lg">OR</div>
+                    </div>
+                </div>`;
+            $('#ruleList > :last-child').before(rule_div_html);
+            rules[rule.rule_id] = rule;
 
-  function addNewRules(){
+            // add an option to the select picker for this prompt
+            $('#ruleFilter').append(`
+                <option selected value=${rule.rule_id} class="text-xs">
+                    Rule ${rule.rule_id + 1}
+                </option>
+                `
+            );
+
+            // refresh the select picker
+            $(".selectpicker").selectpicker('refresh');
+            
+            selected_rules.push(rule.rule_id);
+        });
+    }
+
+    function deleteRule(deleted_id) {
+        // delete the prompt at index
+        console.log(`deleting rule ${deleted_id}`);
+        // delete the key deleted_id from prompts
+        delete rules[deleted_id];
+        
+        // remove the div with the id prompt.${deleted_id}
+        $(`#rule-${deleted_id}`).remove();
+
+        // remove the option from the select picker
+        $(`#ruleFilter option[value=${deleted_id}]`).remove();
+        $(".selectpicker").selectpicker('refresh');
+
+        // remove the rule from selected_prompts if needed
+        selected_rules = selected_rules.filter((id) => id != deleted_id);
+    }
+
+    function addNewRules(){
         // read from configuring rule panel and add this new rule to the rules in jquery
 
-        let selectedOption = $('#ruletemplate-select').val();
-        let rule_templte = rule_templates[selectedOption];
+        let selected_index = $('#ruleTemplateSelecter').val();
+        let rule_template = rule_templates.find(template => template.index == selected_index);
 
         let new_rule = {
-            "description": rule_templte.description,
-            "summary": rule_templte.summary,
-            "index": rule_templte.index,
-            "selected": true,
+            "description": rule_template.description,
+            "summary": rule_template.summary,
+            "index": rule_template.index,
             "settings": []
         };
 
-        for (let i = 0; i < rule_templte.settings.length; i++) {
-            let setting = rule_templte.settings[i];
-            let value = $(`#rulesetting-${i}`).text();
-            let variants = $(`#rulesetting-spellingvariants-${i}`).is(":checked");
-            let synonyms = $(`#rulesetting-synonyms-${i}`).text().split(",").map(synonym => synonym.trim());
+        rule_template.settings.forEach((setting, setting_index) => {
+            // we assume every setting is of the type list[term]
+            if(setting.type != "list[term]"){
+                console.log(`setting ${setting.name} is not of type list[term]`);
+                return;
+            }
+
             new_rule.settings.push({
                 "name": setting.name,
+                "description": setting.description,
                 "type": setting.type,
-                "value": value,
-                "variants": variants,
-                "synonyms": synonyms
+                "value": []
             });
-        }
+
+            const parent_div = $(`#newRule-${setting_index}`);
+            if (parent_div.length) {
+                parent_div.find('.termSection').each(function() {
+                    const word_value = $(this).find(`.newRule-${setting_index}-word`).text().trim();
+                    if(word_value == "") return;
+
+                    const synonyms_value = $(this).find(`.newRule-${setting_index}-synonyms`).text().trim();
+                    const checkbox_checked = $(this).find(`.newRule-${setting_index}-variants`).is(':checked');
+                    new_rule.settings[setting_index].value.push({
+                        "type": "term",
+                        "value": word_value,
+                        "variants": checkbox_checked,
+                        "synonyms": synonyms_value === '' ? [] : synonyms_value.split(",").map(synonym => synonym.trim())
+                    });
+                });
+            }
+
+            if(new_rule.settings[setting_index].value.length == 0){
+                console.log(`setting ${setting.name} has no terms`);
+                return;
+            }
+
+            console.log(new_rule.settings[setting_index]);
+        })
+
         console.log(new_rule);
-        display_rules([new_rule]);
+        displayRules([new_rule]);
+
         // empty the settings-section
         $('#settings-section').empty();
-  }
-
-  function display_data(new_dataset){
-    // display data on the page
-    let textList = $('#textList');
-    // remove all elements that have the new-indicator class
-    textList.find('.new-indicator').remove();
-
-    for (let i = 0; i < new_dataset.length; i++) {
-        // create a new div element for each text with the template 
-
-        console.log(new_dataset[i]);
-        let newDiv = document.createElement('div');
-        new_dataset[i].text = new_dataset[i].text.replace(/'/g, "\\'");
-        let prediction = Math.random() >= 0.5; // for the purpose of testing
-        newDiv.innerHTML = `
-            <div 
-                x-data="{prediction: ${prediction}, isNew: true, text: '${new_dataset[i].text}'}" 
-                x-init="total_counter += 1; yes_counter += prediction ? 1 : 0"
-                x-show="!filtered || prediction == true" 
-                class="flex flex-row items-center py-0.5"
-                :class="{'bg-red-50': prediction == true, 'bg-violet-50': prediction == false}"
-            >   
-                <div class="new-indicator text-xs font-semibold text-red-200 self-start">New</div>
-                <div x-text="text" class="flex-grow w-7/10 p-2"></div>
-            </div>`;
-        textList.append(newDiv);
     }
-    dataset = dataset.concat(new_dataset);
-  }
 
-  function load_more_data(){
-    // load more data from the server
-    $.ajax({
-      url: "/load_more_data",
-      type: "GET",
-      data: {
-        'last_length': dataset.length,
-      },
-      dataType: 'json',
-      success: function (data) {
-        display_data(data);
-      }
-    });
-  }
+    function removeNearestAncestor(element, class_name){
+        let parent = element.closest(`.${class_name}`);
+        if (parent == null){
+            console.log(`cannot find ancestor with class name ${class_name}`);
+        } return parent.remove();
+    }   
 
-  function addRuleTemplateOptions() {
-    var select = document.getElementById('ruletemplate-select');
-
-    // Loop through the array and add options to the select element
-    for (var i = 0; i < rule_templates.length; i++){
-        var rule = rule_templates[i];
-        var el = document.createElement('option');
-        el.textContent = rule.description;
-        el.value = rule.index;
-        select.appendChild(el);
-    }
-  }
-    
-  addRuleTemplateOptions();
-  document.getElementById('ruletemplate-select').addEventListener('change', function() {
-    let selectedOption = this.value;
-    let settings = rule_templates[selectedOption].settings; 
-    console.log('You selected: ', selectedOption);
-    // remove all children in the settings-section in jquery
-    $('#settings-section').empty();
-    // add each setting to the settings-section
-
-    
-    for(let i = 0; i < settings.length; i++){
-        let setting = settings[i];
-        let newDiv = document.createElement('div');
-        newDiv.innerHTML = `
-            <div class="flex flex-col px-4 bg-${colors[i]}-50 py-2 rounded gap-y-2">
-                <div class="flex items-center">
-                    <div class="text-lg flex-grow-0 pt-1">${capitalize(setting.name)}:</div>
-                    <div contenteditable="true" 
-                        class="text-lg mx-2 flex-grow border-b-2 border-gray-300 focus:outline-none text-${colors[i]}-500 font-semibold"
-                        id="rulesetting-${i}"
-                    >
+    function addTermDiv(setting_index){
+        let setting_color = colors[setting_index];
+        // check how many class TermSection there are in this sectionBody
+        $(`#newRule-${setting_index} .settingBody`).append(
+            `<div class="termSection flex flex-col gap-y-1">
+                <div class="flex flex-col gap-y-1 px-4 pt-2 pb-3 bg-${setting_color}-50 rounded">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center flex-grow">
+                            <span class="text-lg font-medium">Choose a word: </span>
+                            <span class="newRule-${setting_index}-word min-w-[30%] italic w-fit text-xl text-${setting_color}-500 font-semibold mx-2 border-b-2 border-gray-300 focus:outline-none"
+                                contenteditable="true"></span>
+                        </div>
+                        <button class="focus:outline-none" x-on:click="removeNearestAncestor($el, 'termSection')">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </div>
-
+                    <div class="ml-4">
+                        <label class="flex items-center gap-x-2">
+                            <span class="text-base text-gray-500">Do you want to include spelling variants?</span>
+                            <input type="checkbox" class="newRule-${setting_index}-variants form-checkbox h-4 w-4 text-blue-500">
+                        </label>
+                    </div>
+                    <div class="flex flex-col items-start ml-4 gap-y-0">
+                        <div class="text-base text-gray-500 flex-grow-0">What similar words you want to add? Please separate by commas</div>
+                        <div contenteditable="true" 
+                            class="newRule-${setting_index}-synonyms text-base border-b-2 border-gray-300 focus:outline-none text-${setting_color}-500 py-1 italic self-stretch"                    
+                        ></div>
+                    </div>
                 </div>
-                <div class="text ml-4">
-                    <label for="spelling-variants" class="flex items-center gap-x-2">
-                        <span class="text-base text-gray-500 italic">Include spelling variants</span>
-                        <input type="checkbox" 
-                            id="rulesetting-spellingvariants-${i}" 
-                            class="form-checkbox h-4 w-4 text-blue-500">
-                    </label>
-                </div>
-                <div class="flex gap-x-4 items-center ml-4">
-                    <div class="text-base text-gray-500 italic flex-grow-0">Synonyms</div>
-                    <div contenteditable="true" 
-                        class="text-base border-b-2 border-gray-300 focus:outline-none text-${colors[i]}-500 py-1 min-w-[50%]"
-                        id="rulesetting-synonyms-${i}" 
-                    >
+                <div class="text-color-700 text-lg bg-gray-100 rounded text-center">AND</div>
+            </div>`
+        )
+    }
+    
+    $("#ruleTemplateSelecter").on("change", function() {
+        let selected_index = $(this).val();
+        let selected_template = rule_templates.find(template => template.index == selected_index);
+        console.log(selected_template);
+        
+        // remove all children in the settings-section in jquery
+        $('#settingsSection').empty();
+        // add each setting to the settings-section
+        selected_template.settings.forEach((setting, setting_index) => {
+            let setting_color = colors[setting_index];  
+            let setting_div_html = `
+                <div id="newRule-${setting_index}" class="flex flex-col gap-y-2 px-3 py-2">
+                    <div class="settingHeader">
+                        <span class="text-lg text-${setting_color}-700 font-medium">${capitalize(setting.name)}</span> 
+                        <span class="text-base">${setting.description}</span>
+                    </div>
+                    <div class="settingBody flex flex-col gap-y-2">
                         
                     </div>
-                </div>
-            </div>`;
-        $('#settings-section').append(newDiv);
-    }
-
-
-  });
-
-  // bind js variables to html elements for each prompt
-  document.body.addEventListener('change', (event) => {
-        let id = event.target.id;
-        // update the selected status of the prompt
-        if (id.startsWith("spellvariants")){
-            let index = parseInt(id.split(".")[1]);
-            let setting_index = parseInt(id.split(".")[2]);
-            rules[index].settings[setting_index].variants = event.target.checked;
-        } else if (id.startsWith("synonyms")){
-            let index = parseInt(id.split(".")[1]);
-            let setting_index = parseInt(id.split(".")[2]);
-            rules[index].settings[setting_index].synonyms = event.target.value.split(",").map(synonym => synonym.trim());
-        } else if (id.startsWith("rule-checkbox")){
-            let index = parseInt(id.split(".")[1]);
-            rules[index].selected = event.target.checked;
-        }
-        
+                    <div class="settingBottom flex flex-col items-stretch gap-y-2">
+                        <div x-on:click="addTermDiv(${setting_index})" class="text-3xl text-gray-500 rounded text-center bg-${setting_color}-50">+</div>
+                    </div>
+                </div>`;
+            $('#settingsSection').append(setting_div_html);
+        });        
     });
 
-    
-  display_rules([
-    {
-        description: "Texts that include a word",
-        summary: "Texts that include the word {word}",
-        index: 0,
-        selected: true,
-        settings: [
-            {
-                name: "word",
-                type: "term",
-                value: "delicious",
-                variants: true,
-                synonyms: ["yummy", "tasty"]
+    $('#loadMoreButton').on('click', function() {
+        get_backend(
+            "/load_more_data/", 
+            {'participant_id': participant_id},
+            function(data){
+                data = JSON.parse(data);
+                dataset = display_data(data, dataset);
             }
-        ]
-    },
-    {
-        description: "Texts that include a word but exclude another word",
-        summary: "Texts that include {included word} but not {excluded word}",
-        index: 2,
-        selected: true,
-        settings: [
-            {
-                name: "included word",
-                type: "term",
-                value: "delicious",
-                variants: true,
-                synonyms: ["yummy", "tasty"]
-            },
-            {
-                name: "excluded word",
-                type: "term",
-                value: "grape",
-                variants: true,
-                synonyms: []
-            }
-        ]
+        );
+    });
+
+    function generateExplanation(datum){
+        /* generate the explanation for each prediction made by the LLMs */
+        if (datum.total_prediction === null){
+            return "This comment is unlabeled due to the model's instability.";
+        }
+        else if (datum.total_prediction){
+            let explanation = "<p>This comment is caught by the following rules:</p><ul class='list-none pl-0'>";
+            // iterate through the dict object and format each prompt in a new line and with italic font
+            Object.keys(datum.rule_predictions).forEach((key) => {
+                if (datum.rule_predictions[key]){
+                    explanation += `<li class="before:content-['•'] before:mr-2 font-medium"><i>Prompt ${rules[key].rule_id + 1}</i></li>`;
+
+                }
+            });
+
+            explanation += "</ul>";
+            return explanation;
+        }
+        else{
+            return "This comment is not caught by any of your prompts.";
+        }
     }
-  ])
 
+    function updateDataLabels(results) {
+        /* update the labels of the data according to the predictions given by LLMs */
+        let true_counter = 0;
+        let prediction = results["prediction"];
+        let rule_predictions = results["rule_predictions"];
 
+        for (let i = 0; i < prediction.length; i++) {
+            dataset[i].total_prediction = prediction[i];
+            dataset[i].prompt_predictions = rule_predictions[i];
+            
+            // update the label according to the total prediction
+            let new_class = dataset[i].total_prediction === null ? "unLabel" : dataset[i].total_prediction ? "trueLabel" : "falseLabel";
+            const datum = $(`#datum-${i}`);
+            datum.removeClass("unLabel trueLabel falseLabel");
+            datum.addClass(new_class);
 
-  display_data(dataset);
+            // select the tooltip
+            const tooltip_div = $(`#datumTooltip-${i}`);
+            tooltip_div.removeClass("unLabel trueLabel falseLabel");
+            tooltip_div.addClass(new_class);
+
+            // update the tooltip content
+            let explanation = generateExplanation(dataset[i]);
+            // set the second child of the tooltip div to be the explanation, use innerhtml
+
+            tooltip_div.children().eq(1).html(explanation);
+            
+        }
+    }
+
+    function parseContent() {
+        /* we do not listen to the changes of the rules actively but instead parse the content when the user clicks the complete or classify button */
+        // for each div element with the id format rules-${rule.rule_id}-${setting_index}, iterate over all children of the class termSection
+        // for each termSection get the value of the synonyms via the class synonyms and the value of the checkbox via the class spellingVariants
+        // update the corresponding rule's setting_index'th setting's value accordingly
+        Object.keys(rules).forEach((rule_key) => {
+            let rule = rules[rule_key];
+            rule.settings.forEach((setting, setting_index) => {
+                const rule_div_id = `rules-${rule.rule_id}-${setting_index}`;
+                const rule_div = $(`#${rule_div_id}`);
+                console.log(setting);
+                rule_div.find('.termSection').each(function(term_index) {
+                    // Get the value of the synonyms
+                    const synonyms = $(this).find('.synonyms').text().trim().split(',').map(synonym => synonym.trim()).filter(synonym => synonym != "");
+
+                    // Get the checked status of the checkbox
+                    const is_variant_checked = $(this).find('.spellingVariants').is(':checked');
+
+                    // Update the corresponding rule's setting
+                    // Adjust this part according to your rule object structure
+                    setting.value[term_index].synonyms = synonyms;
+                    setting.value[term_index].variants = is_variant_checked;
+                });
+            });
+        });
+    }
+
+    function trainTrees() {
+        parseContent();
+        console.log(rules);
+
+        $('#loadingModal').removeClass('hidden');
+        $('#loadingModalText').text('Waiting for algorithms');
+        post_backend(
+            "/trainTrees/", 
+            {'dataset': dataset, 'prompts': prompts},
+            function(response){
+                if(!response["status"]){
+                    alert(response["message"]);
+                    return;
+                }
+                
+                console.log(response.data.results);
+                updateDataLabels(response.data.results);
+                $('#loadingModal').addClass('hidden');
+            }
+        );
+    }
+
+    function addRuleTemplateOptions() {
+        var select = document.getElementById('');
+
+        // Loop through the array and add options to the select element
+        rule_templates.forEach((rule, index) => {
+            $('#ruleTemplateSelecter').append(`
+                <option value=${rule.index} class="text-base">
+                    ${rule.description}
+                </option>
+            `);
+        });
+        $(".selectpicker").selectpicker('refresh');
+
+        /*// manually select the last option
+        $('#ruleTemplateSelecter').selectpicker('val', rule_templates[rule_templates.length - 1].index);
+        // manually trigger the change event
+        $('#ruleTemplateSelecter').trigger('change');*/
+    }
+
+    $(document).ready(function(){
+        dataset = display_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
+        addRuleTemplateOptions();
+        displayRules([
+            {
+                "description": "Texts that include some words but exclude others",
+                "summary": "Texts that include these words {include words} but exclude those words {exclude words}",
+                "index": 2,
+                "settings": [
+                    {
+                        "name": "include words",
+                        "description": "texts should include each of these words at the same time",
+                        "type": "list[term]",
+                        "value": [
+                            {   
+                                "type": "term",
+                                "value": "delicious",
+                                "variants": false,
+                                "synonyms": ["yummy", "tasty"]
+                            },
+                            {
+                                "type": "term",
+                                "value": "grape",
+                                "variants": true,
+                                "synonyms": ["grapefruit"]
+                            },
+                        ]
+                    },
+                    {
+                        "name": "exclude words",
+                        "description": "texts should exclude each of these words at the same time",
+                        "type": "list[term]",
+                        "value": [
+                            {
+                                "type": "term",
+                                "value": "apple",
+                                "variants": true,
+                                "synonyms": ["applepie", "apple sauce"]
+                            },
+                            {
+                                "type": "term",
+                                "value": "banana",
+                                "variants": true,
+                                "synonyms": ["bananabread"]
+                            },
+                        ]
+                    }
+                ]
+            },
+            // {
+            //     "description": "Texts that include some words",
+            //     "summary": "Texts that include all these words {words}",
+            //     "index": 0,
+            //     "settings": [
+            //         {
+            //             "name": "words",
+            //             "description": "texts should include each of these words at the same time",
+            //             "type": "list[term]",
+            //             "value": [
+            //                 {   
+            //                     "type": "term",
+            //                     "value": "delicious",
+            //                     "variants": true,
+            //                     "synonyms": ["yummy", "tasty"]
+            //                 },
+            //                 {
+            //                     "type": "term",
+            //                     "value": "grape",
+            //                     "variants": true,
+            //                     "synonyms": []
+            //                 }
+            //             ]
+            //         }
+            //     ]
+            // }
+        ])
+        
+    })
+  
 </script>
 </html>

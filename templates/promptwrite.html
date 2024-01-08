@@ -120,15 +120,15 @@
                     <div class="flex justify-start items-center gap-x-2 w-[60%]">
                         <div>Filters</div>
                         <div class="w-[45%]">
-                            <select id="predictionFilter" class="selectpicker border rounded" title="by predictions" data-width="100%" >
-                                <option value="caught" class="bg-red-100 hover:bg-red-300 text-xs text-gray-700">Caught comments</option>
-                                <option value="uncaught" class="bg-blue-100 hover:bg-blue-300 text-xs text-gray-700">Uncaught comments</option>
-                                <option value="all" selected class="bg-gray-100 hover:bg-gray-300 text-xs text-gray-700">All comments</option>
+                            <select id="predictionFilter" class="selectpicker data-filter border rounded show-tick" title="by predictions" data-width="100%" >
+                                <option value="caught" class="hover:bg-red-200 text-xs text-gray-700 caught-option">Caught comments</option>
+                                <option value="uncaught" class=" hover:bg-blue-200 text-xs text-gray-700 uncaught-option">Uncaught comments</option>
+                                <option value="all" selected class=" hover:bg-gray-200 text-xs text-gray-700 all-option">All comments</option>
                             </select>
                         </div>
                         <div class="w-[45%]">
                             <select id="promptFilter" multiple
-                                class="selectpicker show-tick border rounded" 
+                                class="selectpicker data-filter show-tick border rounded" 
                                 title="by rubrics" 
                                 data-width="100%"
                                 data-selected-text-format="count"
@@ -248,7 +248,7 @@
 
             // add an option to the select picker for this prompt
             $('#promptFilter').append(`
-                <option selected value=${prompt.prompt_id} class="text-xs bg-gray">
+                <option selected value=${prompt.prompt_id} class="text-xs">
                     Prompt ${prompt.prompt_id + 1}
                 </option>
                 `
@@ -482,7 +482,7 @@
         Note that when you use defer, the scripts are executed only after the entire document has been parsed, but before the DOMContentLoaded event.
     */
     $(document).ready(function(){
-        dataset = display_data(JSON.parse(`{{dataset | safe}}`), dataset);
+        dataset = display_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
     
         display_prompts([
             {

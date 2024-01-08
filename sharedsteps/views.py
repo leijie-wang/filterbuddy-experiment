@@ -142,6 +142,22 @@ def store_prompts(request):
                 safe=False
             )
 
+def ruleconfigure(request):
+    from systems.rule_templates import RuleTemplate
+    participant_id = request.GET.get('participant_id', default=None)
+    if participant_id is None:
+        participant_id = utils.generate_userid()
+    
+    system = request.GET.get('system', default="rulesTrees")
+    dataset = TrainDataSet.load_batch(participant_id, start=True)
+    rule_templates = RuleTemplate.get_all_schemas()
+    return render(request, 'ruleconfigure.html', {
+        "dataset": json.dumps(dataset),
+        "participant_id": participant_id,
+        "system": system,
+        "rule_templates": json.dumps(rule_templates),
+    })
+
 def validate_page(request):
     # parse out the participant id from the request GET parameters
     participant_id = request.GET.get('participant_id', default=None)
@@ -238,8 +254,6 @@ def validate_system(request):
             )
 
 
-
-
 def trainLLM(request):
     from systems.llm_filter import LLMFilter
     request_data = json.loads(request.body)
@@ -249,7 +263,7 @@ def trainLLM(request):
     dataset = request_data.get('dataset')
     
     dataset = [item["text"] for item in dataset]
-    llm_filter = LLMFilter(prompts, debug=True)
+    llm_filter = LLMFilter(prompts, debug=False)
     results = llm_filter.test_model(X=dataset, y=None)
     return JsonResponse({
                     "status": True,
@@ -260,9 +274,22 @@ def trainLLM(request):
                 }, safe=False
             )
 
-def ruleconfigure(request):
-    dataset = TrainDataSet.load_batch(start=True)
-    return render(request, 'ruleconfigure.html', {
-         "dataset": json.dumps(dataset),
-         # use json.dumps to ensure it can be read in js
-    })
+def train_trees(request):
+    from systems.trees_filter import TreesFilter
+
+    request_data = json.loads(request.body)
+    rules = request_data.get('rules')
+    rules = list(rules.values()) # it is a dict in the frontend
+    dataset = request_data.get('dataset')
+
+    dataset = [item["text"] for item in dataset]
+    tree_filter = TreesFilter(rules)
+    results = tree_filter.test_model(X=dataset, y=None)
+    return JsonResponse({
+                    "status": True,
+                    "message": f"Successfully tested the Trees model",
+                    "data": {
+                        "results": results
+                    }
+                }, safe=False
+            )

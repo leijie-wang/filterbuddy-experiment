@@ -25,7 +25,7 @@ urlpatterns = [
     path('load_more_data/', sharedviews.load_more_data),
     path('validate_page/', sharedviews.validate_page),
     path('validate_system/', sharedviews.validate_system),
-    # path('wordfilter/', sharedviews.wordfilter, name='wordfilter'),
+    
     
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),
     path('store_labels/', sharedviews.store_labels),
@@ -35,4 +35,5 @@ urlpatterns = [
     path('trainLLM/', sharedviews.trainLLM),
 
     path('ruleconfigure/', sharedviews.ruleconfigure, name='ruleconfigure'),
+    path('trainTrees/', sharedviews.train_trees),
 ]
