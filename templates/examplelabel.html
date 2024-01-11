@@ -125,7 +125,7 @@
         
         // for testing purposes, using labels in the dataset instead of manual labeling all the data
         dataset.forEach((datum, index) => {
-            let new_label = +parseFloat(datum.score) >= 2.0;
+            let new_label = +parseFloat(datum.score) >= 0.5;
             if(new_label === true) change_label(index);
         })
 

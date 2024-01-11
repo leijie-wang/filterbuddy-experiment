@@ -3,50 +3,6 @@ import logging
 import random
 import json
 
-SUPPORTED_RULES = [
-    {
-        "description": "Texts that include some words",
-        "summary": "Texts that include all these words {words}",
-        "index": 0,
-        "settings": [
-            {
-                "name": "words",
-                "description": "Texts should include each of these words at the same time",
-                "type": "list[term]",
-            }
-        ]
-    },
-    {
-        "description": "Texts that exclude some words",
-        "summary": "Texts that exclude all these words {words}",
-        "index": 1,
-        "settings": [
-            {
-                "name": "words",
-                "description": "Texts should exclude each of these words at the same time",
-                "type": "list[term]",
-            }
-        ]
-    },
-    {
-        "description": "Texts that include some words but exclude others",
-        "summary": "Texts that include these words {include words} but exclude those words {exclude words}",
-        "index": 2,
-        "settings": [
-            {
-                "name": "include words",
-                "description": "texts should include each of these words at the same time",
-                "type": "list[term]",
-            },
-            {
-                "name": "exclude words",
-                "description": "texts should exclude each of these words at the same time",
-                "type": "list[term]",
-            }
-        ]
-    }
-]
-
 class TreesFilter:
 
     def __init__(self, rules, debug=False):

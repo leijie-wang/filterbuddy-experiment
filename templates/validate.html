@@ -157,7 +157,7 @@
             datum.label = datum.label || false;
         });
 
-
+        console.log(dataset);
         post_backend(
             "/validate_system/",
             {'dataset': dataset, 'participant_id': participant_id, 'system': SYSTEM},
@@ -199,11 +199,11 @@
 
     $(document).ready(function(){
         dataset = display_labeling_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
-    
+        
         // for testing purposes, use the score to simulate the user's label
         dataset.forEach((datum, index) => {
             // covert it to 1 or 0
-            if(+parseFloat(datum.score) >= 2.0) {
+            if(+parseFloat(datum.score) >= 0.5) {
                 change_label(index);
             }
         })

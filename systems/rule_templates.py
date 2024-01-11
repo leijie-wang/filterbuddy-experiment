@@ -34,11 +34,28 @@ class RuleTemplate:
         This should be overridden by subclasses."""
         raise NotImplementedError("This method should be implemented by subclasses.")
 
+    @classmethod
+    def check_validity(cls, input_schema):
+        """Class method to check the validity of the input schema."""
+        input_schema["settings"] = {setting["name"]: setting for setting in input_schema["settings"]}
+        for setting in cls.schema["settings"]:
+            if setting["name"] not in input_schema["settings"]:
+                logger.error(f"The input schema should have a setting with the name '{setting['name']}'.")
+                return None
+        return input_schema
 
+    @classmethod
+    def get_term(cls, term_schema):
+        words = []
+        words.append(term_schema["value"])
+        words.extend(term_schema["synonyms"])
+        # TODO: we should consider the spelling variants as well
+        return words
+    
 class IncludeWordsRule(RuleTemplate):
     schema = {
-        "description": "Texts that include some words",
-        "summary": "Texts that include all these words {words}",
+        "description": "Catch texts that include some words simultaneously",
+        "summary": "Catch texts that include all these words {words} simultaneously",
         "settings": [
             {
                 "name": "words",
@@ -52,19 +69,14 @@ class IncludeWordsRule(RuleTemplate):
     def get_function(cls, input_schema):
         """Returns a function that checks if a text includes all the words in the input schema."""
         # check the validity of the input schema by finding the setting with the name words from settings as a list
-        settings = [setting for setting in input_schema["settings"] if setting["name"] == "words"]
-        if len(settings) != 1:
-            logger.error("The input schema should have exactly one setting with the name 'words'.")
+        input_schema = cls.check_validity(input_schema)
+        if input_schema is None:
             return None
-        setting = settings[0]
-
+        
+        setting = input_schema["settings"]["words"]
         words_to_include = []
         for term in setting["value"]:
-            words = []
-            words.append(term["value"])
-            words.extend(term["synonyms"])
-            # TODO: we should consider the spelling variants as well
-            words_to_include.append(words)
+            words_to_include.extend(cls.get_term(term))
 
         def _include(self, input):
             for lst in words_to_include:
@@ -75,12 +87,12 @@ class IncludeWordsRule(RuleTemplate):
 
 class ExcludeWordsRule(RuleTemplate):
     schema = {
-        "description": "Texts that exclude some words",
-        "summary": "Texts that exclude all these words {words}",
+        "description": "Catch texts that don't include some words simultaneously",
+        "summary": "Catch texts that don't include all these words {words} simultaneously",
         "settings": [
             {
                 "name": "words",
-                "description": "Texts should exclude each of these words at the same time",
+                "description": "Texts should not include all these words at the same time",
                 "type": "list[term]",
             }
         ]
@@ -89,12 +101,25 @@ class ExcludeWordsRule(RuleTemplate):
     @classmethod
     def get_function(cls, input_schema):
         """Returns a function that checks if a text excludes all the words in the input schema."""
-        # check the validity of the input schema
+        input_schema = cls.check_validity(input_schema)
+        if input_schema is None:
+            return None
+        
+        setting = input_schema["settings"]["words"]
+        words_to_exclude = []
+        for term in setting["value"]:
+            words_to_exclude.extend(cls.get_term(term))
+        
+        def _exclude(self, input):
+            for lst in words_to_exclude:
+                # if any of the words in a list is not in the input, then return True
+                if not any(substring in input for substring in lst):
+                    return True
+            return False
+        return _exclude
 
-        def check_exclude_words(text):
-            return all(word not in text for word in input_schema["settings"])
-        return check_exclude_words
-    
+
+
 class IncludeExcludeWordsRule(RuleTemplate):
     schema = {
         "description": "Texts that include some words but exclude others",
@@ -117,10 +142,31 @@ class IncludeExcludeWordsRule(RuleTemplate):
     def get_function(cls, input_schema):
         """Returns a function that checks if a text includes all the words in the input schema."""
         # check the validity of the input schema
+        input_schema = cls.check_validity(input_schema)
+        if input_schema is None:
+            return None
+        
+        include_setting = input_schema["settings"]["include words"]
+        words_to_include = []
+        for term in include_setting["value"]:
+            words_to_include.extend(cls.get_term(term))
 
-        def check_include_exclude_words(text):
-            return all(word in text for word in input_schema["settings"]["include words"]) and all(word not in text for word in input_schema["settings"]["exclude words"])
-        return check_include_exclude_words
+        exclude_setting = input_schema["settings"]["exclude words"]
+        words_to_exclude = []
+        for term in exclude_setting["value"]:
+            words_to_exclude.extend(cls.get_term(term))
+
+        def _include_exclude(self, input):
+            for lst in words_to_include:
+                if not any(substring in input for substring in lst):
+                    return False
+                
+            for lst in words_to_exclude:
+                if not any(substring in input for substring in lst):
+                    return 
+            return True
+
+        
     
 RuleTemplate.register(0, IncludeWordsRule)
 RuleTemplate.register(1, ExcludeWordsRule)

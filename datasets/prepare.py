@@ -5,13 +5,13 @@ import numpy as np
 from django.conf import settings
 from sklearn.model_selection import StratifiedShuffleSplit
 
-DATASET_NAME = "toxicity_ratings.json"
-
+# DATASET_NAME = "toxicity_ratings.json"
+DATASET_NAME = "jigsaw_sampled.json"
 TRAIN_DATASET_SIZE = 1200
 VALIDATION_DATASET_SIZE = 240
 TEST_DATASET_SIZE = 240
 ALL_DATASET_SIZE = TRAIN_DATASET_SIZE + VALIDATION_DATASET_SIZE + TEST_DATASET_SIZE
-SAMPLE_BUCKETS = 8 # we should ensure every bucket has the same number of samples
+SAMPLE_BUCKETS = 2 # we should ensure every bucket has the same number of samples
 
 def clean_toxicity_comment(comment):
     text = comment["comment"].strip()
@@ -19,10 +19,18 @@ def clean_toxicity_comment(comment):
     text = text.replace('"', '').replace("\\", "")
     if len(text) == 0:
         return None
-    
+    # TODO map the toxicity score to 0 or 1
     scores = [rating["toxic_score"] for rating in comment["ratings"]]
     return {"text": text, "score": sum(scores) / len(scores)}
 
+def clean_jigsaw_comment(comment):
+    text = comment["comment"].strip()
+    # escape double quotes
+    text = text.replace('"', '').replace("\\", "").replace("`", "")
+    if len(text) == 0:
+        return None
+    return {"text": text, "score": comment["toxicity"]}
+    
 def determine_split_index(bucket_size):
     if ALL_DATASET_SIZE / SAMPLE_BUCKETS > bucket_size:
         print("Warning: the bucket size is too small to split the dataset; we use ratio instead")
@@ -41,12 +49,13 @@ def main():
         We ensure that each dataset have a balanced distribution of toxicity scores, i.e., each dataset has the same number of samples in each toxicity score bucket
     """
     dataset_path = DATASET_NAME
-
+    print("I am reading from dataset:", dataset_path)
     dataset = []
     with open(dataset_path) as f:
         for line in f:
             comment = line.strip()
-            comment = clean_toxicity_comment(json.loads(comment))
+            # comment = clean_toxicity_comment(json.loads(comment))
+            comment = clean_jigsaw_comment(json.loads(comment))
             if comment is not None:
                 dataset.append(comment)
 

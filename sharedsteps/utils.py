@@ -17,7 +17,7 @@ def calculate_algorithm_metrics(y, y_pred):
     precision = precision_score(y, y_pred)
     recall = recall_score(y, y_pred)
     
-
+    print(confusion_matrix(y, y_pred).ravel())
     tn, fp, fn, tp = confusion_matrix(y, y_pred).ravel()
     # Calculate FNR and FPR
     fnr = fn / (fn + tp)  # False Negative Rate
