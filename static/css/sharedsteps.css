@@ -37,17 +37,7 @@
     color: #374151; /* text-gray-700 */
 }
 
-.caught-option.active {
-    background-color: #fecaca; /* bg-red-200 */
-}
 
-.uncaught-option.active {
-    background-color: #bfdbfe; /* bg-blue-200 */
-}
-
-.all-option.active {
-    background-color: #e5e7eb; /* bg-gray-200 */
-}
 
 .data-filter .bootstrap-select .bs-ok-default::after {
     border-color: #6b7280;
@@ -67,4 +57,30 @@
 
 .selected-button:hover {
     background-color: #2563eb;
+}
+
+/* in the rule configuration system */
+.removeRuleCard {
+    background-color: #fef2f2;
+}
+
+.approveRuleCard {
+    background-color: #bfdbfe;
+}
+
+/* set the css of the tagify input */
+.wordList {
+    --tag-bg: #fafafa;
+    --tag-hover: #eef2ff;
+    --tags-border-color: #d1d5db;
+}
+
+.editableSectionTitle .italic:empty:before {
+    content: attr(data-placeholder);
+    color: #9CA3AF; /* Tailwind gray-400 */
+    pointer-events: none;
+}
+
+.variantsCheckbox {
+    
 }

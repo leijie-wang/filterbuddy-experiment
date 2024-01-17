@@ -28,6 +28,24 @@ class Dataset:
     def load_all(self):
         return self.dataset
     
+    def load_previous_batches(self, participant_id):
+        """
+            load all previous batches of data for a participant
+            @param participant_id: the id of the participant
+        """
+        participant, created = Participant.objects.get_or_create(participant_id=participant_id)
+        if created:
+            raise Exception(f"Participant {participant_id} haven't built a classifier yet")
+        
+            
+        
+        limit = participant.current_batch * BATCH_SIZE
+        limit = min(limit, self.size)
+        # map this batch to another random batch so that different participants do not see the same examples in each batch
+        new_batch = [(participant.random_prime * i % self.size) for i in range(0, limit)]
+        dataset = [self.dataset[i] for i in new_batch]
+        return dataset
+    
     def load_batch(self, participant_id, start=False):
         """
             load a batch of data for a participant

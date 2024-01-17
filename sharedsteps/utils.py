@@ -17,7 +17,7 @@ def calculate_algorithm_metrics(y, y_pred):
     precision = precision_score(y, y_pred)
     recall = recall_score(y, y_pred)
     
-    print(confusion_matrix(y, y_pred).ravel())
+    
     tn, fp, fn, tp = confusion_matrix(y, y_pred).ravel()
     # Calculate FNR and FPR
     fnr = fn / (fn + tp)  # False Negative Rate
@@ -30,3 +30,48 @@ def calculate_algorithm_metrics(y, y_pred):
         "fnr": fnr,
         "fpr": fpr
     }
+
+def read_rules_from_database(participant_id):
+    from sharedsteps.models import RuleConfigure, RuleUnit
+    
+    rule_objects = RuleConfigure.objects.filter(participant_id=participant_id)
+    if len(rule_objects) == 0:
+        return []
+    
+    rules = []
+    for rule in rule_objects:
+        units = rule.units.all()
+        rules.append({
+            "id": rule.rule_id, # different from the id field of a django model
+            "name": rule.name,
+            "action": rule.action,
+            "priority": rule.priority,
+            "variants": rule.variants,
+            "units": [
+                {
+                    "type": unit.type,
+                    "words": unit.get_words()
+                } for unit in units
+            ]
+        })
+    return rules
+
+def read_prompts_from_database(participant_id):
+    from sharedsteps.models import PromptWrite
+    
+    prompt_objects = PromptWrite.objects.filter(participant_id=participant_id)
+    if len(prompt_objects) == 0:
+        return []
+    
+    prompts = []
+    for prompt in prompt_objects:
+        prompts.append({
+            "id": prompt.prompt_id,
+            "name": prompt.name,
+            "action": prompt.action,
+            "priority": prompt.priority,
+            "rubric": prompt.rubric,
+            "positives": prompt.get_positives(),
+            "negatives": prompt.get_negatives()
+        })
+    return

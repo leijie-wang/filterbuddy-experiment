@@ -30,7 +30,7 @@
     </noscript> 
     {% csrf_token %}
 
-    <div class="flex gap-x-4 justify-start gap-y-4 h-screen">
+    <div x-data="{ atBottom: false }"  class="flex gap-x-4 justify-start gap-y-4 h-screen">
         <!-- display a list of comments to be reviewed -->
         <div class="flex flex-col gap-y-2 flex-grow w-2/3 my-2">   
             <div class="header flex flex-col gap-y-4 items-stretch">
@@ -45,63 +45,56 @@
             </div>
             <!-- display a list of comments to be reviewed -->
             <div id="textList"
-                class="body flex flex-col overflow-y-auto px-4 border border-gray-600 rounded h-full">
-            </div>
+                @scroll="atBottom = $el.scrollHeight - $el.scrollTop - $el.clientHeight < 1"
+                class="body flex flex-col overflow-y-auto px-4 border border-gray-600 rounded h-full "
+            ></div>
             <div class="bottom flex justify-end gap-x-2">
-                <button id="test-button" class="bg-blue-600 text-white font-bold py-2 px-3 rounded">
-                    Test
-                </button>
+                <button id="test-button" 
+                    :disabled="!atBottom"
+                    class="text-white font-bold text-lg py-1 px-3 rounded"
+                    :class="{'bg-blue-600 hover:bg-blue-700': atBottom, 'bg-gray-400 cursor-not-allowed': !atBottom}"
+                > Test </button>
             </div>
         </div>
         <!-- display the results of algorithmic predictions -->
-        <div class="flex flex-col w-1/3 my-2">
-            <div class="flex-grow-0 header flex flex-col gap-y-4 items-stretch">
+        <div class="flex flex-col w-1/3 my-2 gap-y-4">
+            <div class="grow-0 header flex flex-col gap-y-4 items-stretch">
                 <p class="text-2xl font-semibold bg-slate-200 rounded text-center py-2">Classifier Performance</p>
             </div>
-            <div class="flex-grow flex flex-col justify-evenly">
-                <div class="flex flex-col gap-4 px-4 ">
-                    <p class="text-xl font-medium">On Training Dataset</p>
-                    <div class="self-center grid grid-rows-2 grid-cols-2 gap-2 w-full">
-                        <!-- Accuracy -->
-                        <div class=" bg-blue-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>Accuracy</strong> <span class="px-2" id="train-accuracy">?</span>
-                        </div>
-                        <!-- Precision -->
-                        <div class="bg-indigo-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>Precision</strong> <span class="px-2" id="train-precision">?</span>
-                        </div>
-                        <!-- Recall -->
-                        <div class="bg-rose-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>Recall</strong> <span class="px-2" id="train-recall">?</span>
-                        </div>
-                        <!-- false positive rate-->
-                        <div class="bg-slate-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>FPR</strong> <span class="px-2" id="train-fpr">?</span>
-                        </div>
+            <div class="grow flex flex-col gap-y-8">
+                <p class="text-base">Review how well your classifier performed on test data below. </p>
+                <div class="flex flex-col gap-y-8 items-center">
+                    <!-- Accuracy -->
+                    <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300">
+                        <div class="text-blue-500 text-center text-2xl font-medium">Accuracy</div>
+                        <span class="text-3xl" id="test-accuracy">?</span>
+                    </div>
+                    <!-- Precision -->
+                    <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300">
+                        <div class="text-indigo-500 text-center text-2xl font-medium">Precision</div>
+                        <span class="text-3xl" id="test-precision">?</span>
+                    </div>
+                    <!-- Recall -->
+                    <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300">
+                        <div class="text-rose-500 text-center text-2xl font-medium">Recall</div>
+                        <span class="text-3xl" id="test-recall">?</span>
+                    </div>
+                    <!-- False Positive Rate -->
+                    <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300"> 
+                        <div class="text-slate-500 text-2xl font-medium">False Positive Rate</div>
+                        <span class="text-3xl" id="test-fpr">?</span>
                     </div>
                 </div>
-                <div class="flex flex-col gap-4 px-4">
-                    <p class="text-xl font-medium">On Testing Dataset</p>
-                    <div class="self-center grid grid-rows-3 grid-cols-2 gap-2 w-full">
-                        <!-- Accuracy -->
-                        <div class=" bg-blue-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>Accuracy</strong> <span class="px-2" id="test-accuracy">?</span>
-                        </div>
-                        <!-- Precision -->
-                        <div class="bg-indigo-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>Precision</strong> <span class="px-2" id="test-precision">?</span>
-                        </div>
-                        <!-- Recall -->
-                        <div class="bg-rose-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>Recall</strong> <span class="px-2" id="test-recall">?</span>
-                        </div>
-                        <!-- false positive rate-->
-                        <div class="bg-slate-200 rounded p-4 flex justify-center items-center text-lg">
-                            <strong>FPR</strong> <span class="px-2" id="test-fpr">?</span>
-                        </div>
-                    </div>
-                </div>
+            
             </div>
+            <button 
+               class="grow w-[60%] mx-auto mb-10 p-3 flex items-center justify-center text-gray-600 text-2xl bg-slate-100 rounded"
+               x-show="atBottom"
+               @click="go_update_system();"
+            >
+                Improve Classifier
+            </button>
+
         </div>
     </div>
 </body> <!-- closes container -->
@@ -128,7 +121,7 @@
         $('#positive-number').text(positive_number);
     }
 
-    function update_data_list(prediction){
+    function update_data_list(results){
         // based on the prediction, indicate to users which examples are incorrectly labeled by their system
 
         // iterate through all children of the textList with the class textDiv
@@ -137,10 +130,11 @@
             index = parseInt(id.split('-')[1]);
 
             let label = dataset[index].label || false;
-            
+            dtataset[index].total_prediction = results.prediction[index];
+            dataset[index].predictions = results.texts_predictions[index];
             let text = $(`#text-${index}`);
             // console.log(`label: ${label}, prediction: ${prediction[index]}`);
-            if (label != prediction[index]) {
+            if (label != dtataset[index].total_prediction) {
                 $(`#labelButton-${index}`).after(`<span class="text-red-500"><i class="fa-solid fa-xmark px-2 fa-xl"></i></span>`);
             } else {
                 $(`#labelButton-${index}`).after(`<span class="text-green-500"><i class="fa-solid fa-check px-2 fa-xl"></i></span>`);
@@ -171,16 +165,16 @@
                 
                 // display the results
                 
-                if(response.data.train_results){
-                    // not all systems have the training stage
-                    let train_performance = response.data.train_results.performance;
-                    console.log(train_performance);
-                    $('#train-accuracy').text(to_percentage(train_performance.accuracy));
-                    $('#train-precision').text(to_percentage(train_performance.precision));
-                    $('#train-recall').text(to_percentage(train_performance.recall));
-                    $('#train-fpr').text(to_percentage(train_performance.fpr));
-                    $('#train-fnr').text(to_percentage(train_performance.fnr));
-                }
+                // if(response.data.train_results){
+                //     // not all systems have the training stage
+                //     let train_performance = response.data.train_results.performance;
+                //     console.log(train_performance);
+                //     $('#train-accuracy').text(to_percentage(train_performance.accuracy));
+                //     $('#train-precision').text(to_percentage(train_performance.precision));
+                //     $('#train-recall').text(to_percentage(train_performance.recall));
+                //     $('#train-fpr').text(to_percentage(train_performance.fpr));
+                //     $('#train-fnr').text(to_percentage(train_performance.fnr));
+                // }
                 
                 let test_performance = response.data.test_results.performance;
                 console.log(test_performance);
@@ -190,12 +184,15 @@
                 $('#test-fpr').text(to_percentage(test_performance.fpr));
                 $('#test-fnr').text(to_percentage(test_performance.fnr));
                 
-                update_data_list(response.data.test_results.prediction);
+                update_data_list(response.data.test_results);
             }
         );
         return;
     });
 
+    function go_update_system(){
+        redirect("/update_page_redirect/", {'participant_id': participant_id, 'system': SYSTEM});
+    }
 
     $(document).ready(function(){
         dataset = display_labeling_data(JSON.parse(`{{dataset | safe}}`), dataset, false);

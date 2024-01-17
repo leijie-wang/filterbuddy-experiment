@@ -5,6 +5,7 @@ from datasets.dataset import Dataset
 import sharedsteps.utils as utils
 import logging
 import json, sys, os, re
+from sharedsteps.models import SYSTEMS
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,9 @@ def promptwrite(request):
     if participant_id is None:
         participant_id = utils.generate_userid()
 
-    system = request.GET.get('system', default="promptsLLM")
+    system = request.GET.get('system', default=SYSTEMS.PROMPTS_LLM.value)
+
+    
     dataset = TrainDataSet.load_batch(participant_id, start=True)
     return render(request, 'promptwrite.html', {
         "dataset": json.dumps(dataset),
@@ -143,20 +146,97 @@ def store_prompts(request):
             )
 
 def ruleconfigure(request):
-    from systems.rule_templates import RuleTemplate
     participant_id = request.GET.get('participant_id', default=None)
     if participant_id is None:
         participant_id = utils.generate_userid()
     
-    system = request.GET.get('system', default="rulesTrees")
-    dataset = TrainDataSet.load_batch(participant_id, start=True)
-    rule_templates = RuleTemplate.get_all_schemas()
-    return render(request, 'ruleconfigure.html', {
-        "dataset": json.dumps(dataset),
-        "participant_id": participant_id,
-        "system": system,
-        "rule_templates": json.dumps(rule_templates),
-    })
+    system = request.GET.get('system', default=SYSTEMS.RULES_TREES.value)
+    if system not in [SYSTEMS.RULES_TREES.value, SYSTEMS.RULES_ML.value]:
+        logging.error(f"Unknown system: {system}")
+        return redirect(f'/onboarding')
+    
+    stage = request.GET.get('stage', default="build")
+    if stage == "build":
+        dataset = TrainDataSet.load_batch(participant_id, start=True)
+        return render(request, 'ruleconfigure.html', {
+            "participant_id": participant_id,
+            "system": system,
+            "stage": stage,
+            "rules": json.dumps([]),
+            "train_dataset": json.dumps(dataset),
+        })
+    elif stage == "update":
+        from sharedsteps.utils import read_rules_from_database
+        rules = read_rules_from_database(participant_id)
+
+        from sharedsteps.models import GroundTruth
+        training_dataset = TrainDataSet.load_previous_batches(participant_id)
+        validation_dataset = list(GroundTruth.objects.filter(participant_id=participant_id, type="validation").values("text", "label"))
+        return render(request, 'ruleconfigure.html', {
+            "participant_id": participant_id,
+            "system": system,
+            "stage": stage,
+            "rules": json.dumps(rules),
+            "validate_dataset": json.dumps(validation_dataset),
+            "train_dataset": json.dumps(training_dataset)     
+        })
+
+def store_rules(request):
+    """
+    request.body
+    {
+        "rules": [
+            {
+                "name": "Catch all texts that involve race-related hate speech",
+                "action": 1 for "remove" and 0 for "approve",
+                "units": [
+                    {
+                        "type": "include" or "exclude",
+                        "words": list[str]
+                    }
+                ]
+            },
+        ],
+        "participant_id": "123456",
+        "stage": "build" or "update"
+    }
+    """
+    request_data = json.loads(request.body)
+    rules = request_data.get("rules")
+    participant_id = request_data.get('participant_id')
+    stage = request_data.get('stage')
+
+    from sharedsteps.models import RuleConfigure, RuleUnit
+    # delete the existing rules of the participant from the database, note we only deleted rules of the corresponding stage
+    RuleConfigure.objects.filter(participant_id=participant_id, stage=stage).delete()
+
+    counter = 0
+    for item in rules:
+        
+        rule = RuleConfigure(
+            name=item["name"], 
+            action=item["action"], 
+            rule_id=counter, 
+            priority=item["priority"], 
+            variants=item["variants"],
+            participant_id=participant_id,
+            stage=stage
+        )
+        rule.save()
+        for unit in item["units"]:
+            rule_unit = RuleUnit(type=unit["type"], rule=rule)
+            rule_unit.set_words(unit["words"])
+            rule_unit.save()
+
+        counter = counter + 1
+
+    return JsonResponse(
+        {
+            "status": True,
+            "message": f"Participants' {participant_id} rules are stored successfully for {stage}"
+        },
+        safe=False
+    )
 
 def validate_page(request):
     # parse out the participant id from the request GET parameters
@@ -176,11 +256,15 @@ def validate_system(request):
     system = request_data.get('system')
     validate_dataset = request_data.get('dataset')
 
+    from sharedsteps.models import GroundTruth
+    GroundTruth.objects.filter(participant_id=participant_id, type="validation").delete()
+    for item in validate_dataset:
+        GroundTruth(participant_id=participant_id, type="validation", text=item["text"], label=item["label"]).save()
+
     X_test = [item["text"] for item in validate_dataset]
     y_test = [item["label"] for item in validate_dataset]
-    
     print(f"participant {participant_id} validates system: {system}")
-    if system == "examplesML":
+    if system == SYSTEMS.EXAMPLES_ML.value:
         # retrieve the labels of the examples labeled by the participant from the database
         from sharedsteps.models import ExampleLabel
         from systems.ml_filter import MLFilter
@@ -208,11 +292,11 @@ def validate_system(request):
                     }
                 }, safe=False
             )
-    elif system == "promptsLLM":
+    elif system == SYSTEMS.PROMPTS_LLM.value:
         from systems.llm_filter import LLMFilter
         from sharedsteps.models import PromptWrite
 
-        prompts = list(PromptWrite.objects.filter(participant_id=participant_id).values("rubric", "positives", "negatives", "prompt_id"))
+        prompts = read_prompts_from_database(participant_id)
         if len(prompts) == 0:
             return JsonResponse({"status": False, "message": "No prompts found for the participant"}, safe=False)
         
@@ -227,7 +311,7 @@ def validate_system(request):
                     }
                 }, safe=False
             )
-    elif system == "promptsML":
+    elif system == SYSTEMS.PROMPTS_ML.value:
         from systems.llm_ml_filter import LLM_ML_MixedFilter
         from sharedsteps.models import PromptWrite
 
@@ -252,14 +336,56 @@ def validate_system(request):
                     }
                 }, safe=False
             )
+    elif system == SYSTEMS.RULES_TREES.value:
+        from systems.trees_filter import TreesFilter
+        from sharedsteps.utils import read_rules_from_database
 
+        rules = read_rules_from_database(participant_id)
+        if len(rules) == 0:
+            return JsonResponse({"status": False, "message": "No rules found for the participant"}, safe=False)
+        
+        tree_filter = TreesFilter(rules)
+        print(f"starting testing with {len(X_test)} examples labeled by the participant")
+        test_results = tree_filter.test_model(X=X_test, y=y_test)
+        return JsonResponse({
+                    "status": True,
+                    "message": f"Successfully tested the {system} model",
+                    "data": {
+                        "test_results": test_results
+                    }
+                }, safe=False
+            )
+    elif system == SYSTEMS.RULES_ML.value:
+        from systems.trees_ml_filter import Trees_ML_MixedFilter
+        from sharedsteps.utils import read_rules_from_database
+
+        rules = read_rules_from_database(participant_id)
+        if len(rules) == 0:
+            return JsonResponse({"status": False, "message": "No rules found for the participant"}, safe=False)
+        
+        trees_ml_filter = Trees_ML_MixedFilter(rules, "Bayes")
+        
+        X_train = TrainDataSet.load_batch_by_size(participant_id, size=360)
+        X_train = [item["text"] for item in X_train]
+        train_results = trees_ml_filter.train_model(X=X_train)
+
+        print(f"starting testing with {len(X_test)} examples labeled by the participant")
+        test_results = trees_ml_filter.test_model(X=X_test, y=y_test)
+        return JsonResponse({
+                    "status": True,
+                    "message": f"Successfully trained and tested the {system} model",
+                    "data": {
+                        "train_results": train_results,
+                        "test_results": test_results
+                    }
+                }, safe=False
+            )
 
 def trainLLM(request):
     from systems.llm_filter import LLMFilter
     request_data = json.loads(request.body)
     
     prompts = request_data.get('prompts')
-    prompts = list(prompts.values()) # it is a dict in the frontend
     dataset = request_data.get('dataset')
     
     dataset = [item["text"] for item in dataset]
@@ -279,7 +405,6 @@ def train_trees(request):
 
     request_data = json.loads(request.body)
     rules = request_data.get('rules')
-    rules = list(rules.values()) # it is a dict in the frontend
     dataset = request_data.get('dataset')
 
     dataset = [item["text"] for item in dataset]
@@ -293,3 +418,12 @@ def train_trees(request):
                     }
                 }, safe=False
             )
+
+def update_page_redirect(request):
+    participant_id = request.GET.get('participant_id', default=None)
+    system = request.GET.get('system', default=None)
+    if participant_id is not None:
+        if system in [SYSTEMS.RULES_TREES.value, SYSTEMS.RULES_ML.value]:
+            return redirect(f'/ruleconfigure?participant_id={participant_id}&system={system}&stage=update')
+        else:
+            raise Exception(f"Unsupported system: {system}")

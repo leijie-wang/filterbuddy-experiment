@@ -20,12 +20,12 @@ from sharedsteps import views as sharedviews
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('onboarding', sharedviews.onboarding, name='onboarding'),
-    path('load_system', sharedviews.load_system),
+    path('onboarding/', sharedviews.onboarding, name='onboarding'),
+    path('load_system/', sharedviews.load_system),
     path('load_more_data/', sharedviews.load_more_data),
     path('validate_page/', sharedviews.validate_page),
     path('validate_system/', sharedviews.validate_system),
-    
+    path('update_page_redirect/', sharedviews.update_page_redirect),
     
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),
     path('store_labels/', sharedviews.store_labels),
@@ -35,5 +35,6 @@ urlpatterns = [
     path('trainLLM/', sharedviews.trainLLM),
 
     path('ruleconfigure/', sharedviews.ruleconfigure, name='ruleconfigure'),
+    path('store_rules/', sharedviews.store_rules),
     path('trainTrees/', sharedviews.train_trees),
 ]

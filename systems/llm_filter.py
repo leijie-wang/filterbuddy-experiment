@@ -121,33 +121,46 @@ class LLMFilter:
         X_test, y_test = X, y
 
         
-        prompt_predictions = [{} for _ in range(len(X_test))]
+        texts_predictions = [{} for _ in range(len(X_test))]
         
         dataset_list = self._generate_dataset_list(X_test)
 
         for index in range(len(self.prompts)):
             prompt = self.prompts[index]
+            prompt_id = prompt["id"]
             prompt_pred = self._test_prompt(prompt, dataset_list)
             
             if prompt_pred is not None:
                 for index in range(len(dataset_list)):
-                    prompt_predictions[index][prompt["prompt_id"]] = prompt_pred[index] if index in prompt_pred else None
+                    texts_predictions[index].append({
+                        "id": prompt_id,
+                        "prediction": prompt["action"] if prompt_pred.get(index, None) else None,
+                    })
+
+                    
 
         prediction = [0 for _ in range(len(X_test))] # overall predictions
         for index in range(len(X_test)):
-            prompt_pred = prompt_predictions[index]
-            # aggregate individual predictions using or operation, do not consider None
-            valid_prediction = [value for value in prompt_pred.values() if value is not None]
-            prediction[index] = any(valid_prediction) if len(valid_prediction) > 0 else False
+            text_pred = texts_predictions[index]
+            """ 
+                we have already sorted the rules by priority in the constructor
+                use the action of the first rule has a True prediction and the highest priority as the final prediction
+            """
+            for pred in text_pred:
+                if pred["prediction"] is not None:
+                    prediction[index] = pred["prediction"]
+                    break
         
         # if the user builds the model interactively, then y_test will be None
         if y_test is not None:
+            # we treat None (not affected texts) as approved texts, which is 0
+            prediction = [(0 if pred is None else pred) for pred in prediction]
             performance = calculate_algorithm_metrics(y_test, prediction)
         else:
             performance = {}
 
         return {
             "prediction": prediction,
-            "prompt_predictions": prompt_predictions,
+            "texts_predictions": texts_predictions,
             "performance": performance
         }

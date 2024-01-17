@@ -18,6 +18,16 @@ function to_percentage(num) {
     return (num * 100).toFixed(0) + "%";
 }
 
+function remove_unit_section(event, class_name) {
+    $(event.target).closest(`.${class_name}`).remove();
+}
+
+function removeNearestAncestor(element, class_name){
+    let parent = element.closest(`.${class_name}`);
+    if (parent == null){
+        console.log(`cannot find ancestor with class name ${class_name}`);
+    } return parent.remove();
+}   
 
 function get_backend(url, data, success_function){
     console.log("start GET to " + url);
@@ -56,9 +66,9 @@ function redirect(url, parameters){
     window.location.href = new_url;
 }
 
-function display_data(new_dataset, dataset, new_separator=true){
+function display_data(new_dataset, dataset, new_separator=true, type="train"){
     // display data on the page, this is not for users to label data
-    let textList = $('#textList');
+    let textList = $(`#${type}TextList`);
 
     if (new_separator) {
         /* remove the old separator for new data; and add a new separator before adding new data */
@@ -76,13 +86,13 @@ function display_data(new_dataset, dataset, new_separator=true){
     }
 
     /* start adding new data */
-    console.log(`start displaying ${new_dataset.length} new data`);
+    console.log(`start displaying ${new_dataset.length} new data for the ${type} dataset`);
     let start_index = dataset.length; // used as the id of the datum
     for (let i = 0; i < new_dataset.length; i++) {
         /* Here i use mb-2 instead of adding a gap-y-2 to the textList div because the latter will still keep gaps for hidden elements */
         let text_div_html = `
             <div class="flex flex-col gap-y-1 mb-2" x-data="{ showTooltip: false }">   
-                <div id="datum-${i + start_index}" 
+                <div id="${type}Datum-${i + start_index}" 
                     class="datum flex flex-row py-1 px-2 self-stretch unLabel"
                 >
                     <div class="flex-grow w-7/10 px-2 py-1 self-center">${new_dataset[i].text}</div>
@@ -93,7 +103,7 @@ function display_data(new_dataset, dataset, new_separator=true){
                 <div 
                     class="flex flex-col px-2 pb-1 self-end max-w-[75%] rounded unLabel"
                     x-show="showTooltip"
-                    id="datumTooltip-${i + start_index}"
+                    id="${type}DatumTooltip-${i + start_index}"
                 >
                     <div class="tooltip-arrow"></div>
                     <div class="text-sm">
@@ -104,7 +114,7 @@ function display_data(new_dataset, dataset, new_separator=true){
         textList.append(text_div_html);
     }
     dataset = dataset.concat(new_dataset);
-    $('#countDisplay').text(`There are now ${dataset.length} comments in total`);
+    $(`#${type}CountDisplay`).text(`There are now ${dataset.length} comments in total`);
 
     /*
         even though the dataset parameter as a dict is passed by reference, we still need to return it to make sure the caller gets the updated dataset
