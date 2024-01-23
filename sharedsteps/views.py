@@ -124,14 +124,15 @@ def store_prompts(request):
     request_data = json.loads(request.body)
     prompts = request_data.get("prompts")
     participant_id = request_data.get('participant_id')
+    stage = request_data.get("stage")
 
     from sharedsteps.models import PromptWrite
     # delete the labels of the participant from the database first, for the testing purposes
-    PromptWrite.objects.filter(participant_id=participant_id).delete()
+    PromptWrite.objects.filter(participant_id=participant_id, stage=stage).delete()
 
     counter = 0
     for item in prompts:
-        prompt = PromptWrite(rubric=item["rubric"], participant_id=participant_id, prompt_id=counter)
+        prompt = PromptWrite(rubric=item["rubric"], participant_id=participant_id, prompt_id=counter, stage=stage)
         prompt.set_positives(item["positives"])
         prompt.set_negatives(item["negatives"])
         prompt.save()
