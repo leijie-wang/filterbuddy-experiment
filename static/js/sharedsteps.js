@@ -13,7 +13,6 @@ function capitalize(str) {
     return str;
 }
 
-
 function to_percentage(num) {
     return (num * 100).toFixed(0) + "%";
 }
@@ -66,9 +65,9 @@ function redirect(url, parameters){
     window.location.href = new_url;
 }
 
-function display_data(new_dataset, dataset, new_separator=true, type="train"){
+function display_data(new_dataset, dataset, new_separator=true){
     // display data on the page, this is not for users to label data
-    let textList = $(`#${type}TextList`);
+    let textList = $(`#textList`);
 
     if (new_separator) {
         /* remove the old separator for new data; and add a new separator before adding new data */
@@ -86,13 +85,13 @@ function display_data(new_dataset, dataset, new_separator=true, type="train"){
     }
 
     /* start adding new data */
-    console.log(`start displaying ${new_dataset.length} new data for the ${type} dataset`);
+    console.log(`start displaying ${new_dataset.length} new data`);
     let start_index = dataset.length; // used as the id of the datum
     for (let i = 0; i < new_dataset.length; i++) {
         /* Here i use mb-2 instead of adding a gap-y-2 to the textList div because the latter will still keep gaps for hidden elements */
         let text_div_html = `
             <div class="flex flex-col gap-y-1 mb-2" x-data="{ showTooltip: false }">   
-                <div id="${type}Datum-${i + start_index}" 
+                <div id="datum-${i + start_index}" 
                     class="datum flex flex-row py-1 px-2 self-stretch unLabel"
                 >
                     <div class="flex-grow w-7/10 px-2 py-1 self-center">${new_dataset[i].text}</div>
@@ -103,7 +102,7 @@ function display_data(new_dataset, dataset, new_separator=true, type="train"){
                 <div 
                     class="flex flex-col px-2 pb-1 self-end max-w-[75%] rounded unLabel"
                     x-show="showTooltip"
-                    id="${type}DatumTooltip-${i + start_index}"
+                    id="datumTooltip-${i + start_index}"
                 >
                     <div class="tooltip-arrow"></div>
                     <div class="text-sm">
@@ -114,7 +113,7 @@ function display_data(new_dataset, dataset, new_separator=true, type="train"){
         textList.append(text_div_html);
     }
     dataset = dataset.concat(new_dataset);
-    $(`#${type}CountDisplay`).text(`There are now ${dataset.length} comments in total`);
+    $(`#countDisplay`).text(`There are now ${dataset.length} comments in total`);
 
     /*
         even though the dataset parameter as a dict is passed by reference, we still need to return it to make sure the caller gets the updated dataset

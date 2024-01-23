@@ -48,7 +48,7 @@
             {% endif %}
         </div>
 
-        <div x-data="{dataset: '{{ stage }}' === 'update' ? 'validate' : 'train'}" class="flex items-stretch w-full gap-x-4 flex-grow">
+        <div x-data="{stage: '{{ stage }}'}" class="flex items-stretch w-full gap-x-4 flex-grow">
             <!-- the section where users configure prompts -->
             <div class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow">
                 
@@ -73,7 +73,7 @@
             <div class="flex flex-col w-1/2 h-full">
                 <!-- display a set of filter options -->
                 
-                <div x-show="dataset == 'train'" class="flex flex-col gap-y-1 h-full border border-gray-600 rounded px-3 pt-2 pb-4 ">
+                <div class="flex flex-col gap-y-1 h-full border border-gray-600 rounded px-3 pt-2 pb-4 ">
                     <div class="header text-lg font-bold">
                         What comments are targeted by your rules?
                     </div>
@@ -99,50 +99,16 @@
                                 </select>
                             </div>
                         </div>
-                        <div id="trainCountDisplay" class="text-sm text-gray-700 self-start"></div>
+                        <div id="countDisplay" class="text-sm text-gray-700 self-start"></div>
                     </div>
                     <!-- display a list of comments to be reviewed -->
-                    <div id="trainTextList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
+                    <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
                     <div class="bottom flex justify-end gap-x-2 pt-3">
                         <button @click="load_more_data" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
                             Load More Examples
                         </button>
-                        <button 
-                            @click="dataset = dataset == 'train' ? 'validate' : 'train'" 
-                            class="bg-red-400 text-white font-bold py-2 px-3 rounded"
-                            x-show="'{{stage}}' == 'update'"
-                            x-text="dataset == 'train' ? 'Switch to validate' : 'Switch to train'"
-                        ></button>
                     </div>
                 </div>
-                <div x-show="dataset == 'validate' & '{{stage}}' == 'update'" class="flex flex-col gap-y-1 h-full border border-gray-600 rounded px-3 pt-2 pb-4 ">
-                    <div class="header text-lg font-bold">
-                        What comments are falsely classified by your rule?
-                    </div>
-                    <div class="flex flex-col items-start gap-y-1">
-                        <div class="flex justify-start items-center gap-x-2 w-[60%]">
-                            <div>Filters</div>
-                            <div class="w-[50%]">
-                                <select id="classifiyFilter" class="selectpicker  data-filter border rounded show-tick" title="by correctness" data-width="100%" >
-                                    <option value="correct" class=" text-xs text-gray-700">Correctly classified comments</option>
-                                    <option value="false" selected class=" text-xs text-gray-700">Falsely classified comments</option>
-                                    <option value="all" selected class=" text-xs text-gray-700">All comments</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="validateCountDisplay" class="text-sm text-gray-700 self-start"></div>
-                    </div>
-                    <div id="validateTextList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
-                    <div class="bottom flex justify-end gap-x-2 pt-3">
-                        
-                        <button 
-                            @click="dataset = dataset == 'train' ? 'validate' : 'train'" 
-                            class="bg-red-400 text-white font-bold py-2 px-3 rounded"
-                            x-text="dataset == 'train' ? 'Switch to validate' : 'Switch to train'"
-                        ></button>
-                    </div>
-                </div>
-                
             </div>
         </div>
         
@@ -163,8 +129,7 @@
     const participant_id = "{{participant_id}}";
     const stage = "{{stage}}";
 
-    var train_dataset = [];
-    var validate_dataset = [];
+    var dataset = [];
 
     // we assume every single quote is properly escaped; this should be ensured when adding them to the list
     // for now, we only require users to input one example for each category
@@ -392,20 +357,18 @@
     /* 
         functions that handle the display of the data 
     */
-    
-
     function load_more_data() {
         get_backend(
             "/load_more_data/", 
             {'participant_id': participant_id},
             function(data){
                 data = JSON.parse(data);
-                train_dataset = display_data(data, train_dataset);
+                dataset = display_data(data, dataset);
             }
         );
     }
 
-    function showFilteredData(dataset_type="train"){
+    function showFilteredData(){
         /* iterature through dataset and hide the datum that doesn't match the filter selected_prediction and selected_prompts */
 
         let expected_prediction = selected_prediction === "targeted" ? [1, 0] : selected_prediction === "not-targeted" ? [null] : [1, 0, null];
@@ -416,7 +379,7 @@
 
         console.log("selected rules", selected_rules);
         console.log("selected_predictions", selected_prediction)
-        train_dataset.forEach((datum, index) => {
+        dataset.forEach((datum, index) => {
             let show = true;
             let now_prediction = null;
             if(expected_prediction.length < 3){
@@ -435,13 +398,13 @@
 
             
             if (show){
-                $(`#${dataset_type}Datum-${index}`).parent().show();
+                $(`#datum-${index}`).parent().show();
                 counter++;
                 targeted_counter += datum.total_prediction !== null ? 1 : 0;
                 approved_counter += datum.total_prediction === 0 ? 1 : 0;
                 removed_counter += datum.total_prediction === 1 ? 1 : 0;
             } else{
-                $(`#${dataset_type}Datum-${index}`).parent().hide();
+                $(`#datum-${index}`).parent().hide();
             }
         });
 
@@ -457,7 +420,7 @@
                 There are ${counter} comments that are ${selected_prediction} by all selected rules, ${approved_counter} approved and ${removed_counter} removed`;
         }
 
-        $('#trainCountDisplay').text(text);
+        $('#countDisplay').text(text);
 
     }
 
@@ -508,41 +471,29 @@
         }
     }
 
-    function updateDataLabels(results, now_dataset, dataset_type="train") {
+    function updateDataLabels(results) {
         /* update the labels of the data according to the predictions given by LLMs */
         let true_counter = 0;
         let prediction = results["prediction"];
         let texts_predictions = results["texts_predictions"];
     
         for (let i = 0; i < prediction.length; i++) {
-            now_dataset[i].total_prediction = prediction[i];
-            now_dataset[i].predictions = texts_predictions[i];
+            dataset[i].total_prediction = prediction[i];
+            dataset[i].predictions = texts_predictions[i];
             
             // update the label according to the total prediction
-            let new_class = now_dataset[i].total_prediction === null ? "unLabel" : now_dataset[i].total_prediction ? "trueLabel" : "falseLabel";
-            const datum = $(`#${dataset_type}Datum-${i}`);
+            let new_class = dataset[i].total_prediction === null ? "unLabel" : dataset[i].total_prediction ? "trueLabel" : "falseLabel";
+            const datum = $(`#datum-${i}`);
             datum.removeClass("unLabel trueLabel falseLabel");
             datum.addClass(new_class);
 
-            if(dataset_type == "validate") {
-                if (now_dataset[i].label != now_dataset[i].total_prediction) {
-                    // insert a red cross in the beginning of the datum div
-                    datum.prepend(`<span class="text-red-500 self-center"><i class="fa-solid fa-xmark px-2 fa-xl"></i></span>`);
-
-                    // datum.append(`<span class="text-red-500"><i class="fa-solid fa-xmark px-2 fa-xl"></i></span>`);
-                } else {
-                    // append a green check in the end of the datum div
-                    datum.prepend(`<span class="text-green-500 self-center"><i class="fa-solid fa-check px-2 fa-xl"></i></span>`);
-                }
-            }
-
             // select the tooltip
-            const tooltip_div = $(`#${dataset_type}DatumTooltip-${i}`);
+            const tooltip_div = $(`#datumTooltip-${i}`);
             tooltip_div.removeClass("unLabel trueLabel falseLabel");
             tooltip_div.addClass(new_class);
 
             // update the tooltip content
-            let explanation = generateExplanation(now_dataset[i]);
+            let explanation = generateExplanation(dataset[i]);
             // set the second child of the tooltip div to be the explanation, use innerhtml
 
             tooltip_div.children().eq(1).html(explanation);
@@ -592,15 +543,13 @@
         return now_rules;
     }
 
-    function trainTrees(dataset_type) {
+    function trainTrees() {
         let now_rules = parseContent();
-        let now_dataset = dataset_type === "train" ? train_dataset : validate_dataset;
-
         $('#loadingModal').removeClass('hidden');
         $('#loadingModalText').text('Waiting for algorithms');
         post_backend(
             "/trainTrees/", 
-            {'dataset': now_dataset, 'rules': now_rules, 'participant_id': participant_id},
+            {'dataset': dataset, 'rules': now_rules, 'participant_id': participant_id},
             function(response){
                 if(!response["status"]){
                     alert(response["message"]);
@@ -608,8 +557,8 @@
                 }
                 
                 console.log(response.data.results);
-                updateDataLabels(response.data.results, now_dataset, dataset_type);
-                if(dataset_type === "train") showFilteredData();
+                updateDataLabels(response.data.results);
+                showFilteredData();
                 
                 $('#loadingModal').addClass('hidden');
             }
@@ -634,7 +583,7 @@
     }
 
     $(document).ready(function(){
-        train_dataset = display_data(JSON.parse(`{{train_dataset | safe}}`), train_dataset, false, "train");
+        dataset = display_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
         $("#ruleList").sortable({
             animation: 150,
             filter: ".addButton",
@@ -646,8 +595,6 @@
 
         if(stage === "update"){
             displayRules(JSON.parse(`{{rules | safe}}`));
-            validate_dataset = display_data(JSON.parse(`{{validate_dataset | safe}}`), validate_dataset, false, "validate");
-            trainTrees("validate")
         } else {
             displayRules([
                 {
@@ -698,8 +645,6 @@
                 }
             ]);
         }
-        
-       
     })
   
 </script>

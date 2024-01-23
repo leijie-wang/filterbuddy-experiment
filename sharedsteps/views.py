@@ -164,22 +164,20 @@ def ruleconfigure(request):
             "system": system,
             "stage": stage,
             "rules": json.dumps([]),
-            "train_dataset": json.dumps(dataset),
+            "dataset": json.dumps(dataset),
         })
     elif stage == "update":
         from sharedsteps.utils import read_rules_from_database
         rules = read_rules_from_database(participant_id)
 
         from sharedsteps.models import GroundTruth
-        training_dataset = TrainDataSet.load_previous_batches(participant_id)
-        validation_dataset = list(GroundTruth.objects.filter(participant_id=participant_id, type="validation").values("text", "label"))
+        dataset = TrainDataSet.load_previous_batches(participant_id)
         return render(request, 'ruleconfigure.html', {
             "participant_id": participant_id,
             "system": system,
             "stage": stage,
             "rules": json.dumps(rules),
-            "validate_dataset": json.dumps(validation_dataset),
-            "train_dataset": json.dumps(training_dataset)     
+            "dataset": json.dumps(dataset)     
         })
 
 def store_rules(request):
