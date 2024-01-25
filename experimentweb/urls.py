@@ -21,10 +21,15 @@ from sharedsteps import views as sharedviews
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('onboarding/', sharedviews.onboarding, name='onboarding'),
+
+    path('groundtruth/', sharedviews.label_ground_truth),
+    path('store_groundtruth/', sharedviews.store_groundtruth),
+
     path('load_system/', sharedviews.load_system),
-    path('load_more_data/', sharedviews.load_more_data),
+    
+    # path('load_more_data/', sharedviews.load_more_data),
     path('validate_page/', sharedviews.validate_page),
-    path('validate_system/', sharedviews.validate_system),
+
     path('update_page_redirect/', sharedviews.update_page_redirect),
     
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),

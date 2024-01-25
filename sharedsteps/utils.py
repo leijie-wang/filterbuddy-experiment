@@ -1,16 +1,31 @@
 from django.conf import settings
 from sklearn.metrics import accuracy_score, recall_score, precision_score, confusion_matrix
+from sharedsteps.models import Participant
+import random
 
-def generate_userid():
-    # generate a random user id of length 10
-    import random
-    import string
 
-    # for debugging purposes, set the seed for the local generator, still keep other random generators random
-    # local_random = random.Random()
-    # local_random.seed(42)  
 
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+
+def check_parameters(participant_id, stage=None, system=None):
+    if participant_id is None:
+        return "No participant id provided"
+    participant = Participant.objects.get(participant_id=participant_id)
+    if participant is None:
+        return "No participant found"
+    if stage is not None and participant.stage != stage:
+        return f"Participant is not in the correct stage {stage}"
+    if system is not None and participant.system != system:
+        return f"Participant is not using the assigned system {system}"
+    
+    return None
+
+def get_groundtruth_dataset(participant_id, stage):
+    from sharedsteps.models import GroundTruth
+    groundtruths = GroundTruth.objects.filter(
+            participant_id=participant_id, 
+            stage=stage
+        ).values('text', 'label')
+    return list(groundtruths)
 
 def calculate_algorithm_metrics(y, y_pred):
     accuracy = accuracy_score(y, y_pred)

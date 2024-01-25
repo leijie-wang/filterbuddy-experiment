@@ -18,7 +18,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
-<body class="container h-screen overflow-y-hidden">
+<body class="h-screen w-screen overflow-y-hidden flex flex-col">
 
     <!-- 
       The <noscript> tag encloses the content that will be displayed 
@@ -30,180 +30,130 @@
     </noscript> 
     {% csrf_token %}
 
-    <div x-data="{ atBottom: false }"  class="flex gap-x-4 justify-start gap-y-4 h-screen">
+    <div x-data="{}" class="grow w-full flex flex-col gap-y-4 mb-10 px-4">
         <!-- display a list of comments to be reviewed -->
-        <div class="flex flex-col gap-y-2 flex-grow w-2/3 my-2">   
-            <div class="header flex flex-col gap-y-4 items-stretch">
-                <p class="text-2xl font-semibold bg-slate-200 rounded text-center py-2">Label Examples</p>
-                <p class="text-base text-start font-sans">
-                    Thank you for your efforts in building your own classifier. Want to know the performance of your classifier?<br>
-                    You are expected to label all these new examples so that we can estimate its performance.
-                </p>
-            </div>
-            <div class="section-header flex justify-start">
-                <div id="countDisplay" class="text-base text-blue-600"></div>
-            </div>
-            <!-- display a list of comments to be reviewed -->
-            <div id="textList"
-                @scroll="atBottom = $el.scrollHeight - $el.scrollTop - $el.clientHeight < 1"
-                class="body flex flex-col overflow-y-auto px-4 border border-gray-600 rounded h-full "
-            ></div>
-            <div class="bottom flex justify-end gap-x-2">
-                <button id="test-button" 
-                    :disabled="!atBottom"
-                    class="text-white font-bold text-lg py-1 px-3 rounded"
-                    :class="{'bg-blue-600 hover:bg-blue-700': atBottom, 'bg-gray-400 cursor-not-allowed': !atBottom}"
-                > Test </button>
-            </div>
+        <div class="header flex flex-col gap-y-4 items-stretch bg-slate-100 p-4 rounded">
+            <p class="text-2xl font-semibold">Welcome to build your own word filters!</p>
+            <p class="text-lg text-start font-sans">
+                Thank you for your efforts in building your own filter. Remember that you have labeled some examples before?
+                We compared your labels with the predictions of your filter and present its performance below.
+            </p>
         </div>
-        <!-- display the results of algorithmic predictions -->
-        <div class="flex flex-col w-1/3 my-2 gap-y-4">
-            <div class="grow-0 header flex flex-col gap-y-4 items-stretch">
-                <p class="text-2xl font-semibold bg-slate-200 rounded text-center py-2">Classifier Performance</p>
+        <div class="grow flex flex-row mx-4">
+            <div class="self-stretch flex flex-col gap-y-2 w-2/3">
+                <div class="grow-0 flex justify-start">
+                    <div id="countDisplay" class="text-base text-blue-600"></div>
+                </div>
+                <!-- display a list of comments to be reviewed -->
+                <div id="textList"
+                    class="grow flex flex-col h-16 overflow-y-auto px-4 border border-gray-600 rounded"
+                ></div>
             </div>
-            <div class="grow flex flex-col gap-y-8">
-                <p class="text-base">Review how well your classifier performed on test data below. </p>
-                <div class="flex flex-col gap-y-8 items-center">
+            <!-- display the results of algorithmic predictions -->
+            <div class="mx-4 flex flex-col justify-between gap-y-8 w-1/3">         
+                <div class="flex flex-col items-center">
                     <!-- Accuracy -->
                     <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300">
-                        <div class="text-blue-500 text-center text-2xl font-medium">Accuracy</div>
+                        <div class="text-slate-600 text-center text-2xl font-medium">Accuracy</div>
                         <span class="text-3xl" id="test-accuracy">?</span>
                     </div>
                     <!-- Precision -->
                     <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300">
-                        <div class="text-indigo-500 text-center text-2xl font-medium">Precision</div>
+                        <div class="text-slate-600  text-center text-2xl font-medium">Precision</div>
                         <span class="text-3xl" id="test-precision">?</span>
                     </div>
                     <!-- Recall -->
                     <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300">
-                        <div class="text-rose-500 text-center text-2xl font-medium">Recall</div>
+                        <div class="text-slate-600  text-center text-2xl font-medium">Recall</div>
                         <span class="text-3xl" id="test-recall">?</span>
                     </div>
                     <!-- False Positive Rate -->
                     <div class="flex items-center py-4 px-3 w-[80%] justify-evenly border-b border-gray-300"> 
-                        <div class="text-slate-500 text-2xl font-medium">False Positive Rate</div>
+                        <div class="text-slate-600 text-2xl font-medium">False Positive Rate</div>
                         <span class="text-3xl" id="test-fpr">?</span>
                     </div>
+                </div>           
+                <div class="flex flex-col gap-y-4 bg-slate-100 rounded p-4">
+                    <p class="text-lg">
+                        Thanks for your efforts in labeling these examples. Now start building your own filters
+                    </p>
+                    <button 
+                        class="text-white text-lg self-end bg-blue-600 px-4 py-2 rounded-lg"
+                        @click="go_to_system();"
+                    >
+                        Improve your filter
+                    </button>
                 </div>
-            
             </div>
-            <button 
-               class="grow w-[60%] mx-auto mb-10 p-3 flex items-center justify-center text-gray-600 text-2xl bg-slate-100 rounded"
-               x-show="atBottom"
-               @click="go_update_system();"
-            >
-                Improve Classifier
-            </button>
-
         </div>
     </div>
 </body> <!-- closes container -->
 <!-- custom js -->
 <script src="{% static 'js/sharedsteps.js' %}" defer></script>
 <script defer>
-    var dataset = [];
-    const participant_id = "{{participant_id}}";
+    const PARTICIPANT_ID = "{{participant_id}}";
     const SYSTEM = "{{system}}";
+    const STAGE = "{{stage}}";
+    const TEST_RESULTS = JSON.parse(`{{test_results | safe}}`);
+    var dataset = JSON.parse(`{{dataset | safe}}`);
+
     var positive_number = 0;
-
-    function change_label(index){
-        // change the label of the text at the given index
-        dataset[index].label = !(dataset[index].label || false);
-
+    function change_label(index, new_label){
+        dataset[index].label = new_label;
         // change the button color
-        if(dataset[index].label)
-            $(`#datum-${index} button`).removeClass('unselected-button').addClass('selected-button');
-        else
-            $(`#datum-${index} button`).removeClass('selected-button').addClass('unselected-button');
+        if(dataset[index].label){
+            $(`#datum-${index} .yes-button`).removeClass('unselected-button').addClass('selected-button');
+            $(`#datum-${index} .no-button`).removeClass('selected-button').addClass('unselected-button');
+        } else {
+            $(`#datum-${index} .no-button`).removeClass('unselected-button').addClass('selected-button');
+            $(`#datum-${index} .yes-button`).removeClass('selected-button').addClass('unselected-button');
+
+        }
 
         // update the number of positive examples
-        positive_number = positive_number + (dataset[index].label ? 1 : -1);
+        positive_number = positive_number + (dataset[index].label ? 1 : 0);
         $('#positive-number').text(positive_number);
     }
-
-    function update_data_list(results){
-        // based on the prediction, indicate to users which examples are incorrectly labeled by their system
-
-        // iterate through all children of the textList with the class textDiv
-        $('#textList').children('.textDiv').each(function(index, element){
-            let id = element.id;
-            index = parseInt(id.split('-')[1]);
-
-            let label = dataset[index].label || false;
-            dtataset[index].total_prediction = results.prediction[index];
-            dataset[index].predictions = results.texts_predictions[index];
-            let text = $(`#text-${index}`);
-            // console.log(`label: ${label}, prediction: ${prediction[index]}`);
-            if (label != dtataset[index].total_prediction) {
-                $(`#labelButton-${index}`).after(`<span class="text-red-500"><i class="fa-solid fa-xmark px-2 fa-xl"></i></span>`);
-            } else {
-                $(`#labelButton-${index}`).after(`<span class="text-green-500"><i class="fa-solid fa-check px-2 fa-xl"></i></span>`);
-            }
-        });
-    }
-
-
-    $("#test-button").click(function() {
-        // train the ML model
-        
-        // iterate throught the dataset and if the label does not exist, set it to false
-        dataset.forEach(datum => {
-            datum.label = datum.label || false;
-        });
-
-        console.log(dataset);
-        post_backend(
-            "/validate_system/",
-            {'dataset': dataset, 'participant_id': participant_id, 'system': SYSTEM},
-            function(response) {
-                // if the json response has the response code 200
-                console.log(response);
-                if (!response['status']) {
-                    alert(response['message']);
-                    return;
-                }
-                
-                // display the results
-                
-                // if(response.data.train_results){
-                //     // not all systems have the training stage
-                //     let train_performance = response.data.train_results.performance;
-                //     console.log(train_performance);
-                //     $('#train-accuracy').text(to_percentage(train_performance.accuracy));
-                //     $('#train-precision').text(to_percentage(train_performance.precision));
-                //     $('#train-recall').text(to_percentage(train_performance.recall));
-                //     $('#train-fpr').text(to_percentage(train_performance.fpr));
-                //     $('#train-fnr').text(to_percentage(train_performance.fnr));
-                // }
-                
-                let test_performance = response.data.test_results.performance;
-                console.log(test_performance);
-                $('#test-accuracy').text(to_percentage(test_performance.accuracy));
-                $('#test-precision').text(to_percentage(test_performance.precision));
-                $('#test-recall').text(to_percentage(test_performance.recall));
-                $('#test-fpr').text(to_percentage(test_performance.fpr));
-                $('#test-fnr').text(to_percentage(test_performance.fnr));
-                
-                update_data_list(response.data.test_results);
-            }
-        );
-        return;
-    });
 
     function go_update_system(){
         redirect("/update_page_redirect/", {'participant_id': participant_id, 'system': SYSTEM});
     }
 
     $(document).ready(function(){
-        dataset = display_labeling_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
         
+        let textList = $('#textList');
         // for testing purposes, use the score to simulate the user's label
         dataset.forEach((datum, index) => {
-            // covert it to 1 or 0
-            if(+parseFloat(datum.score) >= 0.5) {
-                change_label(index);
-            }
-        })
+            // create a new div element for each text with the template below
+            datum.total_prediction = TEST_RESULTS.prediction[index];
+            datum.predictions = TEST_RESULTS.texts_predictions?.[index] || null; 
+            // for some classifiers they do not have individual predictions
+
+            let text_div_html = `
+                <div id="datum-${index}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
+                    <div id="text-${index}" class="grow w-[85%] p-2">${datum.text}</div>
+                    <div class="flex-col items-stretch grow-0 font-bold w-[10%] text-center">
+                        ${datum.label == 1 ? 
+                            "<div class='w-full text-white bg-red-400 text-lg p-1 rounded'>Toxic</div>" : 
+                            "<div class='w-full text-white bg-emerald-400 text-lg p-1 rounded'>No</div>"
+                        }
+                    </div>
+                    <div class="flex-col items-stretch grow-0 font-bold w-[5%] text-center">
+                        ${datum.label == datum.total_prediction ? 
+                            "<span class='text-gray-500'><i class='fa-solid fa-check px-2 fa-xl'></i></span>" : 
+                            "<span class='text-gray-500'><i class='fa-solid fa-xmark px-2 fa-xl'></i></span>"
+                        }
+                    </div>
+                </div>`
+            textList.append(text_div_html);
+        });
+
+        let performance = TEST_RESULTS.performance;
+        $('#test-accuracy').text(to_percentage(performance.accuracy));
+        $('#test-precision').text(to_percentage(performance.precision));
+        $('#test-recall').text(to_percentage(performance.recall));
+        $('#test-fpr').text(to_percentage(performance.fpr));
+        $('#test-fnr').text(to_percentage(performance.fnr));
     });
 
     

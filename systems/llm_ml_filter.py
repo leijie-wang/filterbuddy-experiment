@@ -3,6 +3,22 @@ from systems.ml_filter import MLFilter
 
 class LLM_ML_MixedFilter:
 
+    @classmethod
+    def train(cls, participant_id, dataset):
+        from sharedsteps.models import PromptWrite
+        from sharedsteps.utils import read_prompts_from_database
+
+        prompts = read_prompts_from_database(participant_id)
+        if len(prompts) == 0:
+            return False, "No prompts found for the participant"
+        
+        llm_ml_filter = LLM_ML_MixedFilter(prompts, "Bayes")
+        
+        X_train = dataset.load_train_dataset(participant_id, size=240)
+        X_train = [item["text"] for item in X_train]
+        llm_ml_filter.train_model(X=X_train)
+        return True, llm_ml_filter
+
     def __init__(self, prompts, model_name):
        """
             model_name: the name of the model that will actually be trained for filtering

@@ -11,6 +11,23 @@ from sharedsteps.utils import calculate_algorithm_metrics
 
 class MLFilter:
 
+    @classmethod
+    def train(cls, participant_id, dataset=None):
+        from sharedsteps.models import ExampleLabel
+
+        training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id).values("text", "label"))
+        if len(training_dataset) == 0:
+            return (False, "No labels found for the participant")
+
+        ml_filter = MLFilter("Bayes")
+        X_train = [item["text"] for item in training_dataset] 
+        y_train = [item["label"] for item in training_dataset]
+
+        print(f"starting training with {len(X_train)} examples labeled by the participant")
+        train_results = ml_filter.train_model(X=X_train, y=y_train)
+        return (True, ml_filter)
+
+
     def __init__(self, model_name, rng = random.Random(3141)):
         self.model_name = model_name
         self.model = self.set_model()

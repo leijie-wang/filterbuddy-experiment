@@ -152,11 +152,16 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
                 <div id="text-${index}" class="flex-grow w-7/10 p-2">${new_dataset[i].text}</div>
                 <div class="flex flex-row w-3/10 justify-center space-x-2">
                     <button 
-                        id="labelButton-${index}"
-                        @click="change_label(${index});" 
-                        class="text-white font-bold py-1 px-3 rounded unselected-button"
+                        @click="change_label(${index}, true);" 
+                        class="text-white font-bold py-1 px-3 rounded unselected-button yes-button"
                     >
-                        Yes
+                        Toxic
+                    </button>
+                    <button
+                        @click="change_label(${index}, false);" 
+                        class="text-white font-bold py-1 px-3 rounded unselected-button no-button"
+                    >
+                        No
                     </button>
                 </div>
             </div>`
@@ -164,6 +169,5 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
     }
     // :class="{'bg-blue-500 hover:bg-blue-600': selected == true, 'bg-gray-300 hover:bg-gray-400': selected == false}" 
     dataset = dataset.concat(new_dataset);
-    $('#countDisplay').html(`You have labeled <span id="positive-number">0</span>/ ${dataset.length} positive examples`);
     return dataset;
 }

@@ -51,12 +51,12 @@
     background-color: #9ca3af;
 }
 
-.selected-button {
-    background-color: #3b82f6;
+.selected-button.yes-button {
+    background-color: #f87171;
 }
 
-.selected-button:hover {
-    background-color: #2563eb;
+.selected-button.no-button {
+    background-color: #34d399;
 }
 
 /* in the rule configuration system */

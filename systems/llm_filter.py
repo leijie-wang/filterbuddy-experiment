@@ -9,6 +9,15 @@ logger = logging.getLogger(__name__)
 
 class LLMFilter:
 
+    @classmethod
+    def train(cls, participant_id, dataset=None):
+        from sharedsteps.models import PromptWrite
+        from sharedsteps.utils import read_prompts_from_database
+        prompts = read_prompts_from_database(participant_id)
+        if len(prompts) == 0:
+            return False, "No prompts found for the participant"
+        return True, LLMFilter(prompts, debug=False)
+
     def __init__(self, prompts, batch_size=30, debug=False):
         """
             debug: if debug is True, we will not prompt the model to get predictions

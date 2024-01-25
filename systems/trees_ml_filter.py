@@ -3,6 +3,22 @@ from systems.ml_filter import MLFilter
 
 class Trees_ML_MixedFilter:
 
+    @classmethod
+    def train(cls, participant_id, dataset):
+        from sharedsteps.utils import read_rules_from_database
+
+        rules = read_rules_from_database(participant_id)
+        if len(rules) == 0:
+            return False,"No rules found for the participant"
+        
+        trees_ml_filter = Trees_ML_MixedFilter(rules, "Bayes")
+        
+        X_train = dataset.load_train_dataset(participant_id, size=360)
+        X_train = [item["text"] for item in X_train]
+        
+        trees_ml_filter.train_model(X=X_train)
+        return True, trees_ml_filter
+    
     def __init__(self, rules, model_name):
        """
             model_name: the name of the model that will actually be trained for filtering

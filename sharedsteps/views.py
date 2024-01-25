@@ -1,60 +1,119 @@
+from cgi import test
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import JsonResponse
 from datasets.dataset import Dataset
 import sharedsteps.utils as utils
 import logging
-import json, sys, os, re
-from sharedsteps.models import SYSTEMS
+import json, random
+from sharedsteps.models import SYSTEMS, Participant
 
 logger = logging.getLogger(__name__)
 
 
-TrainDataSet = Dataset("train")
-ValidateDataSet = Dataset("validate")
+BuildDataSet = Dataset("train")
+UpdateDataSet = Dataset("train")
 
-# Create your views here.
 def onboarding(request):
-    return render(request, 'onboarding.html')
+    """
+        the starting point of the experiment
+    """
+    system = request.GET.get('system', default=None)
+
+    new_participant = Participant.create_participant(system=system)
+    return redirect(f"/groundtruth?participant_id={new_participant.participant_id}&stage={new_participant.stage}")
+
+def label_ground_truth(request):
+    """
+        for both build and update stages, the participant will label the ground truth as the first step
+    """
+    participant_id = request.GET.get('participant_id', default=None)
+    stage = request.GET.get('stage', default=None)
+    
+    error_message = utils.check_parameters(participant_id, stage)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+
+    dataset = []
+    if stage == "build":
+        dataset = BuildDataSet.load_test_dataset(participant_id)
+    elif stage == "update":
+        dataset = UpdateDataSet.load_test_dataset(participant_id)
+
+    return render(request, 'groundtruth.html', {
+            "dataset": json.dumps(dataset),
+            "participant_id": participant_id,
+            "stage": stage
+        })
+
+def store_groundtruth(request):
+    """
+        store the ground truth labeled by the participant at the stage of build or update
+    """
+    request_data = json.loads(request.body)
+    participant_id = request_data.get('participant_id')
+    stage = request_data.get('stage')
+    dataset = request_data.get('dataset')
+
+    error_message = utils.check_parameters(participant_id, stage)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+    
+    from sharedsteps.models import GroundTruth
+    GroundTruth.objects.filter(participant_id=participant_id, stage=stage).delete()
+    for datum in dataset:
+        GroundTruth(participant_id=participant_id, text=datum["text"], label=datum["label"], stage=stage).save()
+    return JsonResponse({"status": True, "message": "Participants' ground truth are stored successfully"}, safe=False)
 
 def load_system(request):
-    # parse get parameters of the request
+    print(request.body)
     participant_id = request.GET.get('participant_id', default=None)
-    condition = request.GET.get('condition', default=None)
-    system, task = condition.split('.')
-    # parameters = {
-    #         "task": task,
-    #         "participant_id": participant_id,
-    #     }
-    logging.debug(f"participant_id: {participant_id}, system: {system}, task: {task}")
-    # redirect participants to the assigned system
-    if system == "basic-filter":
-        return redirect(f'/wordfilter?task={task}&participant_id={participant_id}')
-    elif system == "basic-ML":
-        return redirect(f'/examplelabel?task={task}&participant_id={participant_id}')
-    elif system == "advanced-ML":
-        pass
-    elif system == "forest-filter":
-        pass
-    else:
-        logging.error("Unknown system: {}".format(system))
+    stage = request.GET.get('stage', default=None)
 
-def load_more_data(request):
-    participant_id = request.GET.get('participant_id', default=None)
-    new_batch = TrainDataSet.load_batch(participant_id)
-    print(f"participant {participant_id} loaded a new batch of size {len(new_batch)}")
-    return JsonResponse(json.dumps(new_batch), safe=False)
+    error_message = utils.check_parameters(participant_id, stage)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+    
+    participant = Participant.objects.get(participant_id=participant_id)
+    system = participant.system
+    logging.debug(f"participant_id: {participant_id}, system: {system}, stage: {stage}")
+
+    if system == SYSTEMS.EXAMPLES_ML.value:
+        return redirect(f'/examplelabel?participant_id={participant_id}&system={system}&stage={stage}')
+    elif system == SYSTEMS.RULES_TREES.value:
+        return redirect(f'/ruleconfigure?participant_id={participant_id}&system={system}&stage={stage}')
+    elif system == SYSTEMS.PROMPTS_LLM.value:
+        return redirect(f'/promptwrite?participant_id={participant_id}&system={system}&stage={stage}')
+    else:
+        logging.error("System unsupported yet: {}".format(system))
+
+# def load_more_data(request):
+#     participant_id = request.GET.get('participant_id', default=None)
+#     new_batch = TrainDataSet.load_batch(participant_id)
+#     print(f"participant {participant_id} loaded a new batch of size {len(new_batch)}")
+#     return JsonResponse(json.dumps(new_batch), safe=False)
 
 def examplelabel(request):
     participant_id = request.GET.get('participant_id', default=None)
-    if participant_id is None:
-        participant_id = utils.generate_userid()
+    stage = request.GET.get('stage', default="build")
+    system = request.GET.get('system')
+
+    error_message = utils.check_parameters(participant_id, stage, system)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
     
-    dataset = TrainDataSet.load_batch(participant_id, start=True)
+    dataset = []
+    if stage == "build":
+        dataset = BuildDataSet.load_train_dataset(participant_id)
+    elif stage == "update":
+        dataset = UpdateDataSet.load_train_dataset(participant_id)
+
     return render(request, 'examplelabel.html', {
-         "dataset": json.dumps(dataset),
-         "participant_id": participant_id,
-    })
+            "dataset": json.dumps(dataset),
+            "participant_id": participant_id,
+            "stage": stage,
+            "system": system,
+        })
 
 def store_labels(request):
     """
@@ -76,13 +135,18 @@ def store_labels(request):
     request_data = json.loads(request.body)
     dataset = request_data.get('dataset')
     participant_id = request_data.get('participant_id')
+    stage = request_data.get('stage')
 
+    error_message = utils.check_parameters(participant_id, stage)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+    
     from sharedsteps.models import ExampleLabel
     # delete the labels of the participant from the database first, for the testing purposes
-    ExampleLabel.objects.filter(participant_id=participant_id).delete()
+    ExampleLabel.objects.filter(participant_id=participant_id, stage=stage).delete()
 
     for item in dataset:
-        example_label = ExampleLabel(participant_id=participant_id, text=item["text"], label=item["label"])
+        example_label = ExampleLabel(participant_id=participant_id, stage=stage, text=item["text"], label=item["label"])
         example_label.save()
     return JsonResponse(
                     {
@@ -238,148 +302,62 @@ def store_rules(request):
     )
 
 def validate_page(request):
-    # parse out the participant id from the request GET parameters
+    from sharedsteps.models import GroundTruth
+    # parse out the participant id fr dom the request GET parameters
     participant_id = request.GET.get('participant_id', default=None)
     system = request.GET.get('system', default=None)
-    if participant_id is not None and system is not None:
-        dataset = ValidateDataSet.load_all()
-        return render(request, 'validate.html', {
-            "dataset": json.dumps(dataset),
-            "participant_id": participant_id,
-            "system": system,
-        })
+    stage = request.GET.get('stage', default=None)
 
-def validate_system(request):
-    request_data = json.loads(request.body)
-    participant_id = request_data.get('participant_id')
-    system = request_data.get('system')
-    validate_dataset = request_data.get('dataset')
+    error_message = utils.check_parameters(participant_id, stage, system)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+    
+    dataset = utils.get_groundtruth_dataset(participant_id, stage)
+    test_results = test_system(participant_id, dataset)
+    return render(request, 'validate.html', {
+        "dataset": json.dumps(dataset),
+        "participant_id": participant_id,
+        "system": system,
+        "stage": stage,
+        "test_results": json.dumps(test_results),
+    })
 
-    from sharedsteps.models import GroundTruth
-    GroundTruth.objects.filter(participant_id=participant_id, type="validation").delete()
-    for item in validate_dataset:
-        GroundTruth(participant_id=participant_id, type="validation", text=item["text"], label=item["label"]).save()
-
-    X_test = [item["text"] for item in validate_dataset]
-    y_test = [item["label"] for item in validate_dataset]
-    print(f"participant {participant_id} validates system: {system}")
+def test_system(participant_id, test_dataset):
+    
+    X_test = [item["text"] for item in test_dataset]
+    y_test = [item["label"] for item in test_dataset]
+    
+    participant = Participant.objects.get(participant_id=participant_id)
+    system = participant.system
+    stage = participant.stage
+    print(f"participant {participant_id} tests system: {system} at the stage {stage}")
+    
+    classifier_class = None
     if system == SYSTEMS.EXAMPLES_ML.value:
-        # retrieve the labels of the examples labeled by the participant from the database
-        from sharedsteps.models import ExampleLabel
         from systems.ml_filter import MLFilter
-
-        training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id).values("text", "label"))
-        if len(training_dataset) == 0:
-            return JsonResponse({"status": False, "message": "No labels found for the participant"}, safe=False)
-        
-
-        ml_filter = MLFilter("Bayes")
-        X_train = [item["text"] for item in training_dataset] 
-        y_train = [item["label"] for item in training_dataset]
-
-        print(f"starting training with {len(X_train)} examples labeled by the participant")
-        train_results = ml_filter.train_model(X=X_train, y=y_train)
-
-        print(f"starting testing with {len(X_test)} examples labeled by the participant")
-        test_results = ml_filter.test_model(X=X_test, y=y_test)
-        return JsonResponse({
-                    "status": True,
-                    "message": f"Successfully trained and tested the {system} model",
-                    "data": {
-                        "train_results": train_results,
-                        "test_results": test_results
-                    }
-                }, safe=False
-            )
+        classifier_class = MLFilter
     elif system == SYSTEMS.PROMPTS_LLM.value:
         from systems.llm_filter import LLMFilter
-        from sharedsteps.models import PromptWrite
-
-        prompts = read_prompts_from_database(participant_id)
-        if len(prompts) == 0:
-            return JsonResponse({"status": False, "message": "No prompts found for the participant"}, safe=False)
-        
-        llm_filter = LLMFilter(prompts, debug=False)
-        print(f"starting testing with {len(X_test)} examples labeled by the participant")
-        test_results = llm_filter.test_model(X=X_test, y=y_test)
-        return JsonResponse({
-                    "status": True,
-                    "message": f"Successfully tested the {system} model",
-                    "data": {
-                        "test_results": test_results
-                    }
-                }, safe=False
-            )
+        classifier_class = LLMFilter
     elif system == SYSTEMS.PROMPTS_ML.value:
         from systems.llm_ml_filter import LLM_ML_MixedFilter
-        from sharedsteps.models import PromptWrite
-
-        prompts = list(PromptWrite.objects.filter(participant_id=participant_id).values("rubric", "positives", "negatives", "prompt_id"))
-        if len(prompts) == 0:
-            return JsonResponse({"status": False, "message": "No prompts found for the participant"}, safe=False)
-        
-        llm_ml_filter = LLM_ML_MixedFilter(prompts, "Bayes")
-        
-        X_train = TrainDataSet.load_batch_by_size(participant_id, size=360)
-        X_train = [item["text"] for item in X_train]
-        train_results = llm_ml_filter.train_model(X=X_train)
-
-        print(f"starting testing with {len(X_test)} examples labeled by the participant")
-        test_results = llm_ml_filter.test_model(X=X_test, y=y_test)
-        return JsonResponse({
-                    "status": True,
-                    "message": f"Successfully trained and tested the {system} model",
-                    "data": {
-                        "train_results": train_results,
-                        "test_results": test_results
-                    }
-                }, safe=False
-            )
+        classifier_class = LLM_ML_MixedFilter
     elif system == SYSTEMS.RULES_TREES.value:
         from systems.trees_filter import TreesFilter
-        from sharedsteps.utils import read_rules_from_database
-
-        rules = read_rules_from_database(participant_id)
-        if len(rules) == 0:
-            return JsonResponse({"status": False, "message": "No rules found for the participant"}, safe=False)
-        
-        tree_filter = TreesFilter(rules)
-        print(f"starting testing with {len(X_test)} examples labeled by the participant")
-        test_results = tree_filter.test_model(X=X_test, y=y_test)
-        return JsonResponse({
-                    "status": True,
-                    "message": f"Successfully tested the {system} model",
-                    "data": {
-                        "test_results": test_results
-                    }
-                }, safe=False
-            )
+        classifier_class = TreesFilter
     elif system == SYSTEMS.RULES_ML.value:
         from systems.trees_ml_filter import Trees_ML_MixedFilter
-        from sharedsteps.utils import read_rules_from_database
+        classifier_class = Trees_ML_MixedFilter
 
-        rules = read_rules_from_database(participant_id)
-        if len(rules) == 0:
-            return JsonResponse({"status": False, "message": "No rules found for the participant"}, safe=False)
-        
-        trees_ml_filter = Trees_ML_MixedFilter(rules, "Bayes")
-        
-        X_train = TrainDataSet.load_batch_by_size(participant_id, size=360)
-        X_train = [item["text"] for item in X_train]
-        train_results = trees_ml_filter.train_model(X=X_train)
-
-        print(f"starting testing with {len(X_test)} examples labeled by the participant")
-        test_results = trees_ml_filter.test_model(X=X_test, y=y_test)
-        return JsonResponse({
-                    "status": True,
-                    "message": f"Successfully trained and tested the {system} model",
-                    "data": {
-                        "train_results": train_results,
-                        "test_results": test_results
-                    }
-                }, safe=False
-            )
-
+    training_dataset = BuildDataSet if stage == "build" else UpdateDataSet
+    status, classifier = classifier_class.train(participant_id, training_dataset)
+    if not status:
+        return JsonResponse({"status": False, "message": classifier}, safe=False)
+    
+    print(f"starting testing for participant {participant_id} at stage {stage} using system {system}")
+    test_results = classifier.test_model(X=X_test, y=y_test)
+    return test_results
+    
 def trainLLM(request):
     from systems.llm_filter import LLMFilter
     request_data = json.loads(request.body)

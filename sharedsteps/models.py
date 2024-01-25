@@ -1,6 +1,7 @@
 from django.db import models
 from enum import Enum
-import json 
+import json, random, sympy, string
+from datasets.dataset import DATASET_SIZE
 
 class SYSTEMS(Enum):
     PROMPTS_LLM = "promptsLLM"
@@ -9,26 +10,48 @@ class SYSTEMS(Enum):
     RULES_TREES = "rulesTrees"
     RULES_ML = "rulesML"
 
-ACTION_CHOICES = (
+ACTION_CHOICES = [
     (0, 'approve'),
     (1, 'remove'),
-)
+]
 
-STAGES = (
+STAGES = [
     ("build", "build"),
     ("update", "update"),
-)
+]
 
 class Participant(models.Model):
     participant_id = models.CharField(max_length=100)
-    random_prime = models.IntegerField(null=True) # for shuffling the dataset
-    current_batch = models.IntegerField(default=0) # documenting the current batch a participant is viewing
+    random_seed = models.IntegerField(null=True)
+    stage = models.CharField(max_length=10, choices=STAGES)
     system = models.CharField(
         max_length=100, 
         choices=[(system.name, system.value) for system in SYSTEMS],
         null=True
     )
 
+    @classmethod
+    def generate_userid(cls):
+        """
+            generate a random user id of length 10
+        """
+
+        # for debugging purposes, set the seed for the local generator, still keep other random generators random
+        # local_random = random.Random()
+        # local_random.seed(42)  
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+    
+    @classmethod
+    def create_participant(cls, system):
+        participant = Participant.objects.create(
+            participant_id = Participant.generate_userid(),
+            system = random.choice(list(SYSTEMS)).value if system is None else system,
+            stage = "build",
+            random_seed = sympy.randprime(1, DATASET_SIZE)
+        )
+        participant.save()
+        return participant
+    
 class ExampleLabel(models.Model):
     participant_id = models.CharField(max_length=100)
     stage = models.CharField(max_length=10, choices=STAGES)
@@ -112,13 +135,7 @@ class GroundTruth(models.Model):
     participant_id = models.CharField(max_length=100)
     text = models.TextField()
     label = models.IntegerField()
-    
-    DATA_TYPE = (
-        ('validation', 'validation'),
-        ('test', 'test'),
-    )
-    
-    type = models.CharField(max_length=20, choices=DATA_TYPE)
+    stage = models.CharField(max_length=10, choices=STAGES)
 
     def __str__(self):
         return f"Participant {self.participant_id} labeled {self.text} as {self.label}"
