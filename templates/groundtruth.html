@@ -33,10 +33,18 @@
     <!-- display a list of comments to be reviewed -->
     <div x-data="{ atBottom: false }" class="grow w-full flex flex-col gap-y-4 mb-10 px-4">   
         <div class="grow-0 header flex flex-col gap-y-4 items-stretch bg-slate-100 p-4 rounded">
-            <p class="text-2xl font-semibold">Welcome to build your own word filters!</p>
-            <p class="text-lg text-start font-sans">
-                Please take a moment to label these examples. Your labels will be used later to estimate the performance of your word filters. 
-            </p>
+            {% if stage == "build" %}
+                <p class="text-2xl font-semibold">Welcome to Build Your Own Word Filters!</p>
+                <p class="text-lg text-start font-sans">
+                    Please take a moment to label these examples. Your labels will be used later to estimate the performance of your word filters. 
+                </p>
+            {% elif stage == "update" %}
+                <p class="text-2xl font-semibold">Update Your Word Filters!</p>
+                <p class="text-lg text-start font-sans">
+                    After some time, you start to see comments about unexpected topics or word styles, which motivates you to update your original word filters. <br>
+                    Similarly, you are first asked to label some of these new comments so that we can estimate the performance of your updated word filters.
+                </p>
+            {% endif %}
         </div>
         <div class="grow flex mx-4 items-stretch">
             <div class="w-[70%] flex flex-col gap-y-2 items-start">
@@ -52,7 +60,11 @@
             <div x-show="atBottom" class="w-[30%] flex flex-col justify-end items-center px-4">
                 <div class="flex flex-col gap-y-2  bg-slate-100 rounded p-4">
                     <p class="text-lg">
-                        Thanks for your efforts in labeling these examples. Now start building your own filters
+                        {% if stage == "build" %}
+                            Thanks for your efforts in labeling these examples. Now start building your own filters
+                        {% elif stage == "update" %}
+                            Thanks for your efforts in labeling these examples. Now start updating your filters
+                        {% endif %}
                     </p>
                     <button 
                         class="text-white text-2xl self-end bg-blue-600 px-4 py-2 rounded-lg"

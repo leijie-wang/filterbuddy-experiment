@@ -1,4 +1,5 @@
 from cgi import test
+from functools import partial
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import JsonResponse
@@ -18,10 +19,18 @@ def onboarding(request):
     """
         the starting point of the experiment
     """
-    system = request.GET.get('system', default=None)
-
-    new_participant = Participant.create_participant(system=system)
-    return redirect(f"/groundtruth?participant_id={new_participant.participant_id}&stage={new_participant.stage}")
+    participant_id = request.GET.get('participant_id', default=None)
+    participant = None
+    if participant_id is None:
+        system = request.GET.get('system', default=None)
+        participant = Participant.create_participant(system=system)
+        logger.info(f"participant {participant.participant_id} is created with the system {participant.system}")
+    else:
+        logger.info(f"participant {participant_id} is moving to the update stage")
+        participant = Participant.objects.get(participant_id=participant_id)
+        participant.stage = "update"
+        participant.save()
+    return redirect(f"/groundtruth?participant_id={participant.participant_id}&stage={participant.stage}")
 
 def label_ground_truth(request):
     """
@@ -130,6 +139,7 @@ def store_labels(request):
                 }
             ],
             "participant_id": "123456"
+            "stage": "build" or "update"
         }
     """
     request_data = json.loads(request.body)
