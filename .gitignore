@@ -2,3 +2,5 @@ datasets/toxicity_ratings.json
 datasets/jigsaw_sampled.json
 datasets/clean.jigsaw.ipynb
 datasets/jigsaw_all.csv
+
+*/__pycache__/*
