@@ -10,10 +10,11 @@ logger = logging.getLogger(__name__)
 class LLMFilter:
 
     @classmethod
-    def train(cls, participant_id, dataset=None):
-        from sharedsteps.models import PromptWrite
+    def train(cls, participant_id, **kwargs):
         from sharedsteps.utils import read_prompts_from_database
-        prompts = read_prompts_from_database(participant_id)
+
+        stage = kwargs["stage"] # the stage of the participant
+        prompts = read_prompts_from_database(participant_id, stage)
         if len(prompts) == 0:
             return False, "No prompts found for the participant"
         return True, LLMFilter(prompts, debug=False)

@@ -14,7 +14,8 @@ function capitalize(str) {
 }
 
 function to_percentage(num) {
-    return (num * 100).toFixed(0) + "%";
+    const percentage = (num * 100).toFixed(0);
+    return percentage.padStart(2, '0') + "%";
 }
 
 function remove_unit_section(event, class_name) {

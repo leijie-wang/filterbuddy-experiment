@@ -60,10 +60,10 @@
                         </div>
                     </div>
                     <div class="bottom flex justify-end gap-x-2 flex-grow-0">
-                        <button x-on:click="trainTrees(dataset);" class="bg-teal-400 text-white font-bold py-2 px-3 rounded">
+                        <button x-on:click="trainTrees(dataset);" class="bg-emerald-500 text-white font-bold py-2 px-3 rounded border ">
                             Filter Examples
                         </button>
-                        <button x-on:click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
+                        <button x-on:click="complete();" class="bg-blue-500  text-white font-bold py-2 px-3 rounded">
                             Complete
                         </button>
                     </div>
@@ -104,7 +104,7 @@
                     <!-- display a list of comments to be reviewed -->
                     <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
                     <div class="bottom flex justify-end gap-x-2 pt-3">
-                        <button @click="load_more_data" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
+                        <button @click="load_more_data" class="bg-slate-500 text-white font-bold py-2 px-3 rounded">
                             Load More Examples
                         </button>
                     </div>
@@ -125,12 +125,14 @@
 <!-- custom js -->
 <script src="{% static 'js/sharedsteps.js' %}" defer></script>
 <script defer>
+    const COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
+    const BATCH_SIZE = 30;
     const SYSTEM = "{{system}}";
-    const participant_id = "{{participant_id}}";
-    const stage = "{{stage}}";
+    const PARTICIPANT_ID = "{{participant_id}}";
+    const STAGE = "{{stage}}";
 
     var dataset = [];
-
+    var current_batch = 0; 
     // we assume every single quote is properly escaped; this should be ensured when adding them to the list
     // for now, we only require users to input one example for each category
     var rules = {};
@@ -233,10 +235,10 @@
                                 </button>
                                 <button 
                                     class="approveButton grow py-2 px-4 rounded italic " 
-                                    :class="{ 'active bg-blue-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
+                                    :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
                                     x-on:click="action = 0"
                                 >
-                                        Approve
+                                    Approve
                                 </button>
                             </div>
                             <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${rule.name}' }" class="w-[40%] .editableSectionTitle">
@@ -357,15 +359,23 @@
     /* 
         functions that handle the display of the data 
     */
-    function load_more_data() {
-        get_backend(
+    function load_more_data(new_separator=true){
+        // load more data from the server
+        /* get_backend(
             "/load_more_data/", 
             {'participant_id': participant_id},
             function(data){
                 data = JSON.parse(data);
                 dataset = display_data(data, dataset);
             }
-        );
+        );*/
+
+        let start = current_batch * BATCH_SIZE;
+        let end = (current_batch + 1) * BATCH_SIZE;
+        if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
+        let new_data = COMPLETE_DATASET.slice(start, end);
+        dataset = display_data(new_data, dataset, new_separator);
+        current_batch++;
     }
 
     function showFilteredData(){
@@ -443,7 +453,7 @@
         else {
             let explanation = `<p>This comment is targeted by the following rule :</p><ul class='list-none pl-0 text-gray-600'>`;
             // iterate through the dict object and format each prompt in a new line and with italic font
-            let highest_priority = Infinity;
+
             let highest_priority_id = null;
             for (let i = 0; i < datum.predictions.length; i++) {
                 const pred = datum.predictions[i];
@@ -452,10 +462,10 @@
                     
                     explanation += `
                         <li class="before:content-['•'] before:mr-2">
-                            Priority ${rule.priority + 1}: Rule <span class="font-medium italic font-serif">${rule.name}</span>
+                            Priority ${i + 1}: Rule <span class="font-medium italic font-serif">${rule.name}</span>
                         </li>`;
-                    if (rule.priority < highest_priority){
-                        highest_priority = rule.priority;
+                    if (highest_priority_id === null){
+                        highest_priority = i;
                         highest_priority_id = pred.id;
                     }
                 }
@@ -464,7 +474,7 @@
 
             let highest_priority_rule = rules[highest_priority_id];
             explanation += `<br/><p>
-                As the rule <span class="font-bold italic font-serif">${highest_priority_rule.name}</span> has the highest priority ${highest_priority_rule.priority + 1}, 
+                As the rule <span class="font-bold italic font-serif">${highest_priority_rule.name}</span> has the highest priority ${highest_priority + 1}, 
                 this comment should be <span class="font-bold italic">${datum.total_prediction === 1 ? "removed" : "approved"}</span>.`;
             
             return explanation;
@@ -548,7 +558,7 @@
         $('#loadingModalText').text('Waiting for algorithms');
         post_backend(
             "/trainTrees/", 
-            {'dataset': dataset, 'rules': now_rules, 'participant_id': participant_id},
+            {'dataset': dataset, 'rules': now_rules},
             function(response){
                 if(!response["status"]){
                     alert(response["message"]);
@@ -569,20 +579,21 @@
         let now_rules = parseContent();
         post_backend(
             "/store_rules/", 
-            {'rules': now_rules, 'participant_id': participant_id, 'stage': stage},
+            {'rules': now_rules, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
             function(response){
                 if(!response["status"])
                     alert(response["message"]);
-                else
-                    redirect("/validate_page/", {'participant_id': participant_id, 'system': SYSTEM});
-                    
+                else {
+                    console.log("rules are stored successfully");
+                    redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
+                }  
             }
         )
 
     }
 
     $(document).ready(function(){
-        dataset = display_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
+        load_more_data(false);
         $("#ruleList").sortable({
             animation: 150,
             filter: ".addButton",
@@ -592,7 +603,7 @@
             }
         });
 
-        if(stage === "update"){
+        if(STAGE === "update"){
             displayRules(JSON.parse(`{{rules | safe}}`));
         } else {
             displayRules([

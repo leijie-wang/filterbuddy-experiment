@@ -4,11 +4,13 @@ from systems.ml_filter import MLFilter
 class LLM_ML_MixedFilter:
 
     @classmethod
-    def train(cls, participant_id, dataset):
-        from sharedsteps.models import PromptWrite
+    def train(cls, participant_id, **kwargs):
         from sharedsteps.utils import read_prompts_from_database
 
-        prompts = read_prompts_from_database(participant_id)
+        dataset = kwargs["dataset"] # where we get the training data from
+        stage = kwargs["stage"] # the stage of the participant
+
+        prompts = read_prompts_from_database(participant_id, stage)
         if len(prompts) == 0:
             return False, "No prompts found for the participant"
         

@@ -222,36 +222,27 @@ def store_prompts(request):
 
 def ruleconfigure(request):
     participant_id = request.GET.get('participant_id', default=None)
-    if participant_id is None:
-        participant_id = utils.generate_userid()
-    
-    system = request.GET.get('system', default=SYSTEMS.RULES_TREES.value)
-    if system not in [SYSTEMS.RULES_TREES.value, SYSTEMS.RULES_ML.value]:
-        logging.error(f"Unknown system: {system}")
-        return redirect(f'/onboarding')
-    
     stage = request.GET.get('stage', default="build")
-    if stage == "build":
-        dataset = TrainDataSet.load_batch(participant_id, start=True)
-        return render(request, 'ruleconfigure.html', {
-            "participant_id": participant_id,
-            "system": system,
-            "stage": stage,
-            "rules": json.dumps([]),
-            "dataset": json.dumps(dataset),
-        })
-    elif stage == "update":
-        from sharedsteps.utils import read_rules_from_database
-        rules = read_rules_from_database(participant_id)
+    system = request.GET.get('system')
 
-        from sharedsteps.models import GroundTruth
-        dataset = TrainDataSet.load_previous_batches(participant_id)
-        return render(request, 'ruleconfigure.html', {
+    error_message = utils.check_parameters(participant_id, stage, system)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+    
+    dataset = []
+    if stage == "build":
+        dataset = BuildDataSet.load_train_dataset(participant_id)
+    elif stage == "update":
+        dataset = UpdateDataSet.load_train_dataset(participant_id)
+
+    # when the participant just starts the updating stage, we should load the rules from the build stage
+    rules = utils.read_rules_from_database(participant_id, "build")
+    return render(request, 'ruleconfigure.html', {
             "participant_id": participant_id,
-            "system": system,
             "stage": stage,
-            "rules": json.dumps(rules),
-            "dataset": json.dumps(dataset)     
+            "system": system,
+            "dataset": json.dumps(dataset),
+            "rules": json.dumps(rules)
         })
 
 def store_rules(request):
@@ -324,12 +315,17 @@ def validate_page(request):
     
     dataset = utils.get_groundtruth_dataset(participant_id, stage)
     test_results = test_system(participant_id, dataset)
+    utils.save_test_results(participant_id, stage, test_results["prediction"])
+
+    build_performance = utils.calculate_stage_performance(participant_id, "build") if stage == "update" else {}
+
     return render(request, 'validate.html', {
         "dataset": json.dumps(dataset),
         "participant_id": participant_id,
         "system": system,
         "stage": stage,
         "test_results": json.dumps(test_results),
+        "build_performance": json.dumps(build_performance)
     })
 
 def test_system(participant_id, test_dataset):
@@ -360,7 +356,7 @@ def test_system(participant_id, test_dataset):
         classifier_class = Trees_ML_MixedFilter
 
     training_dataset = BuildDataSet if stage == "build" else UpdateDataSet
-    status, classifier = classifier_class.train(participant_id, training_dataset)
+    status, classifier = classifier_class.train(participant_id, dataset=training_dataset, stage=stage)
     if not status:
         return JsonResponse({"status": False, "message": classifier}, safe=False)
     
@@ -405,12 +401,3 @@ def train_trees(request):
                     }
                 }, safe=False
             )
-
-def update_page_redirect(request):
-    participant_id = request.GET.get('participant_id', default=None)
-    system = request.GET.get('system', default=None)
-    if participant_id is not None:
-        if system in [SYSTEMS.RULES_TREES.value, SYSTEMS.RULES_ML.value]:
-            return redirect(f'/ruleconfigure?participant_id={participant_id}&system={system}&stage=update')
-        else:
-            raise Exception(f"Unsupported system: {system}")

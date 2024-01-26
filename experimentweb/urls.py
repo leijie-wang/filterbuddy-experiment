@@ -29,8 +29,6 @@ urlpatterns = [
     
     # path('load_more_data/', sharedviews.load_more_data),
     path('validate_page/', sharedviews.validate_page),
-
-    path('update_page_redirect/', sharedviews.update_page_redirect),
     
     path('examplelabel/', sharedviews.examplelabel, name='examplelabel'),
     path('store_labels/', sharedviews.store_labels),

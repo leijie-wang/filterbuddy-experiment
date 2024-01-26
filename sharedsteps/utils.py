@@ -1,10 +1,10 @@
 from django.conf import settings
 from sklearn.metrics import accuracy_score, recall_score, precision_score, confusion_matrix
-from sharedsteps.models import Participant
-import random
+from sympy import loggamma
+from sharedsteps.models import Participant, GroundTruth
+import logging
 
-
-
+logger = logging.getLogger(__name__)
 
 def check_parameters(participant_id, stage=None, system=None):
     if participant_id is None:
@@ -20,12 +20,29 @@ def check_parameters(participant_id, stage=None, system=None):
     return None
 
 def get_groundtruth_dataset(participant_id, stage):
-    from sharedsteps.models import GroundTruth
+
     groundtruths = GroundTruth.objects.filter(
             participant_id=participant_id, 
             stage=stage
-        ).values('text', 'label')
+        ).order_by('id').values('text', 'label')
     return list(groundtruths)
+
+def save_test_results(participant_id, stage, predictions):
+    # Retrieve the ground truth entries in the same order as the predictions
+    groundtruths = GroundTruth.objects.filter(
+        participant_id=participant_id, 
+        stage=stage
+    ).order_by('id')
+
+    # Check if the lengths of groundtruths and results match
+    if len(groundtruths) != len(predictions):
+        logger.error("The number of ground truths does not match the number of predictions.")
+        return
+
+    # Update each ground truth with its corresponding prediction
+    for groundtruth, prediction in zip(groundtruths, predictions):
+        groundtruth.prediction = prediction
+        groundtruth.save()
 
 def calculate_algorithm_metrics(y, y_pred):
     accuracy = accuracy_score(y, y_pred)
@@ -46,10 +63,22 @@ def calculate_algorithm_metrics(y, y_pred):
         "fpr": fpr
     }
 
-def read_rules_from_database(participant_id):
+def calculate_stage_performance(participant_id, stage):
+
+    groundtruths = GroundTruth.objects.filter(
+        participant_id=participant_id, 
+        stage=stage
+    ).order_by('id').values('label', 'prediction')
+    y = [groundtruth['label'] for groundtruth in groundtruths]
+    y_pred = [groundtruth['prediction'] for groundtruth in groundtruths]
+    return calculate_algorithm_metrics(y, y_pred)
+
+
+
+def read_rules_from_database(participant_id, stage):
     from sharedsteps.models import RuleConfigure, RuleUnit
     
-    rule_objects = RuleConfigure.objects.filter(participant_id=participant_id)
+    rule_objects = RuleConfigure.objects.filter(participant_id=participant_id, stage=stage)
     if len(rule_objects) == 0:
         return []
     
@@ -71,10 +100,10 @@ def read_rules_from_database(participant_id):
         })
     return rules
 
-def read_prompts_from_database(participant_id):
+def read_prompts_from_database(participant_id, stage):
     from sharedsteps.models import PromptWrite
     
-    prompt_objects = PromptWrite.objects.filter(participant_id=participant_id)
+    prompt_objects = PromptWrite.objects.filter(participant_id=participant_id, stage=stage)
     if len(prompt_objects) == 0:
         return []
     

@@ -137,6 +137,7 @@
         if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
         let new_data = COMPLETE_DATASET.slice(start, end);
         dataset = display_labeling_data(new_data, dataset, new_separator);
+        current_batch++;
         $('#countDisplay').html(`<span id="label-number">${label_number}</span> / ${dataset.length} labeled examples; <span id="positive-number">${positive_number}</span> example(s) labeled as toxic.`);
     }
 

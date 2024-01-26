@@ -34,10 +34,10 @@ ALL_VARIANTS = {
 class TreesFilter:
 
     @classmethod
-    def train(cls, participant_id, dataset=None):
+    def train(cls, participant_id, **kwargs):
         from sharedsteps.utils import read_rules_from_database
-
-        rules = read_rules_from_database(participant_id)
+        stage = kwargs["stage"]
+        rules = read_rules_from_database(participant_id, stage)
         if len(rules) == 0:
             return False, "No rules found for the participant"
         

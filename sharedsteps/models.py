@@ -136,6 +136,7 @@ class GroundTruth(models.Model):
     text = models.TextField()
     label = models.IntegerField()
     stage = models.CharField(max_length=10, choices=STAGES)
+    prediction = models.IntegerField(null=True)
 
     def __str__(self):
         return f"Participant {self.participant_id} labeled {self.text} as {self.label}"

@@ -12,7 +12,7 @@ from sharedsteps.utils import calculate_algorithm_metrics
 class MLFilter:
 
     @classmethod
-    def train(cls, participant_id, dataset=None):
+    def train(cls, participant_id, **kwargs):
         from sharedsteps.models import ExampleLabel
 
         training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id).values("text", "label"))

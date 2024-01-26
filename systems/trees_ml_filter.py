@@ -4,10 +4,13 @@ from systems.ml_filter import MLFilter
 class Trees_ML_MixedFilter:
 
     @classmethod
-    def train(cls, participant_id, dataset):
+    def train(cls, participant_id, **kwargs):
         from sharedsteps.utils import read_rules_from_database
 
-        rules = read_rules_from_database(participant_id)
+        dataset = kwargs["dataset"]
+        stage = kwargs["stage"]
+        
+        rules = read_rules_from_database(participant_id, stage)
         if len(rules) == 0:
             return False,"No rules found for the participant"
         
