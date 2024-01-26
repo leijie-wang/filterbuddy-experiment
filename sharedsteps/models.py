@@ -103,6 +103,7 @@ class PromptWrite(models.Model):
     participant_id = models.CharField(max_length=100)
     stage = models.CharField(max_length=10, choices=STAGES)
 
+    name = models.TextField()
     prompt_id = models.IntegerField()
     rubric = models.TextField()
     priority = models.IntegerField()

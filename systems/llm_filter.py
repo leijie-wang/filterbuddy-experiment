@@ -1,3 +1,4 @@
+from regex import F
 from sharedsteps.utils import calculate_algorithm_metrics
 from openai import OpenAI
 from django.conf import settings
@@ -17,7 +18,7 @@ class LLMFilter:
         prompts = read_prompts_from_database(participant_id, stage)
         if len(prompts) == 0:
             return False, "No prompts found for the participant"
-        return True, LLMFilter(prompts, debug=False)
+        return True, LLMFilter(prompts, debug=True)
 
     def __init__(self, prompts, batch_size=30, debug=False):
         """
@@ -25,6 +26,7 @@ class LLMFilter:
         """
         self.debug = debug 
         self.prompts = prompts
+        self.prompts = sorted(self.prompts, key=lambda x: x["priority"])
         self.BATCH_SIZE = batch_size
         self.system_prompt = f"""
             For each text in the dataset, you task is to give a 1 (True) or 0 (False) prediction that represents whether the text satisfies the description in the overview and the rubrics.
@@ -129,9 +131,9 @@ class LLMFilter:
 
         """
         X_test, y_test = X, y
-
         
-        texts_predictions = [{} for _ in range(len(X_test))]
+        
+        texts_predictions = [[] for _ in range(len(X_test))]
         
         dataset_list = self._generate_dataset_list(X_test)
 
@@ -141,7 +143,7 @@ class LLMFilter:
             prompt_pred = self._test_prompt(prompt, dataset_list)
             
             if prompt_pred is not None:
-                for index in range(len(dataset_list)):
+                for index in range(len(X_test)):
                     texts_predictions[index].append({
                         "id": prompt_id,
                         "prediction": prompt["action"] if prompt_pred.get(index, None) else None,
@@ -149,7 +151,7 @@ class LLMFilter:
 
                     
 
-        prediction = [0 for _ in range(len(X_test))] # overall predictions
+        prediction = [None for _ in range(len(X_test))] # overall predictions
         for index in range(len(X_test)):
             text_pred = texts_predictions[index]
             """ 
@@ -165,6 +167,7 @@ class LLMFilter:
         if y_test is not None:
             # we treat None (not affected texts) as approved texts, which is 0
             prediction = [(0 if pred is None else pred) for pred in prediction]
+            
             performance = calculate_algorithm_metrics(y_test, prediction)
         else:
             performance = {}

@@ -38,7 +38,7 @@
         (JavaScript) or it has been disabled. This study website requires JavaScript.
     </noscript> 
     {% csrf_token %}
-    <div class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
+    <div x-data="{}" class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
         <div class="mx-auto pb-1 flex-grow-0">
             <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Prompt Writer</h1>
         </div>
@@ -59,13 +59,13 @@
                         <textarea rows="2" id="promptOverview" class="bg-gray-100 border border-gray-300 rounded-lg p-2 text-base w-full" placeholder="Write an overview of your prompt"></textarea>
                     </div> -->
                     <div id="promptList" class="flex flex-col gap-y-2 flex-grow h-1 overflow-y-auto">
-                        <div @click="addNewPrompt" class="flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
+                        <div @click="addNewPrompt" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
                             <div class="text-3xl text-gray-500">+</div>
                         </div>
                     </div>
                     <div class="bottom flex justify-end gap-x-2 flex-grow-0">
-                        <button @click="trainLLM();" class="bg-teal-400 text-white font-bold py-2 px-3 rounded">
-                            Classify
+                        <button @click="trainLLM();" class="bg-emerald-500 text-white font-bold py-2 px-3 rounded">
+                            Try filtering
                         </button>
                         <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
                             Complete
@@ -91,9 +91,9 @@
                         <div>Filters</div>
                         <div class="w-[45%]">
                             <select id="predictionFilter" class="selectpicker data-filter border rounded show-tick" title="by predictions" data-width="100%" >
-                                <option value="caught" class="hover:bg-red-200 text-xs text-gray-700 caught-option">Caught comments</option>
-                                <option value="uncaught" class=" hover:bg-blue-200 text-xs text-gray-700 uncaught-option">Uncaught comments</option>
-                                <option value="all" selected class=" hover:bg-gray-200 text-xs text-gray-700 all-option">All comments</option>
+                                <option value="targeted" class="text-xs text-gray-700">Targeted comments</option>
+                                <option value="not-targeted" class="text-xs text-gray-700">Not Targeted comments</option>
+                                <option value="all" selected class="text-xs text-gray-700">All comments</option>
                             </select>
                         </div>
                         <div class="w-[45%]">
@@ -114,8 +114,8 @@
                 <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow ">
                 </div>
                 <div class="bottom flex justify-end gap-x-2 pt-3">
-                    <button id="loadMoreButton" class="bg-red-400 text-white font-bold py-2 px-3 rounded">
-                        Load More
+                    <button @click="load_more_data" class="bg-slate-500 text-white font-bold py-2 px-3 rounded">
+                        Load More Examples
                     </button>
                 </div>
             </div>
@@ -134,11 +134,14 @@
 <!-- custom js -->
 <script src="{% static 'js/sharedsteps.js' %}" defer></script>
 <script defer>
+    const COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
+    const BATCH_SIZE = 30;
     const SYSTEM = "{{system}}";
-    const participant_id = "{{participant_id}}";
-    const stage = "{{stage}}";
+    const PARTICIPANT_ID = "{{participant_id}}";
+    const STAGE = "{{stage}}";
     
     var dataset = [];
+    var current_batch = 0; 
 
     var prompts = {}
     var prompt_counter = 0; 
@@ -202,7 +205,7 @@
                                 </button>
                                 <button 
                                     class="approveButton grow py-2 px-4 rounded italic " 
-                                    :class="{ 'active bg-blue-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
+                                    :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
                                     x-on:click="action = 0"
                                 >
                                         Approve
@@ -278,8 +281,9 @@
             prompts[prompt.id] = prompt;
 
             // add an option to the select picker for this prompt
+            // prompts are not selected by default
             $('#promptFilter').append(`
-                <option selected value=${prompt.id} class="text-xs">
+                <option value=${prompt.id} class="text-xs">
                     ${prompt.name.length === 0 ? "Unnamed Prompt" : prompt.name}
                 </option>
                 `
@@ -288,7 +292,7 @@
             // refresh the select picker
             $(".selectpicker").selectpicker('refresh');
             
-            selected_prompts.push(prompt.id);
+            
         });
     }
 
@@ -324,41 +328,81 @@
 
     }
     
+    /* 
+        functions that handle the display of the data 
+    */
+    function load_more_data(new_separator=true){
+        // load more data from the server
+        /* get_backend(
+            "/load_more_data/", 
+            {'participant_id': participant_id},
+            function(data){
+                data = JSON.parse(data);
+                dataset = display_data(data, dataset);
+            }
+        );*/
+
+        let start = current_batch * BATCH_SIZE;
+        let end = (current_batch + 1) * BATCH_SIZE;
+        if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
+        let new_data = COMPLETE_DATASET.slice(start, end);
+        dataset = display_data(new_data, dataset, new_separator);
+        current_batch++;
+        
+    }
+
     function showFilteredData(){
         /* iterature through dataset and hide the datum that doesn't match the filter selected_prediction and selected_prompts */
 
-        let expected_prediction = selected_prediction === "caught" ? [true] : selected_prediction === "uncaught" ? [false] : [true, false];
+        let expected_prediction = selected_prediction === "targeted" ? [1, 0] : selected_prediction === "not-targeted" ? [null] : [1, 0, null];
         let counter = 0;
-        let true_counter = 0;
-        train_dataset.forEach((datum, index) => {
+        let targeted_counter = 0;
+        let approved_counter = 0;
+        let removed_counter = 0;
+
+        console.log("selected prompts", selected_prompts);
+        console.log("selected_predictions", selected_prediction);
+        dataset.forEach((datum, index) => {
             let show = true;
             let now_prediction = null;
-            if(expected_prediction.length === 1){
-                // otherwise, regardless of what prompts are selected, we all show all comments
+            if(expected_prediction.length < 3){
+                // otherwise, regardless of what rules are selected, we all show all comments as the expectd prediction is the all
                 if (selected_prompts.length > 0){
-                    // calculate the or of all selected prompts
-                    console.log(datum)
-                    let selected_predictions = selected_prompts.map((id) => datum.prompt_predictions?.[id] || false);
-                    let now_prediction = selected_predictions.reduce((a, b) => a || b, false)
-                    console.log(`selected results: ${now_prediction}; total prediction: ${datum.total_prediction}`);
-                    show = now_prediction == expected_prediction[0]; // we allow null to be equal to false, and 1 to be equal to true
+                    // only show comments that are targeted (not targeted) by all the selected rules
+                    show = selected_prompts.every(prompt_id => {
+                        let found_pred = datum.predictions.find(prompt => prompt.id === prompt_id);
+                        return found_pred !== undefined && expected_prediction.includes(found_pred.prediction);
+                    })
                 } else {
-                    // if no prompts are selected, then we cannot show any comments
-                    show = false;
+                    // show all comments that are targeted (not targeted) by any of the rules
+                    show = expected_prediction.includes(datum.total_prediction);
                 }
             }
-            if(now_prediction == true) true_counter++;
+
             if (show){
                 $(`#datum-${index}`).parent().show();
                 counter++;
+                targeted_counter += datum.total_prediction !== null ? 1 : 0;
+                approved_counter += datum.total_prediction === 0 ? 1 : 0;
+                removed_counter += datum.total_prediction === 1 ? 1 : 0;
             } else{
                 $(`#datum-${index}`).parent().hide();
             }
         });
-        if(expected_prediction.length === 2) 
-            $(`#countDisplay`).text(`Using these selected rubrics, there are ${true_counter}/${counter} caught comments in total`);
-        else
-            $(`#countDisplay`).text(`Using these filters, there are ${counter} comments in total`);
+
+        let text = ""
+        if(expected_prediction.length === 3) 
+            text = `There are ${targeted_counter}/${counter} targeted comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
+        else if(selected_prompts.length === 0 && selected_prediction === "targeted"){
+            text = `There are ${counter} ${selected_prediction} comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
+        } else if(selected_prompts.length === 0 && selected_prediction === "not-targeted"){
+            text = `There are ${counter} ${selected_prediction} comments, so they are approvedy by default`;
+        } else {
+            text = `
+                There are ${counter} comments that are ${selected_prediction} by all of your selected prompts, ${approved_counter} approved and ${removed_counter} removed`;
+        }
+
+        $('#countDisplay').text(text);
 
     }
 
@@ -369,43 +413,47 @@
     });
 
     $("#promptFilter").on("change", function() {
-        selected_prompts = $(this).val();
+        selected_prompts = [$(this).val()].map((value) => +value )
         showFilteredData();
     });
 
-    $('#loadMoreButton').on('click', function() {
-        get_backend(
-            "/load_more_data/", 
-            {'participant_id': participant_id},
-            function(data){
-                data = JSON.parse(data);
-                train_dataset = display_data(data, train_dataset, true, "train");
-            }
-        );
-    });
+
 
 
     function generateExplanation(datum){
         /* generate the explanation for each prediction made by the LLMs */
 
         if (datum.total_prediction === null){
-            return "This comment is unlabeled due to the model's instability.";
+            return "This comment is not targeted by any of your prompts, so it will be approved by default.";
         }
-        else if (datum.total_prediction){
-            let explanation = "<p>This comment is caught by the following prompts:</p><ul class='list-none pl-0'>";
+        else {
+            let explanation = `<p>This comment is targeted by the following prompts :</p><ul class='list-none pl-0 text-gray-600'>`;
             // iterate through the dict object and format each prompt in a new line and with italic font
-            Object.keys(datum.prompt_predictions).forEach((key) => {
-                if (datum.prompt_predictions[key]){
-                    explanation += `<li class="before:content-['•'] before:mr-2 font-medium"><i>Prompt ${prompts[key].id + 1}</i></li>`;
 
+            let highest_priority_id = null;
+            for (let i = 0; i < datum.predictions.length; i++) {
+                const pred = datum.predictions[i];
+                if (pred.prediction !== null){
+                    let prompt = prompts[pred.id];
+                    
+                    explanation += `
+                        <li class="before:content-['•'] before:mr-2">
+                            Priority ${i + 1}: Prompt <span class="font-medium italic font-serif">${prompt.name}</span>
+                        </li>`;
+                    if (highest_priority_id === null){
+                        highest_priority = i;
+                        highest_priority_id = pred.id;
+                    }
                 }
-            });
-
+            }
             explanation += "</ul>";
+
+            let highest_priority_prompt = prompts[highest_priority_id];
+            explanation += `<br/><p>
+                As the prompt <span class="font-bold italic font-serif">${highest_priority_prompt.name}</span> has the highest priority ${highest_priority + 1}, 
+                this comment should be <span class="font-bold italic">${datum.total_prediction === 1 ? "removed" : "approved"}</span>.`;
+            
             return explanation;
-        }
-        else{
-            return "This comment is not caught by any of your prompts.";
         }
     }
 
@@ -413,11 +461,11 @@
         /* update the labels of the data according to the predictions given by LLMs */
         let true_counter = 0;
         let prediction = results["prediction"];
-        let prompt_predictions = results["prompt_predictions"];
+        let texts_predictions = results["texts_predictions"];
 
         for (let i = 0; i < prediction.length; i++) {
             dataset[i].total_prediction = prediction[i];
-            dataset[i].prompt_predictions = prompt_predictions[i];
+            dataset[i].predictions = texts_predictions[i];
             
             // update the label according to the total prediction
             let new_class =  dataset[i].total_prediction === null ? "unLabel" :  dataset[i].total_prediction ? "trueLabel" : "falseLabel";
@@ -431,13 +479,13 @@
             tooltip_div.addClass(new_class);
 
             // update the tooltip content
-            let explanation = generateExplanation(now_dataset[i]);
+            let explanation = generateExplanation(dataset[i]);
             // set the second child of the tooltip div to be the explanation, use innerhtml
 
             tooltip_div.children().eq(1).html(explanation);
             
         }
-        showFilteredData();
+        // showFilteredData();
     }
 
     function parseContent() {
@@ -459,7 +507,7 @@
             if(prompt.rubric.length > 0) now_prompts.push(prompt);
 
         });
-        
+        console.log("parsed out prompts", now_prompts);
         return now_prompts;
 
     }
@@ -480,7 +528,9 @@
                 
                 console.log(response.data.results);
                 updateDataLabels(response.data.results);
+                showFilteredData();
                 $('#loadingModal').addClass('hidden');
+
             }
         );
     }
@@ -491,12 +541,12 @@
         
         post_backend(
             "/store_prompts/", 
-            {'prompts': now_prompts, 'participant_id': participant_id, 'stage': stage},
+            {'prompts': now_prompts, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
             function(response){
                 if(!response["status"])
                     alert(response["message"]);
                 else
-                    redirect("/validate_page/", {'participant_id': participant_id, 'system': SYSTEM});
+                    redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
                     
             }
         )
@@ -507,39 +557,43 @@
         Note that when you use defer, the scripts are executed only after the entire document has been parsed, but before the DOMContentLoaded event.
     */
     $(document).ready(function(){
-        dataset = display_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
+        load_more_data(false);
         $("#promptList").sortable({
             animation: 150,
+            filter: ".addButton",
             onEnd: function(event, ui) {
                 // console.log("updating priority");
                 updatePriority();
             }
         });
+        if(STAGE === "update"){
+            display_prompts(JSON.parse(`{{prompts | safe}}`));
+        } else {
+            display_prompts([
+                {
+                    "name": "Racial hate speech",
+                    "action": 1,
+                    "rubric": "Catch all texts that promote hate, discrimination, stereotypes, or violence against individuals or groups based on their race, ethnicity, or national origin.",
+                    "positives": ["You are just some mad browskin because Europeans styled on your ass"],
+                    "negatives": ["83% of US blacks are Christians"],
+                },
+                {
+                    "name": "Violence calls",
+                    "action": 1,
+                    "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
+                    "positives": ["it pleases me to know you will die"],
+                    "negatives": []
 
-        display_prompts([
-            {
-                "name": "Racial hate speech",
-                "action": 1,
-                "rubric": "Catch all texts that promote hate, discrimination, stereotypes, or violence against individuals or groups based on their race, ethnicity, or national origin.",
-                "positives": ["You are just some mad browskin because Europeans styled on your ass"],
-                "negatives": ["83% of US blacks are Christians"],
-            },
-            {
-                "name": "Violence calls",
-                "action": 1,
-                "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
-                "positives": ["it pleases me to know you will die"],
-                "negatives": []
-
-            },
-            // {   
-            //     "name": "Gender hate speech",
-            //     "action": 1,
-            //     "rubric": "Catch all texts that are derogatory, demeaning, or violent towards individuals based on their gender or gender identity",
-            //     "positives": [],
-            //     "negatives": ["What didn’t the Bitch say. I hate talking to people in the morning"]
-            // }
-        ]);
+                },
+                {   
+                    "name": "Gender hate speech",
+                    "action": 1,
+                    "rubric": "Catch all texts that are derogatory, demeaning, or violent towards individuals based on their gender or gender identity",
+                    "positives": [],
+                    "negatives": ["What didn’t the Bitch say. I hate talking to people in the morning"]
+                }
+            ]);
+        }
     })
     
 

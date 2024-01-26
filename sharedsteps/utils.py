@@ -118,4 +118,4 @@ def read_prompts_from_database(participant_id, stage):
             "positives": prompt.get_positives(),
             "negatives": prompt.get_negatives()
         })
-    return
+    return prompts

@@ -168,17 +168,26 @@ def store_labels(request):
 
 def promptwrite(request):
     participant_id = request.GET.get('participant_id', default=None)
-    if participant_id is None:
-        participant_id = utils.generate_userid()
+    stage = request.GET.get('stage', default="build")
+    system = request.GET.get('system')
 
-    system = request.GET.get('system', default=SYSTEMS.PROMPTS_LLM.value)
-
+    error_message = utils.check_parameters(participant_id, stage, system)
+    if error_message is not None:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
     
-    dataset = TrainDataSet.load_batch(participant_id, start=True)
+    dataset = []
+    if stage == "build":
+        dataset = BuildDataSet.load_train_dataset(participant_id)
+    elif stage == "update":
+        dataset = UpdateDataSet.load_train_dataset(participant_id)
+
+    prompts = utils.read_prompts_from_database(participant_id, "build")
     return render(request, 'promptwrite.html', {
-        "dataset": json.dumps(dataset),
         "participant_id": participant_id,
+        "stage": stage,
         "system": system,
+        "dataset": json.dumps(dataset),
+        "prompts": json.dumps(prompts)
     })
 
 def store_prompts(request):
@@ -206,7 +215,15 @@ def store_prompts(request):
 
     counter = 0
     for item in prompts:
-        prompt = PromptWrite(rubric=item["rubric"], participant_id=participant_id, prompt_id=counter, stage=stage)
+        prompt = PromptWrite(
+            name=item["name"], 
+            prompt_id=counter, 
+            rubric=item["rubric"], 
+            priority=item["priority"],  
+            action=item["action"],
+            participant_id=participant_id, 
+            stage=stage
+        )
         prompt.set_positives(item["positives"])
         prompt.set_negatives(item["negatives"])
         prompt.save()
@@ -303,7 +320,7 @@ def store_rules(request):
     )
 
 def validate_page(request):
-    from sharedsteps.models import GroundTruth
+    
     # parse out the participant id fr dom the request GET parameters
     participant_id = request.GET.get('participant_id', default=None)
     system = request.GET.get('system', default=None)
@@ -364,7 +381,7 @@ def test_system(participant_id, test_dataset):
     test_results = classifier.test_model(X=X_test, y=y_test)
     return test_results
     
-def trainLLM(request):
+def train_LLM(request):
     from systems.llm_filter import LLMFilter
     request_data = json.loads(request.body)
     
@@ -372,7 +389,7 @@ def trainLLM(request):
     dataset = request_data.get('dataset')
     
     dataset = [item["text"] for item in dataset]
-    llm_filter = LLMFilter(prompts, debug=False)
+    llm_filter = LLMFilter(prompts, debug=True)
     results = llm_filter.test_model(X=dataset, y=None)
     return JsonResponse({
                     "status": True,

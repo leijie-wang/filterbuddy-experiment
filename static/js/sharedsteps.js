@@ -6,6 +6,15 @@ function escape_single_quote(text) {
     return text.replace(/'/g, "\\'");
 }
 
+function escape_html(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 function capitalize(str) {
     if (str && typeof str === 'string') {
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -95,7 +104,7 @@ function display_data(new_dataset, dataset, new_separator=true){
                 <div id="datum-${i + start_index}" 
                     class="datum flex flex-row py-1 px-2 self-stretch unLabel"
                 >
-                    <div class="flex-grow w-7/10 px-2 py-1 self-center">${new_dataset[i].text}</div>
+                    <div class="flex-grow w-7/10 px-2 py-1 self-center">${escape_html(new_dataset[i].text)}</div>
                     <div class="self-end" @click="showTooltip = !showTooltip">
                         <i class="fa-solid fa-circle-info fa-xs" style="color: #868788;"></i>
                     </div>
@@ -150,7 +159,7 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
         let index = i + start_index;
         let text_div_html = `
             <div id="datum-${index}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
-                <div id="text-${index}" class="flex-grow w-7/10 p-2">${new_dataset[i].text}</div>
+                <div id="text-${index}" class="flex-grow w-7/10 p-2">${escape_html(new_dataset[i].text)}</div>
                 <div class="flex flex-row w-3/10 justify-center space-x-2">
                     <button 
                         @click="change_label(${index}, true);" 

@@ -1,9 +1,9 @@
 .trueLabel {
-    background-color: #fee2e2;
+    background-color: #ffe4e6; /* Tailwind red-100 */
 }
 
 .falseLabel {
-    background-color: #dbeafe;
+    background-color: #dcfce7; /* tailwind emerald-100 */
 }
 
 .unLabel {
@@ -79,8 +79,4 @@
     content: attr(data-placeholder);
     color: #9CA3AF; /* Tailwind gray-400 */
     pointer-events: none;
-}
-
-.variantsCheckbox {
-    
 }

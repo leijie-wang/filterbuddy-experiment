@@ -34,16 +34,18 @@
         <!-- display a list of comments to be reviewed -->
         <div class="header flex flex-col gap-y-4 items-stretch bg-slate-100 p-4 rounded">
             {% if stage == "build" %}
-                <p class="text-2xl font-semibold">Curious about how your filter works?</p>
+                <p class="text-2xl font-semibold">Curious about how your filter performs?</p>
                 <p class="text-lg text-start font-sans">
-                    Thank you for your efforts in building your own filter. Remember that you have labeled some examples before?
-                   <br> We compared your labels with the predictions of your filter and present its performance below.
+                    Thank you for your hard work in crafting your unique word filter! Remember those examples you labeled earlier? It's time to see how your filter did.
+                   <br> We've compared your initial labels with the predictions made by your filter. Below, you'll find a detailed performance report. 
                 </p>
             {% elif stage == "update" %}
-                <p class="text-2xl font-semibold">Curious about how your updated filter works?</p>
+                <p class="text-2xl font-semibold">Discover How Your Updated Filter Performs!</p>
                 <p class="text-lg text-start font-sans">
-                    Thank you for your efforts in updating your filter. Remember that you have labeled some new examples before?
-                    <br> We compared your labels with the predictions of your filter and present its performance below.
+                    Thanks for updating your filter! Recall those new examples you labeled earlier? 
+                    Now it's time to see the results. <br/>
+                    We've compared your labels with the predictions made by your updated filter. 
+                    Below, you'll find how well your filter is adapting to the latest trends in social media. Let's explore its performance together!
                 </p>
             {% endif %}
 
@@ -86,7 +88,7 @@
                     </div>
                     
                 {% elif stage == "build" %}
-                    <div class="grow grid grid-cols-2 gap-x-8 gap-y-4 my-4 mx-[10%]">
+                    <div class="self-stretch grow grid grid-cols-2 gap-x-4 gap-y-4 my-4 mx-[10%] items-stretch">
                     <!-- Accuracy -->
                         <div class="flex flex-col items-start gap-y-2">
                             <div class="text-slate-600 text-2xl font-medium">Accuracy</div>
@@ -104,7 +106,7 @@
                         </div>
                         <!-- False Positive Rate -->
                         <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600 text-2xl font-medium">False Positive Rate</div>
+                            <div class="text-slate-600 text-2xl font-medium">FPR</div>
                             <span class="text-3xl text-blue-500" id="test-fpr">?</span>
                         </div>
                     </div>
@@ -169,7 +171,7 @@
 
             let text_div_html = `
                 <div id="datum-${index}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
-                    <div id="text-${index}" class="grow w-[85%] p-2">${datum.text}</div>
+                    <div id="text-${index}" class="grow w-[85%] p-2">${escape_html(datum.text)}</div>
                     <div class="flex-col items-stretch grow-0 font-bold w-[10%] text-center">
                         ${datum.label == 1 ? 
                             "<div class='w-full text-white bg-red-400 text-lg p-1 rounded'>Toxic</div>" : 
@@ -198,7 +200,7 @@
             $('#test-accuracy').html(`${to_percentage(BUILD_PERFORMANCE.accuracy)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.accuracy)}`);
             $('#test-precision').html(`${to_percentage(BUILD_PERFORMANCE.precision)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.precision)}`);
             $('#test-recall').html(`${to_percentage(BUILD_PERFORMANCE.recall)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.recall)}`);
-            $('#test-fpr').html(`${to_percentage(BUILD_PERFORMANCE.fpr)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-2"></i>${to_percentage(performance.fpr)}`);
+            $('#test-fpr').html(`${to_percentage(BUILD_PERFORMANCE.fpr)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.fpr)}`);
         }
         
     });
