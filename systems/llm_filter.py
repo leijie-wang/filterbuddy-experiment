@@ -5,6 +5,7 @@ from django.conf import settings
 import logging
 import random
 import json
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class LLMFilter:
         prompts = read_prompts_from_database(participant_id, stage)
         if len(prompts) == 0:
             return False, "No prompts found for the participant"
-        return True, LLMFilter(prompts, debug=True)
+        return True, LLMFilter(prompts, debug=False)
 
     def __init__(self, prompts, batch_size=30, debug=False):
         """
@@ -68,6 +69,24 @@ class LLMFilter:
             dataset_list.append(f'DATA<{index}>: <{text}>')    
         return dataset_list
     
+    def _handle_batch_prompt(self, batch, predictions, user_prompt):
+        """
+            @param batch: a list of texts
+            @param predictions: a list of predictions
+            @param user_prompt: the prompt that will be used to prompt the model
+        """
+        batch_str = "\n".join(batch)
+        now_prompt = user_prompt + f"""\n\n\t### DATASETS: "{batch_str}","""
+        response = self._chat_completion(self.system_prompt, now_prompt)
+        response = json.loads(response or "{}")
+        if "results" in response:
+            if len(response["results"]) != len(batch):
+                logger.warning(f"response length {len(response['results'])} does not match batch length {len(batch)}")
+            predictions += response["results"]
+        else:
+            logger.warning(f"batch_response is ill-formated: {response}")
+        return predictions
+    
     def _test_prompt(self, prompt, dataset_list):
         rubric = f"Rubric: <{prompt['rubric']}>\n"
 
@@ -81,20 +100,16 @@ class LLMFilter:
         logger.debug(f"prompt: {user_prompt}")
 
         predictions = []
+        threads = []
         if not self.debug:
             for index in range(0, len(dataset_list), self.BATCH_SIZE):
                 batch = dataset_list[index: index + self.BATCH_SIZE]
-                batch_str = "\n".join(batch)
                 print(f"now predicting batch from index {index} to {index + self.BATCH_SIZE}")
-                now_prompt = user_prompt + f"""\n\n\t### DATASETS: "{batch_str}","""
-                response = self._chat_completion(self.system_prompt, now_prompt)
-                response = json.loads(response or "{}")
-                if "results" in response:
-                    if len(response["results"]) != len(batch):
-                        logger.warning(f"response length {len(response['results'])} does not match batch length {len(batch)}")
-                    predictions += response["results"]
-                else:
-                    logger.warning(f"batch_response is ill-formated: {response}")
+                thread = threading.Thread(target=self._handle_batch_prompt, args=(batch, predictions, user_prompt))
+                threads.append(thread)
+                thread.start()
+            for thread in threads:
+                thread.join()  
         else:
             # generate a random number either 0 or 1
             predictions = [(index, random.randint(0, 1)) for index in range(len(dataset_list))]

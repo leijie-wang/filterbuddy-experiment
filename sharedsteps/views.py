@@ -389,7 +389,7 @@ def train_LLM(request):
     dataset = request_data.get('dataset')
     
     dataset = [item["text"] for item in dataset]
-    llm_filter = LLMFilter(prompts, debug=True)
+    llm_filter = LLMFilter(prompts, debug=False)
     results = llm_filter.test_model(X=dataset, y=None)
     return JsonResponse({
                     "status": True,

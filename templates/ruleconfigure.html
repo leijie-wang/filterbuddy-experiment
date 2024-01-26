@@ -581,12 +581,14 @@
             "/store_rules/", 
             {'rules': now_rules, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
             function(response){
-                if(!response["status"])
+                $('#loadingModal').removeClass('hidden');
+                $('#loadingModalText').text('We are evaluating the performance of your filters, please wait for a moment.');
+                if(!response["status"]){
                     alert(response["message"]);
-                else {
-                    console.log("rules are stored successfully");
+                    $('#loadingModal').addClass('hidden');
+                } else {
                     redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
-                }  
+                }
             }
         )
 
