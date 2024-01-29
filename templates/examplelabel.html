@@ -151,11 +151,12 @@
             "/store_labels/",
             {'dataset': labeled_dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
             function(response) {
-                if(!response["status"])
+                $('#loadingModal').removeClass('hidden');
+                $('#loadingModalText').text('We are evaluating the performance of your filters, please wait for a moment.');
+                if(!response["status"]){
                     alert(response["message"]);
-                else {
-                    console.log("labels are stored successful");
-                    // if the training is successful, redirect to the next page, attach a GET parameter participant_id to the url
+                    $('#loadingModal').addClass('hidden');
+                } else {
                     redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
                 }
             }
