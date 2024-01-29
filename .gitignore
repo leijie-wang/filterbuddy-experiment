@@ -5,3 +5,4 @@ datasets/jigsaw_all.csv
 
 */__pycache__/*
 */*/__pycache__
+.env
