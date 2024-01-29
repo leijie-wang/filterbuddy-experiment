@@ -4,3 +4,4 @@ datasets/clean.jigsaw.ipynb
 datasets/jigsaw_all.csv
 
 */__pycache__/*
+*/*/__pycache__
