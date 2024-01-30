@@ -1,6 +1,8 @@
 from  systems.llm_filter import LLMFilter
 from systems.ml_filter import MLFilter
+import logging
 
+logger = logging.getLogger(__name__)
 class LLM_ML_MixedFilter:
 
     @classmethod
@@ -38,7 +40,7 @@ class LLM_ML_MixedFilter:
         X_train = X
 
         llm_filter = LLMFilter(self.prompts, debug=False)
-        print(f"starting labeling {len(X_train)} examples using LLM.")
+        logger.info(f"starting labeling {len(X_train)} examples using LLM.")
 
         y_train = llm_filter.test_model(X=X_train, y=None)["prediction"]
         
@@ -52,7 +54,7 @@ class LLM_ML_MixedFilter:
         """
 
         if self.ml_filter is None:
-            print('Classifier not trained or stale! Please retrain via .train_model()')
+            logger.warning('Classifier not trained or stale! Please retrain via .train_model()')
             return
         
         X_test, y_test = X, y

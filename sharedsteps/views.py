@@ -75,7 +75,6 @@ def store_groundtruth(request):
     return JsonResponse({"status": True, "message": "Participants' ground truth are stored successfully"}, safe=False)
 
 def load_system(request):
-    print(request.body)
     participant_id = request.GET.get('participant_id', default=None)
     stage = request.GET.get('stage', default=None)
 
@@ -99,7 +98,7 @@ def load_system(request):
 # def load_more_data(request):
 #     participant_id = request.GET.get('participant_id', default=None)
 #     new_batch = TrainDataSet.load_batch(participant_id)
-#     print(f"participant {participant_id} loaded a new batch of size {len(new_batch)}")
+#     logger.info(f"participant {participant_id} loaded a new batch of size {len(new_batch)}")
 #     return JsonResponse(json.dumps(new_batch), safe=False)
 
 def examplelabel(request):
@@ -353,7 +352,7 @@ def test_system(participant_id, test_dataset):
     participant = Participant.objects.get(participant_id=participant_id)
     system = participant.system
     stage = participant.stage
-    print(f"participant {participant_id} tests system: {system} at the stage {stage}")
+    logger.info(f"participant {participant_id} tests system: {system} at the stage {stage}")
     
     classifier_class = None
     if system == SYSTEMS.EXAMPLES_ML.value:
@@ -377,7 +376,7 @@ def test_system(participant_id, test_dataset):
     if not status:
         return JsonResponse({"status": False, "message": classifier}, safe=False)
     
-    print(f"starting testing for participant {participant_id} at stage {stage} using system {system}")
+    logger.info(f"starting testing for participant {participant_id} at stage {stage} using system {system}")
     test_results = classifier.test_model(X=X_test, y=y_test)
     return test_results
     

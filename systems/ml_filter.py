@@ -23,7 +23,7 @@ class MLFilter:
         X_train = [item["text"] for item in training_dataset] 
         y_train = [item["label"] for item in training_dataset]
 
-        print(f"starting training with {len(X_train)} examples labeled by the participant")
+        logger.info(f"starting training with {len(X_train)} examples labeled by the participant")
         train_results = ml_filter.train_model(X=X_train, y=y_train)
         return (True, ml_filter)
 
@@ -80,7 +80,7 @@ class MLFilter:
         """
 
         if self.pipe is None:
-            print('Classifier not trained or stale! Please retrain via .train_model()')
+            logger.warning('Classifier not trained or stale! Please retrain via .train_model()')
             return
         
         X_test, y_test = X, y

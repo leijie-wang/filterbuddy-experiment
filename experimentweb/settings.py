@@ -17,7 +17,9 @@ import environ
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env = environ.Env()
+env = environ.Env(
+    DEBUG=(bool, 'False')
+)
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
@@ -29,7 +31,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = 'django-insecure-tb(!k$rbo+k6_y#^+_8!p6xtb)vw^l-^h3y9hxbc^*jr5he!_$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG') == 'True'
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=False)
 
@@ -162,16 +164,21 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        "django.db.backends": {
+        "django.db": {
             "level": "WARNING",
             "handlers": ["file"],
             "propagate": False,
         },
-        "django.utils.autoreload": {
+        "django.utils": {
             "level": "WARNING",
             "handlers": ["file"],
             "propagate": False,
         },
+        "": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "handlers": ["file"],
+            "propagate": False,
+        }
 
     },
 }
