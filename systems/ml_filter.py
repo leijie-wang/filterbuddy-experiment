@@ -9,6 +9,8 @@ from sklearn.neural_network import MLPClassifier
 from sentence_transformers import SentenceTransformer
 from sharedsteps.utils import calculate_algorithm_metrics
 
+import logging
+logger = logging.getLogger(__name__)
 class MLFilter:
 
     @classmethod

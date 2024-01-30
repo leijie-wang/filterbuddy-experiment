@@ -1,5 +1,7 @@
 from  systems.trees_filter import TreesFilter
 from systems.ml_filter import MLFilter
+import logging
+logger = logging.getLogger(__name__)
 
 class Trees_ML_MixedFilter:
 

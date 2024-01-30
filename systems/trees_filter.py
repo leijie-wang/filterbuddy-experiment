@@ -1,5 +1,7 @@
 from sharedsteps.utils import calculate_algorithm_metrics
 import re
+import logging
+logger = logging.getLogger(__name__)
 
 ALL_VARIANTS = {
                 'a': '[aÁáÀàĂăẮắẰằẴẵẲẳÂâẤấẦầẪẫẨẩǍǎÅåǺǻÄäǞǟÃãȦȧǠǡĄąĄ́ą́Ą̃ą̃ĀāĀ̀ā̀ẢảȀȁA̋a̋ȂȃẠạẶặẬậḀḁȺⱥᶏẚＡａ@4*]',
