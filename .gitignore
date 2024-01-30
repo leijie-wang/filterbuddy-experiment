@@ -2,7 +2,9 @@ datasets/toxicity_ratings.json
 datasets/jigsaw_sampled.json
 datasets/clean.jigsaw.ipynb
 datasets/jigsaw_all.csv
-
-*/__pycache__/*
-*/*/__pycache__
+venv/
+**/__pycache__/*
+staticfiles/
+db.sqlite3
 .env
+django.log

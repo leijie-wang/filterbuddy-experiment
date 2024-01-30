@@ -30,7 +30,7 @@ def onboarding(request):
         participant = Participant.objects.get(participant_id=participant_id)
         participant.stage = "update"
         participant.save()
-    return redirect(f"/groundtruth?participant_id={participant.participant_id}&stage={participant.stage}")
+    return redirect(f"/groundtruth/?participant_id={participant.participant_id}&stage={participant.stage}")
 
 def label_ground_truth(request):
     """
@@ -88,11 +88,11 @@ def load_system(request):
     logging.debug(f"participant_id: {participant_id}, system: {system}, stage: {stage}")
 
     if system == SYSTEMS.EXAMPLES_ML.value:
-        return redirect(f'/examplelabel?participant_id={participant_id}&system={system}&stage={stage}')
+        return redirect(f'/examplelabel/?participant_id={participant_id}&system={system}&stage={stage}')
     elif system == SYSTEMS.RULES_TREES.value:
-        return redirect(f'/ruleconfigure?participant_id={participant_id}&system={system}&stage={stage}')
+        return redirect(f'/ruleconfigure/?participant_id={participant_id}&system={system}&stage={stage}')
     elif system == SYSTEMS.PROMPTS_LLM.value:
-        return redirect(f'/promptwrite?participant_id={participant_id}&system={system}&stage={stage}')
+        return redirect(f'/promptwrite/?participant_id={participant_id}&system={system}&stage={stage}')
     else:
         logging.error("System unsupported yet: {}".format(system))
 

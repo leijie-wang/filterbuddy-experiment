@@ -147,16 +147,18 @@
         dataset = display_labeling_data(new_data, dataset, new_separator);
         current_batch++;
         $('#countDisplay').html(`<span id="label-number">${label_number}</span> / ${dataset.length} labeled examples; <span id="positive-number">${positive_number}</span> example(s) labeled as toxic.`);
-    }
-
-    $('#complete-button').click( function(){
-        // train the ML model
-        
+    
         // for testing purposes, using labels in the dataset instead of manual labeling all the data
         dataset.forEach((datum, index) => {
             let new_label = +parseFloat(datum.score) >= 0.5;
             change_label(index, new_label);
         });
+    }
+
+    $('#complete-button').click( function(){
+        // train the ML model
+        
+
 
         // filter out the unlabeled data
         let labeled_dataset = dataset.filter(datum => datum.label != null);
