@@ -30,10 +30,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-tb(!k$rbo+k6_y#^+_8!p6xtb)vw^l-^h3y9hxbc^*jr5he!_$'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with debug turned on in production!s
 DEBUG = env('DEBUG') == 'True'
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=False)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=["*"])
 
 
 # Application definition
@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
+    'django.contrib.sessions',å
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sharedsteps'
