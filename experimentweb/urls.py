@@ -36,6 +36,7 @@ urlpatterns = [
     path('promptwrite/', sharedviews.promptwrite),
     path("store_prompts/", sharedviews.store_prompts),
     path('trainLLM/', sharedviews.train_LLM),
+    path('get_LLM_results/<str:task_id>/', sharedviews.get_LLM_results),
 
     path('ruleconfigure/', sharedviews.ruleconfigure),
     path('store_rules/', sharedviews.store_rules),

@@ -528,7 +528,6 @@
                 $('#loadingModalText').html('The evaluation is taking longer than expected, and thanks for your patience.');
             }
 
-            // Decrement the estimated_time by 1 every second
             estimated_time--; 
         }, 1000);
 
@@ -540,14 +539,42 @@
                     alert(response["message"]);
                     return;
                 }
-                
-                console.log(response.data.results);
-                updateDataLabels(response.data.results);
-                showFilteredData();
-                $('#loadingModal').addClass('hidden');
+                let task_id = response.data.task_id;
+
+                // console.log(response.data.results);
+                // updateDataLabels(response.data.results);
+                // showFilteredData();
+                // $('#loadingModal').addClass('hidden');
 
             }
         );
+    }
+
+    function pollForResults(taskId) {
+        const pollInterval = 1000; // Poll every second
+        
+        var poll = setInterval(function() {
+            $.ajax({
+                url: "/get_LLM_results/" + taskId + "/", // Adjust URL as needed
+                type: "GET",
+                success: function(response) {
+                    if (response["status"]) {
+                        console.log(response["results"]);
+                        updateDataLabels(response["results"]);
+                        showFilteredData();
+                        $('#loadingModal').addClass('hidden');
+                        
+                        clearInterval(poll); // Stop polling since task is complete
+                    } else {
+                        console.log("Task is still processing...");
+                    }
+                },
+                error: function() {
+                    alert("Error polling for task results.");
+                    clearInterval(poll); // Stop polling on error
+                }
+            });
+        }, pollInterval);
     }
 
     function complete(){

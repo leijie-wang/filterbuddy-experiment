@@ -382,7 +382,7 @@ def test_system(participant_id, test_dataset):
     return test_results
     
 def train_LLM(request):
-    from systems.llm_filter import LLMFilter
+    from sharedsteps.tasks import train_llm_task
     logger.info(f"starting training the LLM model")
     request_data = json.loads(request.body)
     
@@ -390,18 +390,35 @@ def train_LLM(request):
     dataset = request_data.get('dataset')
     
     dataset = [item["text"] for item in dataset]
-    llm_filter = LLMFilter(prompts, debug=False)
     
-    results = llm_filter.test_model(X=dataset, y=None)
-    
+    task = train_llm_task.delay(prompts, dataset)
+    logger.info(f"task {task.id} is started to train the LLM model")
     return JsonResponse({
                     "status": True,
-                    "message": f"Successfully tested the LLM model",
+                    "message": f"Successfully started the LLM model training",
                     "data": {
-                        "results": results
+                        "task_id": task.id
                     }
                 }, safe=False
             )
+
+def get_LLM_results(request, task_id):
+    from celery.result import AsyncResult
+    logger.info(f"checking the task {task_id} status")
+    task_result = AsyncResult(task_id)
+    if task_result.ready():
+        return JsonResponse({
+            "status": True,
+            "message": f"Task {task_id} is completed",
+            "data": {
+                "results": task_result.get()
+            }
+        })
+    else:
+        return JsonResponse({
+            "status": False,
+            "message": "Task is still processing"
+        })
 
 def train_trees(request):
     from systems.trees_filter import TreesFilter
