@@ -18,7 +18,7 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
-    DEBUG=(bool, 'False')
+    DEBUG=(str, 'False')
 )
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
@@ -32,6 +32,7 @@ SECRET_KEY = 'django-insecure-tb(!k$rbo+k6_y#^+_8!p6xtb)vw^l-^h3y9hxbc^*jr5he!_$
 
 # SECURITY WARNING: don't run with debug turned on in production!s
 DEBUG = env('DEBUG') == 'True'
+
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=["*"])
 
@@ -137,12 +138,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 OPENAI_API_KEY = env('OPENAI_API_KEY')
 
+LOGGING_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGGING_DIR):
+    os.makedirs(LOGGING_DIR)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
         'simple': {
@@ -151,6 +156,11 @@ LOGGING = {
         },
     },
     'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -160,8 +170,8 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
+            'handlers': ['console'] if DEBUG else ['file'],
+            'level': 'INFO',
             'propagate': True,
         },
         "django.db": {
@@ -174,9 +184,19 @@ LOGGING = {
             "handlers": ["file"],
             "propagate": False,
         },
+        "sharedsteps": {
+            "level": 'INFO',
+            "handlers": ['console'] if DEBUG else ['file'],
+            "propagate": False,
+        },
+        "systems": {
+            "level": 'INFO',
+            "handlers": ['console'] if DEBUG else ['file'],
+            "propagate": False,
+        },
         "": {
-            "level": "DEBUG" if DEBUG else "INFO",
-            "handlers": ["file"],
+            "level": 'WARNING',
+            "handlers": ['console'] if DEBUG else ['file'],
             "propagate": False,
         }
 

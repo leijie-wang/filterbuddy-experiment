@@ -1,5 +1,6 @@
 from cgi import test
 from functools import partial
+from math import log
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import JsonResponse
@@ -382,6 +383,7 @@ def test_system(participant_id, test_dataset):
     
 def train_LLM(request):
     from systems.llm_filter import LLMFilter
+    logger.info(f"starting training the LLM model")
     request_data = json.loads(request.body)
     
     prompts = request_data.get('prompts')
@@ -389,7 +391,9 @@ def train_LLM(request):
     
     dataset = [item["text"] for item in dataset]
     llm_filter = LLMFilter(prompts, debug=False)
+    
     results = llm_filter.test_model(X=dataset, y=None)
+    
     return JsonResponse({
                     "status": True,
                     "message": f"Successfully tested the LLM model",

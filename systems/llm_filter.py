@@ -1,3 +1,5 @@
+from math import e
+from exceptiongroup import catch
 from regex import F
 from sharedsteps.utils import calculate_algorithm_metrics
 from openai import OpenAI
@@ -6,6 +8,7 @@ import logging
 import random
 import json
 import threading
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +24,7 @@ class LLMFilter:
             return False, "No prompts found for the participant"
         return True, LLMFilter(prompts, debug=False)
 
-    def __init__(self, prompts, batch_size=30, debug=False):
+    def __init__(self, prompts, batch_size=10, debug=False):
         """
             debug: if debug is True, we will not prompt the model to get predictions
         """
@@ -34,10 +37,10 @@ class LLMFilter:
             Each text starts with "DATA" and a number. Both the number and the text are enclosed by "<" and ">".
 
             In the following, the user will provide one rubric to help you make your decision. 
-            It might be associated with some examples that should be caught and some examples that should not be caught for you to better understand the rubric.
+            The rubric comes with some examples that should be marked as True and some examples that should be marked as False for you to better understand the rubric.
             As long as the given rubric is satisfied, you should give a True prediction. Otherwise, give a False prediction.
 
-            RETURN YOUR ANSWER in the json format {{"results": [(index, prediction), ...]}} where index is the index of the text in the dataset and prediction is either 1 or 0.
+            RETURN YOUR ANSWER as JSON `{{"results": [(index, prediction), ...]}}` where `index` is the index of the text in the dataset as an integer and prediction is the binary outcome (1 or 0).
         """
         self.llm_client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -80,11 +83,40 @@ class LLMFilter:
         response = self._chat_completion(self.system_prompt, now_prompt)
         response = json.loads(response or "{}")
         if "results" in response:
-            if len(response["results"]) != len(batch):
-                logger.warning(f"response length {len(response['results'])} does not match batch length {len(batch)}")
-            predictions += response["results"]
+            results = response["results"]
+            batch_preds = []
+            try:
+                if type(results[0]) == dict and "index" in results[0] and "prediction" in results[0]:
+                    for item in results:
+                        batch_preds.append((
+                                int(item["index"]), 
+                                int(item["prediction"])
+                            ))
+                elif type(results[0]) == dict and len(results[0]) == 1:
+                    for item in results:
+                        (index, prediction), = item.items()
+                        batch_preds.append((
+                            int(index), 
+                            int(prediction)
+                        ))
+                elif type(results[0]) == list and len(results[0]) == 2:
+                    for item in results:
+                        batch_preds.append((
+                            int(item[0]), 
+                            int(item[1])
+                        ))
+                elif type(results[0]) == tuple and len(results[0]) == 2:
+                    batch_preds = results
+                else:
+                    logger.warning(f"response {results} is not in any expected format")
+            except Exception as e:
+                logger.warning(f"reading individual predictions from results {results} raise an error: {e}")
+            
+            if len(batch_preds) != len(batch):
+                logger.warning(f"response length {len(results)} does not match batch length {len(batch)}\nresults: {results}")
+            predictions += batch_preds
         else:
-            logger.warning(f"batch_response is ill-formated: {response}")
+            logger.warning(f"batch_response does not have 'results' key: {response}")
         return predictions
     
     def _test_prompt(self, prompt, dataset_list):
@@ -92,9 +124,9 @@ class LLMFilter:
 
         # we assume there is only one positive and one negative example for each prompt
         if len(prompt["positives"]) > 0:
-            rubric += f"\tExamples that should be caught: <{prompt['positives'][0]}>\n"
+            rubric += f"\tExamples that should be marked as True: <{prompt['positives'][0]}>\n"
         if len(prompt["negatives"]) > 0:
-            rubric += f"\tExamples that should not be caught: <{prompt['negatives'][0]}>\n"
+            rubric += f"\tExamples that should be marked as False: <{prompt['negatives'][0]}>\n"
         
         user_prompt = f"""\t### RUBRIC\n\t{rubric}"""
         logger.debug(f"prompt: {user_prompt}")
@@ -104,7 +136,7 @@ class LLMFilter:
         if not self.debug:
             for index in range(0, len(dataset_list), self.BATCH_SIZE):
                 batch = dataset_list[index: index + self.BATCH_SIZE]
-                logger.debug(f"now predicting batch from index {index} to {index + self.BATCH_SIZE}")
+                logger.info(f"now predicting batch from index {index} to {index + self.BATCH_SIZE}")
                 thread = threading.Thread(target=self._handle_batch_prompt, args=(batch, predictions, user_prompt))
                 threads.append(thread)
                 thread.start()
@@ -155,8 +187,12 @@ class LLMFilter:
         for index in range(len(self.prompts)):
             prompt = self.prompts[index]
             prompt_id = prompt["id"]
+
+            start_time = time.time()
             prompt_pred = self._test_prompt(prompt, dataset_list)
-            
+            end_time = time.time()
+            logger.info(f"LLM model testing time for the {index}-th prompt: {end_time - start_time} seconds")
+
             if prompt_pred is not None:
                 for index in range(len(X_test)):
                     texts_predictions[index].append({
