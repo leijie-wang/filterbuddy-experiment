@@ -8,5 +8,3 @@ app = Celery('experimentweb')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
-# Don't store task results in the database
-app.conf.task_ignore_result = True
