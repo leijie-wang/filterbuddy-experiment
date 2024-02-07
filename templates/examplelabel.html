@@ -26,10 +26,10 @@
     <noscript>
         If you see this text, your browser does not support dynamic content
         (JavaScript) or it has been disabled. This study website requires JavaScript.
-    </noscript> 
+    </noscript>
     {% csrf_token %}
 
-    <div x-data="{}" class="flex flex-col my-2 justify-start gap-y-4 h-screen">
+    <div x-data="{}" class="flex flex-col my-2 py-2 justify-start gap-y-4 h-screen">
         <div class="flex-grow-0 flex gap-x-2 items-stretch">
             
             <div class="text-center  grow text-3xl font-bold text-black bg-slate-100 p-4 rounded">
@@ -41,7 +41,7 @@
         </div>
 
         <!-- display a list of comments to be reviewed -->
-        <div class="flex flex-col h-5/6 gap-y-2 flex-grow">
+        <div class="flex flex-col h-[75%] gap-y-2 flex-grow">
             <!-- display a set of filter options -->
             <div class="header flex justify-between">
                 <label class="flex gap-2">
