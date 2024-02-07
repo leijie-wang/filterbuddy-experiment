@@ -6,7 +6,7 @@ sys.path.append(os.path.join(settings.BASE_DIR, 'datasets'))
 logger = logging.getLogger(__name__)
 BATCH_SIZE = 30
 DATASET_SIZE = 1200
-TEST_SIZE = 120
+TEST_SIZE = 50
 
 class Dataset:
 

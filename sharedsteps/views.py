@@ -1,9 +1,11 @@
+from calendar import c
 from cgi import test
 from functools import partial
 from math import log
+from re import T
 from django.shortcuts import render, redirect
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from datasets.dataset import Dataset
 import sharedsteps.utils as utils
 import logging
@@ -331,22 +333,36 @@ def validate_page(request):
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = utils.get_groundtruth_dataset(participant_id, stage)
-    test_results = test_system(participant_id, dataset)
-    utils.save_test_results(participant_id, stage, test_results["prediction"])
-
-    build_performance = utils.calculate_stage_performance(participant_id, "build") if stage == "update" else {}
-
-    return render(request, 'validate.html', {
-        "dataset": json.dumps(dataset),
-        "participant_id": participant_id,
-        "system": system,
-        "stage": stage,
-        "test_results": json.dumps(test_results),
-        "build_performance": json.dumps(build_performance)
-    })
+    status, response = test_system(participant_id, dataset)
+    if status == 0:
+        return HttpResponse(f"Error: {response}")
+    elif status == 1:
+        task_id = response
+        return render(request, 'validate.html', {
+            "dataset": json.dumps(dataset),
+            "participant_id": participant_id,
+            "system": system,
+            "stage": stage,
+            "task_id": task_id,
+        })
+    else:
+        test_results = response
+        utils.save_test_results(participant_id, stage, test_results["prediction"])
+        build_performance = utils.calculate_stage_performance(participant_id, "build") if stage == "update" else {}
+        return render(request, 'validate.html', {
+            "dataset": json.dumps(dataset),
+            "participant_id": participant_id,
+            "system": system,
+            "stage": stage,
+            "test_results": json.dumps(test_results),
+            "build_performance": json.dumps(build_performance),
+            "task_id": ""
+        })
+        
 
 def test_system(participant_id, test_dataset):
     
+
     X_test = [item["text"] for item in test_dataset]
     y_test = [item["label"] for item in test_dataset]
     
@@ -375,11 +391,17 @@ def test_system(participant_id, test_dataset):
     training_dataset = BuildDataSet if stage == "build" else UpdateDataSet
     status, classifier = classifier_class.train(participant_id, dataset=training_dataset, stage=stage)
     if not status:
-        return JsonResponse({"status": False, "message": classifier}, safe=False)
+        return 0, classifier
     
     logger.info(f"starting testing for participant {participant_id} at stage {stage} using system {system}")
-    test_results = classifier.test_model(X=X_test, y=y_test)
-    return test_results
+    if system == SYSTEMS.PROMPTS_LLM.value:
+        from sharedsteps.tasks import test_llm_classifier
+        task = test_llm_classifier.delay(classifier.prompts, X_test, y_test)
+        return 1, task.id
+    else:
+        test_results = classifier.test_model(X=X_test, y=y_test)
+        return 2, test_results
+
     
 def train_LLM(request):
     from sharedsteps.tasks import train_llm_task
@@ -404,7 +426,7 @@ def train_LLM(request):
 
 def get_LLM_results(request, task_id):
     from celery.result import AsyncResult
-    logger.info(f"checking the task {task_id} status")
+    
     task_result = AsyncResult(task_id)
     if task_result.ready():
         logger.info(f"task result {task_result.get()}")
@@ -413,6 +435,36 @@ def get_LLM_results(request, task_id):
             "message": f"Task {task_id} is completed",
             "data": {
                 "results": task_result.get()
+            }
+        })
+    else:
+        return JsonResponse({
+            "status": False,
+            "message": "Task is still processing"
+        })
+    
+def get_validate_results(request):
+    print("get_validate_results")
+    from celery.result import AsyncResult
+    # get the parameter of the GET request
+    participant_id = request.GET.get('participant_id')
+    stage = request.GET.get('stage')
+    task_id = request.GET.get('task_id')
+
+    print(f"checking the task {task_id} status, participant_id: {participant_id}, stage: {stage}")
+    task_result = AsyncResult(task_id)
+    if task_result.ready():
+        results = task_result.get()
+        print(f"task result {results}")
+        utils.save_test_results(participant_id, stage, results["prediction"])
+        build_performance = utils.calculate_stage_performance(participant_id, "build") if stage == "update" else {}
+
+        return JsonResponse({
+            "status": True,
+            "message": f"Task {task_id} is completed",
+            "data": {
+                "test_results": results,
+                "build_performance": build_performance
             }
         })
     else:
