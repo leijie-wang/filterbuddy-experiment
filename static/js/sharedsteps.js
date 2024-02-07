@@ -163,15 +163,15 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
                 <div class="flex flex-row w-3/10 justify-center space-x-2">
                     <button 
                         @click="change_label(${index}, true);" 
-                        class="text-white font-bold py-1 px-3 rounded unselected-button yes-button"
+                        class="text-white py-1 px-3 rounded unselected-button yes-button"
                     >
-                        Toxic
+                        Remove
                     </button>
                     <button
                         @click="change_label(${index}, false);" 
-                        class="text-white font-bold py-1 px-3 rounded unselected-button no-button"
+                        class="text-white py-1 px-3 rounded unselected-button no-button"
                     >
-                        No
+                        Approve
                     </button>
                 </div>
             </div>`

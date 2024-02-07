@@ -139,7 +139,9 @@
         
         // for testing purposes, use the score to simulate the user's label
         dataset.forEach((datum, index) => {
-            change_label(index, +parseFloat(datum.score) >= 0.5);
+            if(index >= 5){
+                change_label(index, +parseFloat(datum.score) >= 0.5);
+            }
         })
     });
 

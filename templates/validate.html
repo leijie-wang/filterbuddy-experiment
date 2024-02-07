@@ -36,7 +36,7 @@
             {% if stage == "build" %}
                 <p class="text-2xl font-semibold">Curious about how your filter performs?</p>
                 <p class="text-lg text-start font-sans">
-                    Thank you for your hard work in crafting your unique word filter! Remember those examples you labeled earlier? It's time to see how your filter did.
+                    Thank you for your hard work in creating your unique filter! Remember those examples you labeled earlier? It's time to see how your filter did.
                    <br> We've compared your initial labels with the predictions made by your filter. Below, you'll find a detailed performance report. 
                 </p>
             {% elif stage == "update" %}
@@ -62,60 +62,38 @@
                 ></div>
             </div>
             <!-- display the results of algorithmic predictions -->
-            <div class="flex flex-col items-start gap-y-8 my-4 w-1/3">
-                {% if stage == "update" %}       
-                    <div class="grow flex flex-col mx-[10%] self-stretch justify-evenly mt-[0%] mb-[5%]">
-                        <!-- Accuracy -->
-                        <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600 text-2xl font-medium">Accuracy</div>
-                            <div class="text-3xl text-blue-500" id="test-accuracy">?</div>
-                        </div>
-                        <!-- Precision -->
-                        <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600 text-2xl font-medium">Precision</div>
-                            <div class="text-3xl text-blue-500" id="test-precision">?</div>
-                        </div>
-                        <!-- Recall -->
-                        <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600  text-2xl font-medium">Recall</div>
-                            <div class="text-3xl text-blue-500" id="test-recall">?</div>
-                        </div>
-                        <!-- False Positive Rate -->
-                        <div class="flex flex-col items-start gap-y-2"> 
-                            <div class="text-slate-600 text-2xl font-medium">False Positive Rate</div>
-                            <div class="text-3xl text-blue-500" id="test-fpr">?</div>
-                        </div>
-                    </div>
-                    
-                {% elif stage == "build" %}
-                    <div class="self-stretch grow grid grid-cols-2 gap-x-4 gap-y-4 my-4 mx-[10%] items-stretch">
+            <div class="flex flex-col items-start gap-y-4 w-1/3">
+                  
+                <div class="grow flex flex-col mx-[10%] self-stretch justify-evenly gap-y-4">
                     <!-- Accuracy -->
-                        <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600 text-2xl font-medium">Accuracy</div>
-                            <span class="text-3xl text-blue-500" id="test-accuracy">?</span>
-                        </div>
-                        <!-- Precision -->
-                        <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600 text-2xl font-medium">Precision</div>
-                            <span class="text-3xl text-blue-500" id="test-precision">?</span>
-                        </div>
-                        <!-- Recall -->
-                        <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600 text-2xl font-medium">Recall</div>
-                            <span class="text-3xl text-blue-500" id="test-recall">?</span>
-                        </div>
-                        <!-- False Positive Rate -->
-                        <div class="flex flex-col items-start gap-y-2">
-                            <div class="text-slate-600 text-2xl font-medium">FPR</div>
-                            <span class="text-3xl text-blue-500" id="test-fpr">?</span>
-                        </div>
+                    <div class="flex flex-col items-center gap-y-2">
+                        <div class="text-slate-600 text-lg text-center">How many comments are flagged correctly</div>
+                        <div class="text-3xl text-blue-500" id="test-accuracy">?</div>
                     </div>
-                    <div class="grow-0 flex flex-col gap-y-4 bg-slate-100 rounded p-4 mx-[10%]">
+                    <!-- Precision -->
+                    <div class="flex flex-col items-center gap-y-2">
+                        <div class="text-slate-600 text-lg text-center">How many comments flagged as removed are truly toxic </div>
+                        <div class="text-3xl text-blue-500" id="test-precision">?</div>
+                    </div>
+                    <!-- Recall -->
+                    <div class="flex flex-col items-center gap-y-2">
+                        <div class="text-slate-600 text-lg text-center">How many toxic comments are removed</div>
+                        <div class="text-3xl text-blue-500" id="test-recall">?</div>
+                    </div>
+                    <!-- False Positive Rate -->
+                    <div class="flex flex-col items-center gap-y-2"> 
+                        <div class="text-slate-600 text-lg text-center">How many non-toxic comments are mistakenly flagged as removed</div>
+                        <div class="text-3xl text-blue-500" id="test-fpr">?</div>
+                    </div>
+                </div>
+                    
+                {% if stage == "build" %}
+                    <div class="grow-0 flex flex-col gap-y-4 bg-slate-100 rounded mx-[10%] p-3">
                         <p class="text-lg">
                             Thanks for your efforts in labeling these examples. Now start building your own filters
                         </p>
                         <button 
-                            class="text-white text-lg self-end bg-blue-600 px-4 py-2 rounded-lg"
+                            class="text-white text-lg self-end bg-blue-600 p-2 rounded-lg"
                             @click="go_to_system();"
                         >
                             Improve your filter
@@ -233,10 +211,10 @@
             let text_div_html = `
                 <div id="datum-${index}" class="datum flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
                     <div id="text-${index}" class="grow w-[85%] p-2">${escape_html(datum.text)}</div>
-                    <div class="flex-col items-stretch grow-0 font-bold w-[10%] text-center">
+                    <div class="flex-col items-stretch grow-0 w-[10%] text-center">
                         ${datum.label == 1 ? 
-                            "<div class='w-full text-white bg-red-400 text-lg p-1 rounded'>Toxic</div>" : 
-                            "<div class='w-full text-white bg-emerald-400 text-lg p-1 rounded'>No</div>"
+                            "<div class='w-full text-white bg-red-400 text-base p-1 rounded'>Remove</div>" : 
+                            "<div class='w-full text-white bg-emerald-400 text-base p-1 rounded'>Approve</div>"
                         }
                     </div>
                 </div>`;

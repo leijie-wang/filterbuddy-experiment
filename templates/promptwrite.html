@@ -652,27 +652,39 @@
         } else {
             display_prompts([
                 {
+                    "name": "Economy Discussions",
+                    "action": 0,
+                    "rubric": "ermit texts that engage in respectful, informed, and constructive dialogue about economic policies.",
+                    "positives": [
+                        "His carbon tax will have a greater negative effect on the middle class.",
+                    ],
+                    "negatives": [
+                        "Anyone who supports that economic policy is an idiot.",
+                    ]
+                },
+                {
                     "name": "Racial hate speech",
                     "action": 1,
                     "rubric": "Catch all texts that promote hate, discrimination, stereotypes, or violence against individuals or groups based on their race, ethnicity, or national origin.",
                     "positives": ["You are just some mad browskin because Europeans styled on your ass"],
                     "negatives": ["83% of US blacks are Christians"],
                 },
-                {
-                    "name": "Violence calls",
-                    "action": 1,
-                    "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
-                    "positives": ["it pleases me to know you will die"],
-                    "negatives": []
+               
+                // {
+                //     "name": "Violence calls",
+                //     "action": 1,
+                //     "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
+                //     "positives": ["it pleases me to know you will die"],
+                //     "negatives": []
 
-                },
-                {   
-                    "name": "Gender hate speech",
-                    "action": 1,
-                    "rubric": "Catch all texts that are derogatory, demeaning, or violent towards individuals based on their gender or gender identity",
-                    "positives": [],
-                    "negatives": ["What didn’t the Bitch say. I hate talking to people in the morning"]
-                }
+                // },
+                // {   
+                //     "name": "Gender hate speech",
+                //     "action": 1,
+                //     "rubric": "Catch all texts that are derogatory, demeaning, or violent towards individuals based on their gender or gender identity",
+                //     "positives": [],
+                //     "negatives": ["What didn’t the Bitch say. I hate talking to people in the morning"]
+                // }
             ]);
         }
 

@@ -91,7 +91,7 @@
                                 </select>
                             </div>
                             <div class="w-[45%]">
-                                <select id="ruleFilter"
+                                <select id="ruleFilter" multiple
                                     class="selectpicker data-filter show-tick border rounded" 
                                     title="by rules" 
                                     data-width="100%"
@@ -637,28 +637,28 @@
             displayRules(JSON.parse(`{{rules | safe}}`));
         } else {
             displayRules([
-                {
-                    "action": 0,
-                    "name": "Trump-related discussion",
-                    "variants": true,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["Trump", "Donald Trump"],
-                        }
-                    ]
-                },
-                {
-                    "action": 1,
-                    "name": "Sexual accusation",
-                    "variants": false,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["sex offender", "rapists", "fuck"],
-                        },
-                    ]   
-                },
+                // {
+                //     "action": 0,
+                //     "name": "Trump-related discussion",
+                //     "variants": true,
+                //     "units": [
+                //         {
+                //             "type": "include",
+                //             "words": ["Trump", "Donald Trump"],
+                //         }
+                //     ]
+                // },
+                // {
+                //     "action": 1,
+                //     "name": "Sexual accusation",
+                //     "variants": false,
+                //     "units": [
+                //         {
+                //             "type": "include",
+                //             "words": ["sex offender", "rapists", "fuck"],
+                //         },
+                //     ]   
+                // },
                 {
                     "action": 1,
                     "name": "Personal attack",
@@ -672,17 +672,33 @@
                     ]
                 },
                 {
-                    "action": 1,
-                    "name": "Terrorist accusation",
+                    "action": 0,
+                    "name": "Construtive Economy Discussion",
                     "variants": true,
                     "units": [
                         {
                             "type": "include",
-                            "words": ["terrorists", "terrorist", "kill", "killing"]
+                            "words": ["progressive", "equity", "investing", "renewable", "growth", "sustainability", "balanced", "benefit", "protecting"]
                         },
-                    ]
+                        {
+                            "type": "exclude",
+                            "words": ["ignorant", "stupid", "waste", "thieves", "stealing"]
+                        }
 
-                }
+                    ]
+                },
+                // {
+                //     "action": 1,
+                //     "name": "Terrorist accusation",
+                //     "variants": true,
+                //     "units": [
+                //         {
+                //             "type": "include",
+                //             "words": ["terrorists", "terrorist", "kill", "killing"]
+                //         },
+                //     ]
+
+                // }
             ]);
         }
 

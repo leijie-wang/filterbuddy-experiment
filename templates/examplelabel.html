@@ -29,7 +29,7 @@
     </noscript> 
     {% csrf_token %}
 
-    <div x-data="{}" class="flex flex-col my-2 justify-start gap-y-4 py-4 h-screen">
+    <div x-data="{}" class="flex flex-col my-2 justify-start gap-y-4 h-screen">
         <div class="flex-grow-0 flex gap-x-2 items-stretch">
             
             <div class="text-center  grow text-3xl font-bold text-black bg-slate-100 p-4 rounded">
@@ -159,8 +159,10 @@
     
         // for testing purposes, using labels in the dataset instead of manual labeling all the data
         dataset.forEach((datum, index) => {
-            let new_label = +parseFloat(datum.score) >= 0.5;
-            change_label(index, new_label);
+            if(index >= 5) {
+                let new_label = +parseFloat(datum.score) >= 0.5;
+                change_label(index, new_label);
+            }
         });
     }
 
