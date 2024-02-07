@@ -407,6 +407,7 @@ def get_LLM_results(request, task_id):
     logger.info(f"checking the task {task_id} status")
     task_result = AsyncResult(task_id)
     if task_result.ready():
+        logger.info(f"task result {task_result.get()}")
         return JsonResponse({
             "status": True,
             "message": f"Task {task_id} is completed",

@@ -561,8 +561,8 @@
                 type: "GET",
                 success: function(response) {
                     if (response["status"]) {
-                        console.log(response["results"]);
-                        updateDataLabels(response["results"]);
+                        console.log(response.data.results);
+                        updateDataLabels(response.data.results);
                         showFilteredData();
                         $('#loadingModal').addClass('hidden');
                         
