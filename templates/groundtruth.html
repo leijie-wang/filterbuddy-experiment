@@ -33,21 +33,24 @@
     <!-- display a list of comments to be reviewed -->
     <div x-data="{ atBottom: false }" class="grow w-full flex flex-col gap-y-4 mb-10 px-4">   
         <div class="grow-0 header flex flex-col gap-y-4 items-stretch bg-slate-100 p-4 rounded">
-            {% if stage == "build" %}
-                <p class="text-2xl font-semibold">Welcome to Build Your Own Word Filters!</p>
-                <p class="text-lg text-start font-sans">
-                    To get started, we need your input. Please take a moment to label the following examples. 
-                    The labels you provide will be used to measure how well your filter performs later on. 
-                    Your input is crucial for creating a filter that truly understands your preferences. Let's begin!
-                </p>
-            {% elif stage == "update" %}
-                <p class="text-2xl font-semibold">Update Your Word Filters!</p>
-                <p class="text-lg text-start font-sans">
-                    The world of social media is always changing, and so are the types of comments you see. <br/>
-                    Before you update your word filter to these new trends, we need your help in labeling a fresh set of comments <br/>
-                    Please label this new set of comments, which reflect recent trends. Your labels will help us evaluate the effectiveness of your updated filter 
-                </p>
-            {% endif %}
+            
+            <div>
+                {% if stage == "build" %}
+                    <p class="text-2xl font-semibold">Welcome to Build Your Own Word Filters!</p>
+                    <p class="text-lg text-start font-sans">
+                        To get started, we need your input. Please take a moment to label the following examples. 
+                        The labels you provide will be used to measure how well your filter performs later on. 
+                        Your input is crucial for creating a filter that truly understands your preferences. Let's begin!
+                    </p>
+                {% elif stage == "update" %}
+                    <p class="text-2xl font-semibold">Update Your Word Filters!</p>
+                    <p class="text-lg text-start font-sans">
+                        The world of social media is always changing, and so are the types of comments you see. <br/>
+                        Before you update your word filter to these new trends, we need your help in labeling a fresh set of comments <br/>
+                        Please label this new set of comments, which reflect recent trends. Your labels will help us evaluate the effectiveness of your updated filter 
+                    </p>
+                {% endif %}
+            </div>
         </div>
         <div class="grow flex mx-4 items-stretch">
             <div class="w-[70%] flex flex-col gap-y-2 items-start">

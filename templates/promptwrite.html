@@ -39,8 +39,16 @@
     </noscript> 
     {% csrf_token %}
     <div x-data="{}" class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
-        <div class="mx-auto pb-1 flex-grow-0">
-            <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Prompt Writer</h1>
+        <div class="flex-grow-0 self-start flex gap-x-2">
+            <div id="timer" class="timer text-3xl font-bold py-2 px-4 bg-gray-100 rounded">
+                
+            </div>
+            <div class="text-base text-black">
+                <span class="font-bold">Task Description</span>: You are reviewing a news site comments and you are expected to write a set of prompts that can be used to automatically approve or remove comments. Prompts that come earlier in the list have higher priority. ... 
+                {% if stage == "update" %}
+                    You have already built and tested your classifier. Now please update your classifier by reviewing the performance of your classifier on your labeled examples. You can also spend more time reviewing more training examples.
+                {% endif %}
+            </div>
         </div>
 
         <div class="flex items-stretch w-full gap-x-4 flex-grow">
@@ -152,6 +160,9 @@
 
     var selected_prompts = [];
     var selected_prediction = "all";
+
+    var is_paused = false;
+    var time_left = null;
 
     function updatePriority(){
         
@@ -516,8 +527,10 @@
         let now_prompts = parseContent();
 
         $('#loadingModal').removeClass('hidden');
+        is_paused = true;
+
         // add a countdown timer to the loading modal
-        let estimated_time = Math.ceil(25 / 120 * now_prompts.length * dataset.length);
+        let estimated_time = Math.ceil(40 / 120 * now_prompts.length * dataset.length);
         let countdown_timer = setInterval(function(){
             $('#loadingModalText').html(
                 `We are evaluating the performance of your filters. <br/> It is estimated to take <b>${estimated_time}</b> seconds, please wait for a moment.`
@@ -565,7 +578,7 @@
                         updateDataLabels(response.data.results);
                         showFilteredData();
                         $('#loadingModal').addClass('hidden');
-                        
+                        is_paused = false;
                         clearInterval(poll); // Stop polling since task is complete
                     } else {
                         console.log("Task is still processing...");
@@ -580,6 +593,7 @@
     }
 
     function complete(){
+        is_paused = true;
         /* store the prompts written by the user */
         let now_prompts = parseContent();
         
@@ -600,6 +614,25 @@
         )
     }
 
+    function set_timer(){
+        if (!is_paused) {
+            time_left = time_left - 1000;
+
+            // Time calculations for minutes and seconds
+            var minutes = Math.floor((time_left % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((time_left % (1000 * 60)) / 1000);
+
+            // Output the result in the element with id="timer"
+            $("#timer").text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
+
+            // If the countdown is over, stop the timer
+            if (time_left < 0) {
+                clearInterval(x);
+                $("#timer").text("EXPIRED");
+            }
+        }
+    }
+
     /* 
         wrap init statements inside it so that we can ensure that both functions are both loaded and executed at the point these codes are run. 
         Note that when you use defer, the scripts are executed only after the entire document has been parsed, but before the DOMContentLoaded event.
@@ -614,6 +647,7 @@
                 updatePriority();
             }
         });
+
         if(STAGE === "update"){
             display_prompts(JSON.parse(`{{prompts | safe}}`));
         } else {
@@ -642,6 +676,10 @@
                 }
             ]);
         }
+
+        $("#timer").text("15:00");
+        time_left = 15 * 60 * 1000;;
+        setInterval(set_timer, 1000);
     })
     
 

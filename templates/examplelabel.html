@@ -30,8 +30,16 @@
     {% csrf_token %}
 
     <div x-data="{}" class="flex flex-col my-2 justify-start gap-y-4 py-4 h-screen">
-        <div class="mx-auto pb-1 h-fit flex-grow-0">
-            <h1 class="text-3xl font-semibold text-gray-800">Welcome to the Example Labeler</h1>
+        <div class="flex-grow-0 self-start flex gap-x-2">
+            <div id="timer" class="timer text-3xl font-bold py-2 px-4 bg-gray-100 rounded">
+                
+            </div>
+            <div class="text-base text-black">
+                <span class="font-bold">Task Description</span>: You are reviewing a news site comments and you are expected to label the comments as toxic or non-toxic, which will then be used to train a classifier for you.
+                {% if stage == "update" %}
+                    You have already built and tested your classifier. 
+                {% endif %}
+            </div>
         </div>
 
         <!-- display a list of comments to be reviewed -->
@@ -85,6 +93,9 @@
     var positive_number = 0;
     // how many examples are labeled
     var label_number = 0;
+
+    var is_paused = false;
+    var time_left = null;
 
     $("#yesFilter").change(function(){
         
@@ -157,7 +168,7 @@
 
     $('#complete-button').click( function(){
         // train the ML model
-        
+        is_paused = true;
 
 
         // filter out the unlabeled data
@@ -179,8 +190,32 @@
         ); 
     });
 
+    function set_timer(){
+        if (!is_paused) {
+            time_left = time_left - 1000;
+
+            // Time calculations for minutes and seconds
+            var minutes = Math.floor((time_left % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((time_left % (1000 * 60)) / 1000);
+
+            // Output the result in the element with id="timer"
+            $("#timer").text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
+
+            // If the countdown is over, stop the timer
+            if (time_left < 0) {
+                clearInterval(x);
+                $("#timer").text("EXPIRED");
+            }
+        }
+    }
+
+
     $(document).ready(function(){
         load_more_data(false);
+
+        $("#timer").text("15:00");
+        time_left = 15 * 60 * 1000;;
+        setInterval(set_timer, 1000);
     });
 
 
