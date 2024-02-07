@@ -545,17 +545,19 @@
                 // updateDataLabels(response.data.results);
                 // showFilteredData();
                 // $('#loadingModal').addClass('hidden');
+                pollForResults(task_id);
 
             }
         );
     }
 
-    function pollForResults(taskId) {
+    function pollForResults(task_id) {
         const pollInterval = 1000; // Poll every second
         
         var poll = setInterval(function() {
+            console.log("Polling for task results...");
             $.ajax({
-                url: "/get_LLM_results/" + taskId + "/", // Adjust URL as needed
+                url: "/get_LLM_results/" + task_id + "/", // Adjust URL as needed
                 type: "GET",
                 success: function(response) {
                     if (response["status"]) {
