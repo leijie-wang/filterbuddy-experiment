@@ -204,3 +204,5 @@ LOGGING = {
 }
 
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis broker URL
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  # Redis backend URL
