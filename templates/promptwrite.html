@@ -39,15 +39,13 @@
     </noscript> 
     {% csrf_token %}
     <div x-data="{}" class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
-        <div class="flex-grow-0 self-start flex gap-x-2">
-            <div id="timer" class="timer text-3xl font-bold py-2 px-4 bg-gray-100 rounded">
-                
+        <div class="flex-grow-0 flex gap-x-2 items-stretch">
+            
+            <div class="text-center  grow text-3xl font-bold text-black bg-slate-100 p-4 rounded">
+                Welcome to the Prompt Writer!
             </div>
-            <div class="text-base text-black">
-                <span class="font-bold">Task Description</span>: You are reviewing a news site comments and you are expected to write a set of prompts that can be used to automatically approve or remove comments. Prompts that come earlier in the list have higher priority. ... 
-                {% if stage == "update" %}
-                    You have already built and tested your classifier. Now please update your classifier by reviewing the performance of your classifier on your labeled examples. You can also spend more time reviewing more training examples.
-                {% endif %}
+            <div id="timer" class="flex items-center justify-center grow-0 text-3xl font-bold p-2 rounded-full border border-gray-500">
+                
             </div>
         </div>
 
@@ -526,11 +524,12 @@
     function trainLLM() {
         let now_prompts = parseContent();
 
-        $('#loadingModal').removeClass('hidden');
+        
         is_paused = true;
 
         // add a countdown timer to the loading modal
         let estimated_time = Math.ceil(40 / 120 * now_prompts.length * dataset.length);
+        $('#loadingModal').removeClass('hidden');
         let countdown_timer = setInterval(function(){
             $('#loadingModalText').html(
                 `We are evaluating the performance of your filters. <br/> It is estimated to take <b>${estimated_time}</b> seconds, please wait for a moment.`
