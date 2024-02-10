@@ -171,7 +171,7 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
                         @click="change_label(${index}, false);" 
                         class="text-white py-1 px-3 rounded unselected-button no-button"
                     >
-                        Approve
+                        Keep
                     </button>
                 </div>
             </div>`

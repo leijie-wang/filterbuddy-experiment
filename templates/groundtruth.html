@@ -34,11 +34,11 @@
     <div x-data="{ atBottom: false }" class="grow w-full flex flex-col gap-y-2 mb-5 px-4">   
         <div class="grow-0 header flex flex-col gap-y-2 items-stretch bg-slate-100 p-4 rounded">
                 {% if stage == "build" %}
-                    <p class="text-2xl font-semibold">Build Your Filters!</p>
+                    <p class="text-2xl font-semibold">Set Your Filter's Goal</p>
                     <p class="text-lg text-start font-sans">
-                        To get started, we need your input. Please take a moment to label the following examples. 
-                        The labels you provide will be used later to measure how well your filter performs. 
-                        Your input is crucial for creating a filter that truly understands your preferences. Let's begin!
+                       Before building your filter, please take a moment to label these comments as <span class="text-emerald-600 font-medium">Keep</span> or <span class="text-red-600 font-medium ">Remove</span>.
+                       <br/>Your labels will be the gold standards for your filter to match. 
+                       We'll use your labeled examples to assess how effectively your filter works. 
                     </p>
                 {% elif stage == "update" %}
                     <p class="text-2xl font-semibold">Update Your Word Filters!</p>
@@ -64,9 +64,9 @@
                 <div class="flex flex-col gap-y-2  bg-slate-100 rounded p-4">
                     <p class="text-lg">
                         {% if stage == "build" %}
-                            Thanks for your efforts in labeling these examples. Now start building your filters
+                            Thanks for your efforts in labeling these examples. Now start creating your filters!
                         {% elif stage == "update" %}
-                            Thanks for your efforts in labeling these examples. Now start updating your filters
+                            Thanks for your efforts in labeling these examples. Now start updating your filters!
                         {% endif %}
                     </p>
                     <button 
@@ -74,7 +74,7 @@
                         
                         @click="go_to_system();"
                     >
-                        GO!
+                        GO
                     </button>
                 </div>
             </div>
@@ -139,7 +139,7 @@
         
         // for testing purposes, use the score to simulate the user's label
         dataset.forEach((datum, index) => {
-            if(index >= 5){
+            if(index >= 0){
                 change_label(index, +parseFloat(datum.score) >= 0.5);
             }
         })

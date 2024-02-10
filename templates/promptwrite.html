@@ -41,11 +41,21 @@
     <div x-data="{}" class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
         <div class="flex-grow-0 flex gap-x-2 items-stretch">
             
-            <div class="text-center  grow text-3xl font-bold text-black bg-slate-100 p-4 rounded">
-                Welcome to the Prompt Writer!
+            <div class="flex items-center justify-start bg-slate-100 p-3 rounded-md">
+                <div class="text-xl text-black">
+                    Do you know you can teach a filter to think like you? 
+                    By labeling examples as <span class="text-emerald-600 font-medium">Keep</span> or <span class="text-red-600 font-medium ">Remove</span>, 
+                    you're essentially teaching the filter to understand your standards.
+                    In the next, please take up to <span class="font-medium">15 minutes</span> to label the provided examples as accurately as possible, based on what you feel fits your criteria.
+                </div>
             </div>
-            <div id="timer" class="flex items-center justify-center grow-0 text-3xl font-bold p-2 rounded-full border border-gray-500">
-                
+            <div class="flex flex-col items-center justify-center">
+                <div id="timer" class="flex items-center justify-center grow-0 text-2xl font-bold p-2 rounded-full border border-gray-500 aspect-square min-w-24">
+                    15:00
+                </div>
+                <div class="text-base italic whitespace-nowrap">
+                    minutes left
+                </div>
             </div>
         </div>
 
@@ -64,17 +74,22 @@
                         </div>
                         <textarea rows="2" id="promptOverview" class="bg-gray-100 border border-gray-300 rounded-lg p-2 text-base w-full" placeholder="Write an overview of your prompt"></textarea>
                     </div> -->
-                    <div id="promptList" class="flex flex-col gap-y-2 flex-grow h-1 overflow-y-auto">
-                        <div @click="addNewPrompt" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
-                            <div class="text-3xl text-gray-500">+</div>
-                        </div>
+                    
+                    <div class="flex flex-col gap-y-2 flex-grow h-1 overflow-y-auto">
+                       <div id="promptList" class="flex flex-col gap-y-2">
+
+                       </div>
+                       <div @click="addNewPrompt" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
+                        <div class="text-3xl text-gray-500">+</div>
                     </div>
+                    </div>
+                   
                     <div class="bottom flex justify-end gap-x-2 flex-grow-0">
                         <button @click="trainLLM();" class="bg-emerald-500 text-white font-bold py-2 px-3 rounded">
                             Try filtering
                         </button>
                         <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
-                            Complete
+                            Create your filter
                         </button>
                     </div>
                 </div>
@@ -189,7 +204,7 @@
             // create a new div element for each text with the template 
             
             prompt.id = prompt_counter++;
-            prompt.priority = promptList.children().length - 1;
+            prompt.priority = promptList.children().length;
 
 
             let prompt_div_html = `
@@ -217,7 +232,7 @@
                                     :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
                                     x-on:click="action = 0"
                                 >
-                                        Approve
+                                    Keep
                                 </button>
                             </div>
                             <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${prompt.name}' }" class="w-[40%] .editableSectionTitle">
@@ -237,6 +252,9 @@
                         </div>
                         <!--have a foldable button-->
                         <div class="flex justify-center gap-x-2 ml-4">
+                            <div class="flex items-center sortHandle focus:outline-none">
+                                <i class="fa-solid fa-up-down-left-right"></i>
+                            </div>
                             <button @click="deletePrompt(${prompt.id})" class="focus:outline-none">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
@@ -252,7 +270,7 @@
                     </div>
                     <div class="flex flex-col gap-y-2" x-show="open">
                         <div class="flex flex-col gap-y-1">
-                            <div class="text-base font-medium">
+                            <div class="text-lg font-bold font-serif text-slate-600">
                                 Description
                             </div>
                             <div 
@@ -263,8 +281,8 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-y-1">
-                            <div class="text-base">
-                                Examples that <span class="italic font-medium">Should</span> be targeted
+                            <div class="font-bold font-serif text-slate-600">
+                                Provide an example that <span class="italic font-medium">Should</span> be targeted
                             </div>
                             <div contenteditable="true"
                                 class="promptPositiveExample example bg-inherit bg-zinc-50 border-none text-sm text-gray-700 p-2">
@@ -272,8 +290,8 @@
                             </div>
                         </div>
                         <div class="flex flex-col gap-y-1">
-                            <div class="text-base">
-                                Examples that <span class="italic font-medium">Should Not</span> be targeted
+                            <div class="font-bold font-serif text-slate-600">
+                                Provide an example that <span class="italic font-medium">Should Not</span> be targeted
                             </div>
                             
                             <div contenteditable="true"
@@ -286,7 +304,7 @@
 
                     </div>
                 </div>`;
-            $('#promptList > :last-child').before(prompt_div_html);
+            $('#promptList').append(prompt_div_html);
             prompts[prompt.id] = prompt;
 
             // add an option to the select picker for this prompt
@@ -640,6 +658,7 @@
         load_more_data(false);
         $("#promptList").sortable({
             animation: 150,
+            handle: ".sortHandle",
             filter: ".addButton",
             onEnd: function(event, ui) {
                 // console.log("updating priority");
@@ -654,7 +673,7 @@
                 {
                     "name": "Economy Discussions",
                     "action": 0,
-                    "rubric": "ermit texts that engage in respectful, informed, and constructive dialogue about economic policies.",
+                    "rubric": "Permit texts that engage in respectful, informed, and constructive dialogue about economic policies.",
                     "positives": [
                         "His carbon tax will have a greater negative effect on the middle class.",
                     ],

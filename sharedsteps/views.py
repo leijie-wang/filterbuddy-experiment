@@ -444,18 +444,18 @@ def get_LLM_results(request, task_id):
         })
     
 def get_validate_results(request):
-    print("get_validate_results")
+    
     from celery.result import AsyncResult
     # get the parameter of the GET request
     participant_id = request.GET.get('participant_id')
     stage = request.GET.get('stage')
     task_id = request.GET.get('task_id')
 
-    print(f"checking the task {task_id} status, participant_id: {participant_id}, stage: {stage}")
+    
     task_result = AsyncResult(task_id)
     if task_result.ready():
         results = task_result.get()
-        print(f"task result {results}")
+        
         utils.save_test_results(participant_id, stage, results["prediction"])
         build_performance = utils.calculate_stage_performance(participant_id, "build") if stage == "update" else {}
 

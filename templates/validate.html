@@ -30,14 +30,17 @@
     </noscript> 
     {% csrf_token %}
 
-    <div x-data="{}" class="grow w-full flex flex-col gap-y-4 mb-10 px-4">
+    <div x-data="{}" class="grow w-full flex flex-col gap-y-0 mb-10">
         <!-- display a list of comments to be reviewed -->
-        <div class="grow-0 header flex flex-col gap-y-2 items-stretch bg-slate-100 p-4 rounded">
+        <div class="grow-0 header flex flex-col gap-y-2 items-stretch bg-slate-100 px-4 pt-4 pb-3 rounded">
             {% if stage == "build" %}
                 <p class="text-2xl font-semibold">Curious about how your filter performs?</p>
                 <p class="text-lg text-start font-sans">
-                    Thank you for your hard work in creating your unique filter! Remember those examples you labeled earlier? It's time to see how your filter did.
-                   <br> We've compared your initial labels with the predictions made by your filter. Below, you'll find a detailed performance report. 
+                    Thank you for your hard work in creating your unique filter! Remember the you labeled earlier as gold standards? 
+                    e've analyzed how your filter's decisions match up against those labels.
+                    Below, you'll find a breakdown: 
+                    on the left, we indicate if the filter's prediction matches your label for each example, 
+                    and on the right, we present the overall performance of your filter. 
                 </p>
             {% elif stage == "update" %}
                 <p class="text-2xl font-semibold">Discover How Your Updated Filter Performs!</p>
@@ -57,43 +60,54 @@
                     <div id="countDisplay" class="text-base text-blue-600"></div>
                 </div>
                 <!-- display a list of comments to be reviewed -->
+                <div id="textList-header" class="datum flex justify-between font-serif italic py-0.5">   
+                    <div>Whether your filter's decision matches your label</div>
+                    <div>What you labeled</div>
+                </div>
                 <div id="textList"
-                    class="grow flex flex-col h-16 overflow-y-auto px-4 border border-gray-600 rounded"
-                ></div>
+                    class="grow flex flex-col h-16 overflow-y-auto border border-gray-600 rounded"
+                >
+                    
+                </div>
             </div>
             <!-- display the results of algorithmic predictions -->
-            <div class="flex flex-col items-start gap-y-4 w-1/3">
+            <div class="mt-4 flex flex-col items-start gap-y-4 w-1/3">
                   
                 <div class="grow flex flex-col mx-[10%] self-stretch justify-evenly gap-y-4">
                     <!-- Accuracy -->
-                    <div class="flex flex-col items-center gap-y-2">
-                        <div class="text-slate-600 text-lg text-center">How many comments are flagged correctly</div>
-                        <div class="text-3xl text-blue-500" id="test-accuracy">?</div>
+                    <div class="flex flex-col items-start">
+                        <div class="text-slate-600 text-xl ">
+                            <span class="text-2xl font-bold">1</span>. Your filter's decisions match <br/>
+                            <span class="text-2xl text-blue-500" id="test-accuracy">?</span> of your labels.
+                        </div>
                     </div>
                     <!-- Precision -->
-                    <div class="flex flex-col items-center gap-y-2">
-                        <div class="text-slate-600 text-lg text-center">How many comments flagged as removed are truly toxic </div>
-                        <div class="text-3xl text-blue-500" id="test-precision">?</div>
+                    <div class="flex flex-col items-start">
+                        <div class="text-slate-600 text-xl ">
+                            <span class="text-2xl font-bold">2</span>. Your filter's removal decisions match <br/>
+                                <span class="text-2xl text-blue-500" id="test-precision">?</span> of your removals.
+                        </div>
                     </div>
                     <!-- Recall -->
-                    <div class="flex flex-col items-center gap-y-2">
-                        <div class="text-slate-600 text-lg text-center">How many toxic comments are removed</div>
-                        <div class="text-3xl text-blue-500" id="test-recall">?</div>
+                    <div class="flex flex-col items-start">
+                        <div class="text-slate-600 text-xl ">
+                            <span class="text-2xl font-bold">3</span>. Your filter correctly removes <br/>
+                            <span class="text-2xl text-blue-500" id="test-recall">?</span> of comments you want to remove.
+                        </div>
                     </div>
                     <!-- False Positive Rate -->
-                    <div class="flex flex-col items-center gap-y-2"> 
-                        <div class="text-slate-600 text-lg text-center">How many non-toxic comments are mistakenly flagged as removed</div>
-                        <div class="text-3xl text-blue-500" id="test-fpr">?</div>
+                    <div class="flex flex-col items-start"> 
+                        <div class="text-slate-600 text-xl">
+                            <span class="text-2xl font-bold">4</span>. Your filter falsely removes <br/>
+                            <span class="text-2xl text-blue-500" id="test-fpr">?</span> of comments that you want to keep
+                        </div>
                     </div>
                 </div>
                     
                 {% if stage == "build" %}
-                    <div class="grow-0 flex flex-col gap-y-4 bg-slate-100 rounded mx-[10%] p-3">
-                        <p class="text-lg">
-                            Thanks for your efforts in labeling these examples. Now start building your own filters
-                        </p>
+                    <div class="self-end grow-0 flex justify-end mx-[10%]">
                         <button 
-                            class="text-white text-lg self-end bg-blue-600 p-2 rounded-lg"
+                            class="text-white text-xl font-medium bg-blue-600 p-3 rounded-lg"
                             @click="go_to_system();"
                         >
                             Improve your filter
@@ -141,7 +155,6 @@
         console.log("results", results);
         console.log("build_performance", build_performance);
 
-
         dataset.forEach((datum, index) => {
             // Generate the new div HTML you want to append
             // For demonstration, appending a simple div with a class 'extra-info'
@@ -151,13 +164,14 @@
             let new_div = `
                     <div class="flex-col items-stretch grow-0 font-bold w-[5%] text-center">
                         ${datum.label == datum.total_prediction ? 
-                            "<span class='text-gray-900'><i class='fa-solid fa-check px-2 fa-xl'></i></span>" : 
-                            "<span class='text-gray-900'><i class='fa-solid fa-xmark px-2 fa-xl'></i></span>"
+                            "<span class='text-blue-400'><i class='fa-solid fa-check px-2 fa-xl'></i></span>" : 
+                            "<span class='text-red-500'><i class='fa-solid fa-xmark px-2 fa-xl'></i></span>"
                         }
                     </div>`;
 
             // Append the new div to the current datum div
-            $(`#datum-${index}`).append(new_div);
+            $(`#datum-${index}`).prepend(new_div);
+            $(`#datum-${index}`).addClass(datum.label == datum.total_prediction ? "" : "bg-rose-100");
         });
         
         let performance = results.performance;
@@ -209,7 +223,7 @@
         // for testing purposes, use the score to simulate the user's label
         dataset.forEach((datum, index) => {
             let text_div_html = `
-                <div id="datum-${index}" class="datum flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
+                <div id="datum-${index}" class="px-4 datum flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
                     <div id="text-${index}" class="grow w-[85%] p-2">${escape_html(datum.text)}</div>
                     <div class="flex-col items-stretch grow-0 w-[10%] text-center">
                         ${datum.label == 1 ? 
