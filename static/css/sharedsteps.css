@@ -3,7 +3,7 @@
 }
 
 .falseLabel {
-    background-color: #dcfce7; /* tailwind emerald-100 */
+    background-color: #f1f5f9 /* #dcfce7; tailwind emerald-100 */
 }
 
 .unLabel {
@@ -69,11 +69,23 @@
 }
 
 /* set the css of the tagify input */
-.wordList {
-    --tag-bg: #fafafa;
-    --tag-hover: #eef2ff;
-    --tags-border-color: #d1d5db;
+.wordList  {
+    --tag-bg: #f4f4f5;
+    --tag-hover: #e4e4e7;
+    --tags-border-color: #e4e4e7;
 }
+
+/* .includeUnitSection .wordList {
+    --tag-bg: #fef2f2;
+    --tag-hover: #fee2e2;
+    --tags-border-color: #bfdbfe;
+}
+
+.excludeUnitSection .wordList {
+    --tag-bg: #ecfdf5;
+    --tag-hover: #d1fae5;
+    --tags-border-color: #a7f3d0;
+} */
 
 .editableSectionTitle .italic:empty:before {
     content: attr(data-placeholder);

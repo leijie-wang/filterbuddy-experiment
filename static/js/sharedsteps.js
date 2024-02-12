@@ -104,7 +104,7 @@ function display_data(new_dataset, dataset, new_separator=true){
                 <div id="datum-${i + start_index}" 
                     class="datum flex flex-row py-1 px-2 self-stretch unLabel"
                 >
-                    <div class="flex-grow w-7/10 px-2 py-1 self-center">${escape_html(new_dataset[i].text)}</div>
+                    <div class="datumText flex-grow w-7/10 px-2 py-1 self-center">${escape_html(new_dataset[i].text)}</div>
                     <div class="self-end" @click="showTooltip = !showTooltip">
                         <i class="fa-solid fa-circle-info fa-xs" style="color: #868788;"></i>
                     </div>

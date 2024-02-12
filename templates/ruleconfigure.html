@@ -63,22 +63,23 @@
 
         <div x-data="{stage: '{{ stage }}'}" class="flex items-stretch w-full gap-x-4 flex-grow">
             <!-- the section where users configure prompts -->
-            <div class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow">
+            <div class="flex flex-col items-stretch gap-y-4 rounded w-1/2 flex-grow">
                 
                 <!-- the section where users see all rules -->
                 <div class="section-body flex flex-col flex-grow gap-y-4 pb-4">
-                    <div id="ruleList" class="flex flex-col gap-y-2 flex-grow h-1 overflow-y-auto">
+                    <div class="flex flex-col gap-y-2 flex-grow h-1 pr-2 overflow-y-auto">
+                        <div id="ruleList" class="flex flex-col gap-y-2">
+ 
+                        </div>
                         <div @click="addNewRule" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
                             <div class="text-3xl text-gray-500">+</div>
                         </div>
-                    </div>
+                     </div>
                     <div class="bottom flex justify-end gap-x-2 flex-grow-0">
                         <button x-on:click="trainTrees();" class="bg-emerald-500 text-white font-bold py-2 px-3 rounded border ">
-                            Try Filtering
+                            Apply Active Rules
                         </button>
-                        <button x-on:click="complete();" class="bg-blue-500  text-white font-bold py-2 px-3 rounded">
-                            Create your filter
-                        </button>
+    
                     </div>
                 </div>
             </div>
@@ -88,19 +89,21 @@
                 
                 <div class="flex flex-col gap-y-1 h-full border border-gray-600 rounded px-3 pt-2 pb-4 ">
                     <div class="header text-lg font-bold">
-                        What comments are targeted by your rules?
+                        What comments are removed by your selected rules?
                     </div>
-                    <div class="flex flex-col items-start gap-y-1">
-                        <div class="flex justify-start items-center gap-x-2 w-[60%]">
-                            <div>Filters</div>
-                            <div class="w-[50%]">
-                                <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
-                                    <option value="targeted" class=" text-xs text-gray-700">Targeted comments</option>
-                                    <option value="not-targeted" selected class=" text-xs text-gray-700">Not Targeted comments</option>
-                                    <option value="all" selected class=" text-xs text-gray-700">All comments</option>
-                                </select>
-                            </div>
-                            <div class="w-[45%]">
+                    <div class="self-stretch flex justify-between items-center gap-x-1">
+                        <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
+                        <div class="grow flex justify-start items-center gap-x-2 ">
+                            <!-- <div class="text-sm text-gray-600 ">View Options</div> -->
+                            
+                            
+                            <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
+                                <option value="removed" class=" text-xs text-gray-700">Removed comments</option>
+                                <option value="approved" selected class=" text-xs text-gray-700">Approved comments</option>
+                                <option value="all" selected class=" text-xs text-gray-700">All comments</option>
+                            </select>
+                           
+                            <!-- <div class="w-[45%]">
                                 <select id="ruleFilter" multiple
                                     class="selectpicker data-filter show-tick border rounded" 
                                     title="by rules" 
@@ -110,15 +113,18 @@
                                 >
                                     
                                 </select>
-                            </div>
+                            </div> -->
                         </div>
-                        <div id="countDisplay" class="text-sm text-gray-700 self-start"></div>
+                        
                     </div>
                     <!-- display a list of comments to be reviewed -->
                     <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
                     <div class="bottom flex justify-end gap-x-2 pt-3">
-                        <button @click="load_more_data" class="bg-slate-500 text-white font-bold py-2 px-3 rounded">
+                        <button @click="load_more_data" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
                             Load More Examples
+                        </button>
+                        <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
+                            Create your Filter
                         </button>
                     </div>
                 </div>
@@ -143,6 +149,7 @@
     const SYSTEM = "{{system}}";
     const PARTICIPANT_ID = "{{participant_id}}";
     const STAGE = "{{stage}}";
+    
 
     var dataset = [];
     var current_batch = 0; 
@@ -154,12 +161,15 @@
     var selected_rules = [];
     var selected_prediction = "all";
 
+    var interval_id = null;
     var is_paused = false;
     var time_left = null;
 
     /* 
         functions that display, add, and remove rules
     */
+    
+    
     function updatePriority(){
         
         $('#ruleList .ruleSection').each(function(index) {
@@ -168,34 +178,44 @@
             rules[id].priority = index;
 
             // update the priority class div of the this ruleSection
-            $(this).find('.priority').text(`${index + 1}.`);
+            // $(this).find('.priority').text(`${index + 1}.`);
         });
-        // console.log(rules);
     }
 
     function updateOptions(id, text){
         // update the options of the select picker
         rules[id].name = text;
-        $(`#ruleFilter option[value=${id}]`).text(capitalize(text));
-        $(".selectpicker").selectpicker('refresh');
+        // $(`#ruleFilter option[value=${id}]`).text(capitalize(text));
+        // $(".selectpicker").selectpicker('refresh');
     }
 
-    function get_unit_section(type, words){
+    function getUnitSection(type, words, second_include=false){
         return `
-            <div class='unitSection flex gap-x-4 items-center'>
-                <div class='unitType ${type} w-fit relative text-center text-lg font-medium rounded bg-zinc-100 py-1 px-3 shadow-sm'>
-                    <span class="inline-block whitespace-nowrap">
-                        ${type === "include" ? '<i class="fa-solid fa-plus fa-sm text-green-600 mr-2"></i>Include' : '<i class="fa-solid fa-ban fa-sm text-orange-600 mr-2"></i>Exclude'}
+            <div class='unitSection ${type}UnitSection flex flex-col gap-y-2 items-start pl-4 pr-4'>
+                <div class='unitType ${type} w-fit relative text-start rounded ${type === "include" ? "bg-red-50" : "bg-emerald-50"} text-lg  py-1 px-3 italic'>
+                    <span class="font-bold ">
+                        ${
+                            type === "exclude" ? 
+                                '<i class="fa-solid fa-check fa text-emerald-600 mr-1"></i>' : 
+                                '<i class="fa-solid fa-sm fa-magnifying-glass text-red-400 mr-1"></i>'
+                            }
                     </span>
+                    <span class="font-bold unitTitle">
+                        ${
+                            type === "exclude" ? "Unless including" : second_include ? "And include" : "If they include"
+                        }
+                    </span>
+                    <span class="font-base">one of the following words</span>
                     <button class='absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-white rounded-full text-xs w-4 h-4 flex items-center justify-center border border-gray-300'
-                        x-on:click="remove_unit_section($event, 'unitSection')"
+                        x-on:click="${type === "include" ? "includes = includes - 1; " : "excludes = excludes - 1; "}; removeUnitSection($event);"
                     >
                         &times;
                     </button>
+                    
                 </div>
-                <div class='grow flex wordSection'>
+                <div class='pl-6 self-stretch grow flex wordSection'>
                     <input 
-                        class='grow wordList border-b-2 border-l-0 border-r-0 border-t-0'
+                        class='grow wordList border-b-2 border-t-0 border-l-0 border-r-0 mb-2'
                         value='${words.join(",")}' 
                         autofocus
                     >
@@ -203,138 +223,208 @@
             </div>`;
     }
     
+    function removeUnitSection(event){
+        let unit_sections = $(event.target).closest('.unitSections');
+        $(event.target).closest(`.unitSection`).remove();
+        unit_sections.find(".includeUnitSection").first().find('.unitTitle').text("If they include");
+    }
+    
     function addNewUnit(element, type){
         let unit_sections = $(element).closest('.ruleSection').find('.unitSections');
-        let unit_section_html = get_unit_section(type, []);
-        unit_sections.append(unit_section_html);
+        // see how many unit sections are there
+        let number_include = unit_sections.find('.includeUnitSection').length;
+        let has_exclude = unit_sections.find('.excludeUnitSection').length > 0;
+        if(type === "exclude" && has_exclude) { 
+            return;
+        } else if(type === "include" && number_include >= 2){
+            return;
+        }
+        
+        let unit_section_html = getUnitSection(type, [], number_include === 1);
+        if(!has_exclude){
+            unit_sections.append(unit_section_html);
+            new Tagify(
+                unit_sections.children().last().find('.wordList')[0], 
+                {
+                    placeholder: "Add another word, separated by comma",
+                }
+            );
+        } else {
+            unit_sections.children().last().before(unit_section_html);
+            new Tagify(
+                unit_sections.children().eq(-2).find('.wordList')[0],
+                {
+                    placeholder: "Add another word, separated by comma",
+                }
+            );
+        }
         // tagify the newly added unit section
-        let tag = new Tagify(unit_sections.children().last().find('.wordList')[0]);
+        
     }
 
     function displayRules(new_rules){
         // display the rules in the ruleList
         let ruleList = $('#ruleList');
-
+        
+        
         new_rules.forEach((rule) => {
+            let open = ruleList.children().length === 0 ? "true" : "false";
             rule.id = rule_counter++;
             // the priority is the existing number of ruleSection items in the ruleList div
-            rule.priority = ruleList.children().length - 1;
+            rule.priority = ruleList.children().length;
             let unit_section_html = "";
             /*
                 rule-section: where users select the corresponding action
                     unit-sections: where users configure include or exclude units
                         word-section: where users configure the word and its variants
             */
-            rule.units.forEach((unit) => {            
-                unit_section_html  += get_unit_section(unit.type, unit.words);
+            second_include = false;
+            rule.units.forEach((unit) => {
+                unit_section_html  += getUnitSection(unit.type, unit.words, second_include);
+                if(unit.type === "include") second_include = true;
             });
 
             let rule_div_html = `
                 <div 
-                    x-data="{open: false, action: ${rule.action}}" 
-                    class="ruleSection flex flex-col items-stretch border border-gray-300 rounded-lg px-3" 
+                    x-data="{
+                        open: ${open}, 
+                        active: true,
+                        action: ${rule.action}, 
+                        includes: ${rule.units.filter(unit => unit.type === "include").length}, 
+                        excludes: ${rule.units.filter(unit => unit.type === "exclude").length},
+                    }" 
+                    class="ruleSection flex items-start gap-x-2"
+                    :class="{ 'activeRuleSection': active, 'bg-gray-100': !active}" 
                     id="rule-${rule.id}"
-                >
-                    <div class="flex justify-between py-2">
-                        <div class="grow text-black flex items-center font-serif gap-x-2">
-                            <div class="priority text-2xl">
-                                ${rule.priority + 1}.
+                >   
+
+                    <div class="grow flex flex-col items-stretch border !border-gray-300 rounded-lg px-2">
+                        <div class="flex justify-between py-2">
+                            <div class="grow text-black flex items-center font-serif gap-x-2">
+                                <!-- <div class="priority text-2xl">
+                                    ${rule.priority + 1}.
+                                </div> -->
+                                <!-- Toggle Switch for Rule Action -->
+                                <div class="min-w-[20%] flex items-center font-medium text-xl ">
+                                    <button 
+                                        class="removeButton grow py-2 px-4 rounded italic" 
+                                        :class="{ 'active bg-red-100': action === 1 && active, 'bg-gray-100 text-gray-300': action !== 1 || !active}" 
+                                        x-on:click="action = 1"
+                                    >
+                                        Remove 
+                                    </button>
+                                    <!-- <button 
+                                            class="approveButton grow py-2 px-4 rounded italic " 
+                                            :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
+                                            x-on:click="action = 0"
+                                        >
+                                            Keep
+                                    </button> -->
+                                    <span></span>
+                                </div>
+                                <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${rule.name}' }" class="grow editableSectionTitle">
+                                    <div 
+                                        contenteditable="true" 
+                                        x-text="text"
+                                        x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateOptions(${rule.id}, text);"
+                                        class="ruleName italic font-xl border border-gray-300 p-2 rounded"
+                                        :class="{'border-red-500': inputExceedsLimit, 'text-gray-300': !active}"
+                                        data-placeholder="What Texts?"
+                                    ></div>
+                                    
+                                    <div x-show="inputExceedsLimit" 
+                                        class="text-red-600 text-sm mt-1" 
+                                        x-text="'The title should be less than ' + charLimit + ' characters.'"
+                                    ></div>
+                                </div>
+                                
                             </div>
-                            <!-- Toggle Switch for Rule Action -->
-                            <div class="grow flex items-center font-medium text-xl ">
-                                <button 
-                                    class="removeButton grow py-2 px-4 rounded italic" 
-                                    :class="{ 'active bg-red-100': action === 1, 'bg-gray-100 text-gray-300': action !== 1}" 
-                                    x-on:click="action = 1"
-                                >
-                                    Remove
+                            <!--have a foldable button-->
+                            <div class="flex justify-center gap-x-2 ml-2">
+                                <!-- <div class="flex items-center sortHandle focus:outline-none">
+                                    <i class="fa-solid fa-up-down-left-right"></i>
+                                </div> -->
+                                <button @click="active = !active; open=false;" class="focus:outline-none">
+                                    <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
                                 </button>
-                                <button 
-                                    class="approveButton grow py-2 px-4 rounded italic " 
-                                    :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
-                                    x-on:click="action = 0"
-                                >
-                                    Approve
+                                <button @click="deleteRule(${rule.id})" class="focus:outline-none">
+                                    <i class="fa-solid fa-trash-can"></i>
                                 </button>
-                            </div>
-                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${rule.name}' }" class="w-[40%] .editableSectionTitle">
-                                <div 
-                                    contenteditable="true" 
-                                    x-text="text"
-                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateOptions(${rule.id}, text);"
-                                    class="italic font-xl border border-gray-300 p-2 rounded"
-                                    :class="{'border-red-500': inputExceedsLimit}"
-                                    data-placeholder="What Texts?"
-                                ></div>
-                                <div x-show="inputExceedsLimit" 
-                                    class="text-red-600 text-sm mt-1" 
-                                    x-text="'The title should be less than ' + charLimit + ' characters.'"
-                                ></div>
-                            </div>
-                        </div>
-                        <!--have a foldable button-->
-                        <div class="flex justify-center gap-x-2 ml-4">
-                            <div class="flex items-center sortHandle focus:outline-none">
-                                <i class="fa-solid fa-up-down-left-right"></i>
-                            </div>
-                            <button @click="deleteRule(${rule.id})" class="focus:outline-none">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                            <button @click="open = !open" class="focus:outline-none">
-                                <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                                <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="unitSections flex flex-col gap-y-4 py-2" x-show="open">
-                        ${unit_section_html}
-                    </div>
-                    <div class="self-stretch flex justify-between gap-x-2 py-2 items-center" x-show="open">
-                        <div class="">
-                            <button class="addInclude p-1 text-sm rounded border border-zinc-50" x-on:click="addNewUnit($el, 'include')">
-                                <i class="fa-solid fa-plus text-green-600 mr-2"></i>Add Include
-                            </button>
-                            <button class="addExclude p-1 text-sm rounded border border-zinc-50" x-on:click="addNewUnit($el, 'exclude')">
-                                <i class="fa-solid fa-ban text-orange-600 mr-2"></i>Add Exclude
-                            </button>
-                        </div>
-                        <div class="flex p-1 gap-x-1 items-center">
-                            <input type="checkbox" class="variantsCheckbox h-4 w-4" ${rule.variants ? "checked" : ""}/>
-                            <label class="text-base text-gray-600">Include spelling variants</label>
-                            
-                            <div x-data="{ open: false}">
-                                <!-- Tooltip Trigger -->
                                 <button 
                                     @click="open = !open" 
-                                    class="p-1 rounded-full text-gray-700 hover:bg-gray-100"
+                                    class="focus:outline-none" 
+                                    :class="{'text-gray-100': !active}" 
+                                    :disabled="!active" 
                                 >
-                                    <i class="fas fa-circle-question"></i>
+                                    <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                    </svg>
                                 </button>
-
-                                <!-- Tooltip Content -->
-                                <div x-show="open" @click.away="open = false" 
-                                    class="fixed z-50 w-fit p-2 text-sm text-white bg-gray-600 rounded-md shadow-lg" 
-                                    
-                                >
-                                    We only use the most common ways of spelling variants:
-                                    <ul class="list-disc list-inside">
-                                        <li>repeating letters (cool -> coool)</li>
-                                        <li>mixed upper and lower case (cool -> cOoL)</li>
-                                        <li>using similar looking characters (cool -> c00l)</li>
-                                    </ul>
-                                </div>
                             </div>
                         </div>
-                        
+                        <div 
+                            class="unitSections flex flex-col gap-y-4 py-2" x-show="open"
+                        >
+                            ${unit_section_html}
+                        </div>
+                        <div class="self-stretch flex justify-between gap-x-2 py-2 items-center" x-show="open">
+                            <div class="">
+                                <button 
+                                    class="addInclude px-2 py-1 text-sm rounded"
+                                    :class="{'bg-red-50': includes < 2, 'bg-gray-50 text-gray-400 cursor-not-allowed': includes >= 2}" 
+                                    x-on:click="includes = includes + 1; addNewUnit($el, 'include')"
+                                    :disabled="includes >= 2"
+                                >
+                                    <i class="fa-solid fa-magnifying-glass"  :class="{'text-red-400': includes < 2, 'text-gray-400': includes >= 2}"></i>
+                                    Add Include
+                                </button>
+                                <button 
+                                    class="addExclude px-2 py-1 text-sm rounded" 
+                                    :class="{'bg-emerald-50': excludes < 1, 'bg-gray-50 text-gray-400 cursor-not-allowed': excludes >= 1}" 
+                                    x-on:click="excludes = excludes + 1; addNewUnit($el, 'exclude')"
+                                    :disabled="excludes >= 1"
+                                >
+                                    <i class="fa-solid fa-check" :class="{'text-emerald-600': excludes < 1, 'text-gray-400': excludes >= 1}"></i>
+                                    Add Exceptions
+                                </button>
+                            </div>
+                            <div class="flex p-1 gap-x-1 items-center">
+                                <input type="checkbox" class="variantsCheckbox h-3 w-3" ${rule.variants ? "checked" : ""}/>
+                                <label class="text-sm text-gray-600 font-medium">Detect spelling variants</label>
+                                
+                                <div x-data="{ open: false}">
+                                    <!-- Tooltip Trigger -->
+                                    <button 
+                                        @click="open = !open" 
+                                        class="p-1 rounded-full text-gray-700 hover:bg-gray-100"
+                                    >
+                                        <i class="fas fa-circle-question"></i>
+                                    </button>
+
+                                    <!-- Tooltip Content -->
+                                    <div x-show="open" @click.away="open = false" 
+                                        class="fixed z-50 w-fit p-2 text-sm text-white bg-gray-600 rounded-md shadow-lg" 
+                                        
+                                    >
+                                        We only use the most common ways of spelling variants:
+                                        <ul class="list-disc list-inside">
+                                            <li>repeating letters (cool -> coool)</li>
+                                            <li>mixed upper and lower case (cool -> cOoL)</li>
+                                            <li>using similar looking characters (cool -> c00l)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
                     </div>
                 </div>
             `;
         
-            $('#ruleList > :last-child').before(rule_div_html);
+            $('#ruleList').append(rule_div_html);
             rules[rule.id] = rule;
 
             // add an option to the select picker for this prompt, rules are not selected by default
@@ -345,7 +435,9 @@
 
             $(`#rule-${rule.id} input.wordList`).each(function() {
                 // Initialize Tagify on each input element
-                let tag = new Tagify($(this)[0]);
+                let tag = new Tagify($(this)[0], {
+                    placeholder: "Add another word, separate by comma",
+                });
             });
         });
     }
@@ -370,7 +462,10 @@
         let new_rule = {
                 "action": 1,
                 "name": [],
-                "units": []   
+                "units": [{
+                    "type": "include",
+                    "words": [],
+                }]   
             };
         displayRules([new_rule]);
     }
@@ -400,7 +495,7 @@
     function showFilteredData(){
         /* iterature through dataset and hide the datum that doesn't match the filter selected_prediction and selected_prompts */
 
-        let expected_prediction = selected_prediction === "targeted" ? [1, 0] : selected_prediction === "not-targeted" ? [null] : [1, 0, null];
+        let expected_prediction = selected_prediction === "removed" ? [1] : selected_prediction === "approved" ? [0, null] : [1, 0, null];
         let counter = 0;
         let targeted_counter = 0;
         let approved_counter = 0;
@@ -409,9 +504,10 @@
         console.log("selected rules", selected_rules);
         console.log("selected_predictions", selected_prediction)
         dataset.forEach((datum, index) => {
-            let show = true;
+            let show = expected_prediction.includes(datum.total_prediction);
             let now_prediction = null;
-            if(expected_prediction.length < 3){
+            /*  if(expected_prediction.length < 3){
+                
                 // otherwise, regardless of what rules are selected, we all show all comments as the expectd prediction is the all
                 if (selected_rules.length > 0){
                     // only show comments that are targeted (not targeted) by all the selected rules
@@ -423,22 +519,23 @@
                     // show all comments that are targeted (not targeted) by any of the rules
                     show = expected_prediction.includes(datum.total_prediction);
                 }
-            }
+            } */
 
             
             if (show){
                 $(`#datum-${index}`).parent().show();
-                counter++;
-                targeted_counter += datum.total_prediction !== null ? 1 : 0;
-                approved_counter += datum.total_prediction === 0 ? 1 : 0;
-                removed_counter += datum.total_prediction === 1 ? 1 : 0;
             } else{
                 $(`#datum-${index}`).parent().hide();
             }
+
+            counter++;
+            targeted_counter += datum.total_prediction !== null ? 1 : 0;
+            approved_counter += datum.total_prediction === 0 ? 1 : 0;
+            removed_counter += datum.total_prediction === 1 ? 1 : 0;
         });
 
-        let text = ""
-        if(expected_prediction.length === 3) 
+        let text = `Your filter will remove ${removed_counter} out of ${dataset.length} comments in total.`;
+        /* if(expected_prediction.length === 3) 
             text = `There are ${targeted_counter}/${counter} targeted comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
         else if(selected_rules.length === 0 && selected_prediction === "targeted"){
             text = `There are ${counter} ${selected_prediction} comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
@@ -447,7 +544,7 @@
         } else {
             text = `
                 There are ${counter} comments that are ${selected_prediction} by all selected rules, ${approved_counter} approved and ${removed_counter} removed`;
-        }
+        } */
 
         $('#countDisplay').text(text);
 
@@ -459,21 +556,23 @@
         
     });
 
-    $("#ruleFilter").on("change", function() {
+    /* $("#ruleFilter").on("change", function() {
         selected_rules = [$(this).val()].map((value) => +value )
         showFilteredData();
-    });
-
-    function generateExplanation(datum){
+    }); */
+    
+    function generateExplanation(datum, datum_index){
         /* generate the explanation for each prediction made by the LLMs */
-        if (datum.total_prediction === null){
-            return "This comment is not targeted by any of your rules, so it will be approved by default.";
+        if (datum.total_prediction === null || datum.total_prediction === 0){
+            $(`#datum-${datum_index}`).find('.datumText').html(datum.text);
+            return "This comment will not be removed by any of your rules";
         }
         else {
-            let explanation = `<p>This comment is targeted by the following rule :</p><ul class='list-none pl-0 text-gray-600'>`;
+            let explanation = `<p>This comment will be removed by the following rules :</p><ul class='list-none pl-0 text-gray-600'>`;
             // iterate through the dict object and format each prompt in a new line and with italic font
 
             let highest_priority_id = null;
+            let highest_priority = 0;
             for (let i = 0; i < datum.predictions.length; i++) {
                 const pred = datum.predictions[i];
                 if (pred.prediction !== null){
@@ -481,7 +580,7 @@
                     
                     explanation += `
                         <li class="before:content-['•'] before:mr-2">
-                            Priority ${i + 1}: Rule <span class="font-medium italic font-serif">${rule.name}</span>
+                            Rule <span class="font-medium italic font-serif">${rule.name}</span>
                         </li>`;
                     if (highest_priority_id === null){
                         highest_priority = i;
@@ -493,9 +592,18 @@
 
             let highest_priority_rule = rules[highest_priority_id];
             explanation += `<br/><p>
-                As the rule <span class="font-bold italic font-serif">${highest_priority_rule.name}</span> has the highest priority ${highest_priority + 1}, 
-                this comment should be <span class="font-bold italic">${datum.total_prediction === 1 ? "removed" : "approved"}</span>.`;
+                For the Rule <span class="font-bold italic font-serif">${highest_priority_rule.name}</span>, we highlight matched words in the comment.`;
             
+            
+
+            let replace_text = datum.text
+            datum.predictions.find(pred => pred.id === highest_priority_id).patterns.forEach((pattern) => {
+                let type = pattern[0];
+                let word = pattern[1]
+                replace_text = replace_text.replace(word, `<span class="font-bold text-lg italic">${word}</span>`);
+            });
+            
+            $(`#datum-${datum_index}`).find('.datumText').html(replace_text);
             return explanation;
         }
     }
@@ -522,7 +630,7 @@
             tooltip_div.addClass(new_class);
 
             // update the tooltip content
-            let explanation = generateExplanation(dataset[i]);
+            let explanation = generateExplanation(dataset[i], i);
             // set the second child of the tooltip div to be the explanation, use innerhtml
 
             tooltip_div.children().eq(1).html(explanation);
@@ -544,27 +652,31 @@
             // parse out the id of the ruleSection
             let id = +$(this).attr('id').split('-')[1];
             let rule = rules[id];
+            let active = $(this).hasClass('activeRuleSection');
+            if(active){
+                rule.name = $(this).find('.ruleName').text();
+                rule.priority = index; // not used for now
+                rule.action = $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
+                rule.variants = $(this).find('.variantsCheckbox').is(':checked');
+                
+                let units = [];
+                $(this).find('.unitSection').each(function() {
+                    let unit = {};
+                    unit.type = $(this).find('.unitType').hasClass('include') ? "include" : "exclude";
+                    unit.words = [];
+                    // iterature through the tags element with the class wordList and get the title of each children tag element
+                    $(this).find('.tagify__tag').each(function() {
+                        unit.words.push($(this).attr('title'));
+                    });
 
-            rule.priority = index;
-            rule.action = $(this).find('.approveButton').hasClass('active') ? 0 : 1; // we consider removing a text as 1 and approving a text as 0
-            rule.variants = $(this).find('.variantsCheckbox').is(':checked');
-            let units = [];
-            $(this).find('.unitSection').each(function() {
-                let unit = {};
-                unit.type = $(this).find('.unitType').hasClass('include') ? "include" : "exclude";
-                unit.words = [];
-                // iterature through the tags element with the class wordList and get the title of each children tag element
-                $(this).find('.tagify__tag').each(function() {
-                    unit.words.push($(this).attr('title'));
+                    if (unit.words.length > 0){
+                        units.push(unit);
+                    }
                 });
-
-                if (unit.words.length > 0){
-                    units.push(unit);
+                rule.units = units;
+                if(rule.units.length > 0){
+                    now_rules.push(rule);
                 }
-            });
-            rule.units = units;
-            if(rule.units.length > 0){
-                now_rules.push(rule);
             }
         });
         console.log("parsed out rules: ", now_rules);
@@ -629,39 +741,43 @@
 
             // If the countdown is over, stop the timer
             if (time_left < 0) {
-                clearInterval(x);
-                $("#timer").text("EXPIRED");
+                clearInterval(interval_id);
+                $("#timer").text("00:00");
             }
         }
     }
 
     $(document).ready(function(){
         load_more_data(false);
-        $("#ruleList").sortable({
-            animation: 150,
-            handle: ".sortHandle",
-            filter: ".addButton",
-            onEnd: function(event, ui) {
-                // console.log("updating priority");
-                updatePriority();
-            }
-        });
+        // $("#ruleList").sortable({
+        //     animation: 150,
+        //     handle: ".sortHandle",
+        //     filter: ".addButton",
+        //     onEnd: function(event, ui) {
+        //         // console.log("updating priority");
+        //         updatePriority();
+        //     }
+        // });
 
         if(STAGE === "update"){
             displayRules(JSON.parse(`{{rules | safe}}`));
         } else {
             displayRules([
-                // {
-                //     "action": 0,
-                //     "name": "Trump-related discussion",
-                //     "variants": true,
-                //     "units": [
-                //         {
-                //             "type": "include",
-                //             "words": ["Trump", "Donald Trump"],
-                //         }
-                //     ]
-                // },
+                {
+                    "action": 1,
+                    "name": "Trump-related discussion",
+                    "variants": true,
+                    "units": [
+                        {
+                            "type": "include",
+                            "words": ["Trump", "Donald Trump"],
+                        },
+                        {
+                            "type": "exclude",
+                            "words": ["trumpet", "trump card"],
+                        }
+                    ]
+                },
                 // {
                 //     "action": 1,
                 //     "name": "Sexual accusation",
@@ -685,40 +801,40 @@
 
                     ]
                 },
-                {
-                    "action": 0,
-                    "name": "Construtive Economy Discussion",
-                    "variants": true,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["progressive", "equity", "investing", "renewable", "growth", "sustainability", "balanced", "benefit", "protecting"]
-                        },
-                        {
-                            "type": "exclude",
-                            "words": ["ignorant", "stupid", "waste", "thieves", "stealing"]
-                        }
-
-                    ]
-                },
                 // {
-                //     "action": 1,
-                //     "name": "Terrorist accusation",
+                //     "action": 0,
+                //     "name": "Constructive Economy Discussion",
                 //     "variants": true,
                 //     "units": [
                 //         {
                 //             "type": "include",
-                //             "words": ["terrorists", "terrorist", "kill", "killing"]
+                //             "words": ["progressive", "equity", "investing", "renewable", "growth", "sustainability", "balanced", "benefit", "protecting"]
                 //         },
-                //     ]
+                //         {
+                //             "type": "exclude",
+                //             "words": ["ignorant", "stupid", "waste", "thieves", "stealing"]
+                //         }
 
-                // }
+                //     ]
+                // },
+                {
+                    "action": 1,
+                    "name": "Terrorist accusation",
+                    "variants": true,
+                    "units": [
+                        {
+                            "type": "include",
+                            "words": ["terrorists", "terrorist", "kill", "killing"]
+                        },
+                    ]
+
+                }
             ]);
         }
 
         $("#timer").text("15:00");
         time_left = 15 * 60 * 1000;;
-        setInterval(set_timer, 1000);
+        interval_id = setInterval(set_timer, 1000);
     })
   
 </script>

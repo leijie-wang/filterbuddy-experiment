@@ -9,3 +9,4 @@ db.sqlite3
 .env
 django.log
 datasets/youtube_data.ipynb
+datasets/collected_datasets/*

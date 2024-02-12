@@ -69,33 +69,42 @@ class TreesFilter:
     def _build_statement(self, unit, variants=False):
         regex_list = [self._build_word_regex(word, variants) for word in unit["words"]]
         or_regex = "|".join(regex_list) # a regex that checks if any of the words in the list is in the text
-        if unit["type"] == "include":
-            def func(text):
-                return re.search(or_regex, text, re.IGNORECASE)
-            return func
-        elif unit["type"] == "exclude":
-            def func(text):
-                return not re.search(or_regex, text, re.IGNORECASE)
-            return func
-        else:
-            raise Exception("Unknown unit type: {}".format(unit["type"]))
+        def func(text):
+            match = re.search(or_regex, text, re.IGNORECASE)
+            if match:
+                return True, match.group()  # Return True and the matched pattern
+            else:
+                return False, None  # Return False and None if no match
+        return func
+
                 
     def _build_rule_function(self, rule):
         units = rule["units"]
         variants = rule["variants"]
-        funcs = [self._build_statement(unit, variants) for unit in units]
+        funcs = [(unit["type"], self._build_statement(unit, variants)) for unit in units]
         def rule_function(text):
-            for func in funcs:
-                if not func(text):
-                    return False
-            return True
+            patterns = []
+            for type, func in funcs:
+                result, pattern = func(text)
+                if result:
+                    patterns.append([type, pattern])
+
+                if type == "include" and not result:
+                    return False, patterns
+                if type == "exclude" and result:
+                    return False, patterns
+            return True, patterns
         return rule_function
 
     def _test_rule(self, rule, dataset):
         rule_function = self._build_rule_function(rule)
         predictions = {}
         for index in range(len(dataset)):
-            predictions[index] = rule_function(dataset[index])
+            pred, patterns = rule_function(dataset[index])
+            predictions[index] = {
+                "pred": pred,
+                "patterns": patterns
+            }
         return predictions
 
     def test_model(self, X, y=None):
@@ -123,7 +132,8 @@ class TreesFilter:
                     # the difference between None and 0/1 is still important for the frontend to display, even though None predictions are treated as 0 in the classifier
                     texts_predictions[index].append({
                         "id": rule_id,
-                        "prediction": rule["action"] if rule_pred.get(index, None) else None,
+                        "prediction": rule["action"] if rule_pred[index]["pred"] else None,
+                        "patterns": rule_pred[index]["patterns"]
                     })
             
         prediction = [None for _ in range(len(X_test))] # overall predictions
@@ -138,13 +148,12 @@ class TreesFilter:
                     prediction[index] = pred["prediction"]
                     break
             
-
-            
+        # we still make sure that the backend operates with a priority framework but we return the result in a simplified way.
+        prediction = [(0 if pred is None else pred) for pred in prediction]  
         
         # if the user builds the model interactively, then y_test will be None
         if y_test is not None:
             # we treat None (not affected texts) as approved texts, which is 0
-            prediction = [(0 if pred is None else pred) for pred in prediction]
             performance = calculate_algorithm_metrics(y_test, prediction)
         else:
             performance = {}
