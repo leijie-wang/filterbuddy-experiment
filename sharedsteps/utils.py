@@ -27,7 +27,7 @@ def get_groundtruth_dataset(participant_id, stage):
         ).order_by('id').values('text', 'label')
     return list(groundtruths)
 
-def save_test_results(participant_id, stage, predictions):
+def save_test_results(participant_id, stage, predictions, old=False):
     # Retrieve the ground truth entries in the same order as the predictions
     groundtruths = GroundTruth.objects.filter(
         participant_id=participant_id, 
@@ -39,10 +39,20 @@ def save_test_results(participant_id, stage, predictions):
         logger.error("The number of ground truths does not match the number of predictions.")
         return
 
-    # Update each ground truth with its corresponding prediction
-    for groundtruth, prediction in zip(groundtruths, predictions):
-        groundtruth.prediction = prediction
-        groundtruth.save()
+    if old:
+        if stage != "update":
+            logger.warning("Old predictions are only saved in the update stage.")
+            return
+        
+        # save the predictions of the old filter on the new set of ground truths
+        for groundtruth, prediction in zip(groundtruths, predictions):
+            groundtruth.old_prediction = prediction
+            groundtruth.save()
+    else:
+        # Update each ground truth with its corresponding prediction
+        for groundtruth, prediction in zip(groundtruths, predictions):
+            groundtruth.prediction = prediction
+            groundtruth.save()
 
 def calculate_algorithm_metrics(y, y_pred):
     accuracy = accuracy_score(y, y_pred)
@@ -119,3 +129,14 @@ def read_prompts_from_database(participant_id, stage):
             "negatives": prompt.get_negatives()
         })
     return prompts
+
+def save_logs(participant_id, stage, logs):
+    
+    from sharedsteps.models import ExperimentLog
+    for log in logs:
+        ExperimentLog.objects.create(
+            participant_id=participant_id,
+            stage=stage,
+            time=log['time'],
+            message=log["message"]
+        ).save()

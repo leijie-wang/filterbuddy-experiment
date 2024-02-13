@@ -1,5 +1,6 @@
 from calendar import c
 from cgi import test
+from distutils.command import build
 from functools import partial
 from math import log
 from re import T
@@ -15,8 +16,8 @@ from sharedsteps.models import SYSTEMS, Participant
 logger = logging.getLogger(__name__)
 
 
-BuildDataSet = Dataset("train")
-UpdateDataSet = Dataset("train")
+BuildDataSet = Dataset("old.csv")
+UpdateDataSet = Dataset("new.csv")
 
 def onboarding(request):
     """
@@ -66,7 +67,9 @@ def store_groundtruth(request):
     participant_id = request_data.get('participant_id')
     stage = request_data.get('stage')
     dataset = request_data.get('dataset')
+    logs = request_data.get('logs')
 
+    utils.save_logs(participant_id, stage, logs)
     error_message = utils.check_parameters(participant_id, stage)
     if error_message is not None:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
@@ -148,6 +151,8 @@ def store_labels(request):
     dataset = request_data.get('dataset')
     participant_id = request_data.get('participant_id')
     stage = request_data.get('stage')
+    logs = request_data.get('logs')
+    utils.save_logs(participant_id, stage, logs)
 
     error_message = utils.check_parameters(participant_id, stage)
     if error_message is not None:
@@ -333,43 +338,81 @@ def validate_page(request):
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = utils.get_groundtruth_dataset(participant_id, stage)
-    status, response = test_system(participant_id, dataset)
+    status, response = test_system(participant_id, stage, dataset)
     if status == 0:
         return HttpResponse(f"Error: {response}")
     elif status == 1:
         task_id = response
+        status, build_task_id = test_system(participant_id, "build", dataset) if stage == "update" else (2, "")
         return render(request, 'validate.html', {
             "dataset": json.dumps(dataset),
             "participant_id": participant_id,
             "system": system,
             "stage": stage,
+            "build_task_id": build_task_id,
             "task_id": task_id,
         })
     else:
         test_results = response
         utils.save_test_results(participant_id, stage, test_results["prediction"])
-        build_performance = utils.calculate_stage_performance(participant_id, "build") if stage == "update" else {}
+        # we want to show the performance of the old system on the new dataset
+        status, old_results = test_system(participant_id, "build", dataset) if stage == "update" else (2, {})
         return render(request, 'validate.html', {
             "dataset": json.dumps(dataset),
             "participant_id": participant_id,
             "system": system,
             "stage": stage,
             "test_results": json.dumps(test_results),
-            "build_performance": json.dumps(build_performance),
+            "old_results": json.dumps(old_results),
             "task_id": ""
         })
         
+def test_filter(request):
+    request_data = json.loads(request.body)
+    dataset = request_data.get('dataset')
+    participant_id = request_data.get('participant_id')
+    stage = request_data.get('stage')
+    if stage == "update":
+        status, response = test_system(participant_id, "build", dataset)
+        old_performance = utils.calculate_stage_performance(participant_id, "build")
+        if status == 0:
+            return JsonResponse({"status": False, "message": response}, safe=False)
+        elif status == 1:
+            task_id = response
+            return JsonResponse({
+                "status": True,
+                "message": "Successfully started the testing",
+                "data": {
+                    "old_performance": old_performance,
+                    "task_id": task_id
+                }
+            })
+        else:
+            test_results = response
+            utils.save_test_results(participant_id, stage, test_results["prediction"], old=True)
+            return JsonResponse({
+                "status": True,
+                "message": "Successfully tested the system",
+                "data": {
+                    "old_performance": old_performance,
+                    "test_results": test_results
+                }
+            })
 
-def test_system(participant_id, test_dataset):
-    
+def test_system(participant_id, stage, test_dataset):
+    """
+        test the system of the given stage for a participant
+        @param participant_id: the id of the participant
+        @param stage: the stage of the system we want to test
+        @param test_dataset: the dataset we want to test the system on
+    """
 
     X_test = [item["text"] for item in test_dataset]
     y_test = [item["label"] for item in test_dataset]
     
     participant = Participant.objects.get(participant_id=participant_id)
     system = participant.system
-    stage = participant.stage
-    logger.info(f"participant {participant_id} tests system: {system} at the stage {stage}")
+    logger.info(f"participant {participant_id} tests system: {system} of the {stage} stage")
     
     classifier_class = None
     if system == SYSTEMS.EXAMPLES_ML.value:
@@ -388,10 +431,10 @@ def test_system(participant_id, test_dataset):
         from systems.trees_ml_filter import Trees_ML_MixedFilter
         classifier_class = Trees_ML_MixedFilter
 
-    training_dataset = BuildDataSet if stage == "build" else UpdateDataSet
+    training_dataset = BuildDataSet if stage == "build" else UpdateDataSet # used in the llm_ml_filter and trees_ml_filter
     status, classifier = classifier_class.train(participant_id, dataset=training_dataset, stage=stage)
     if not status:
-        return 0, classifier
+        return 0, classifier # the error message
     
     logger.info(f"starting testing for participant {participant_id} at stage {stage} using system {system}")
     if system == SYSTEMS.PROMPTS_LLM.value:

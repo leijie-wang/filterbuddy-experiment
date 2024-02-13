@@ -1,4 +1,5 @@
 import random
+from turtle import st
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -16,8 +17,13 @@ class MLFilter:
     @classmethod
     def train(cls, participant_id, **kwargs):
         from sharedsteps.models import ExampleLabel
-
-        training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id).values("text", "label"))
+        stage = kwargs["stage"]
+        if stage == "build":
+            # only examples from the first stage will be used to train the model
+            training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id, stage=stage).values("text", "label"))
+        elif stage == "update":
+            # examples from both stages will be used to train the model
+            training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id).values("text", "label"))
         if len(training_dataset) == 0:
             return (False, "No labels found for the participant")
 

@@ -60,22 +60,60 @@
                     class="grow flex flex-col px-4 border border-gray-600 rounded h-16 overflow-y-auto"
                 ></div>
             </div>
-            <div x-show="atBottom" class="w-[30%] flex flex-col justify-end items-center px-4">
-                <div class="flex flex-col gap-y-2  bg-slate-100 rounded p-4">
+            <div x-show="atBottom" class="w-[30%] flex flex-col justify-end gap-y-2 items-center px-4 pt-4">
+                <!-- 
+                <div class="grow-0 text-2xl font-medium">
+                        How your old filter performed
+                </div>  
+                <div class="grow flex flex-col self-stretch gap-y-4">
+                    
+                    <div class="flex flex-col items-start">
+                        <div class="text-slate-600 text-xl ">
+                            <span class="text-xl font-bold">1</span>. Your filter's decisions match <br/>
+                            <span class="text-2xl text-blue-500" id="test-accuracy">?</span> of your labels.
+                        </div>
+                    </div>
+                   
+                    <div class="flex flex-col items-start">
+                        <div class="text-slate-600 text-xl ">
+                            <span class="text-xl font-bold">2</span>. Your filter's removal decisions match <br/>
+                                <span class="text-2xl text-blue-500" id="test-precision">?</span> of your removals.
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-start">
+                        <div class="text-slate-600 text-xl ">
+                            <span class="text-xl font-bold">3</span>. Your filter correctly removes <br/>
+                            <span class="text-2xl text-blue-500" id="test-recall">?</span> of comments you want to remove.
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-start"> 
+                        <div class="text-slate-600 text-xl">
+                            <span class="text-xl font-bold">4</span>. Your filter falsely removes <br/>
+                            <span class="text-2xl text-blue-500" id="test-fpr">?</span> of comments that you want to keep
+                        </div>
+                    </div>
+                </div>
+                 -->
+                <div class="flex flex-col  bg-slate-100 rounded p-3">
+                    <!--  -->
                     <p class="text-lg">
-                        {% if stage == "build" %}
                             Thanks for your efforts in labeling these examples. Now start creating your filters!
-                        {% elif stage == "update" %}
-                            Thanks for your efforts in labeling these examples. Now start updating your filters!
-                        {% endif %}
                     </p>
                     <button 
-                        class="text-white text-2xl self-end bg-blue-600 px-4 py-2 rounded-lg"
-                        
+                        class="text-white text-xl self-end bg-blue-600 px-4 py-1 rounded-lg"
                         @click="go_to_system();"
-                    >
-                        GO
-                    </button>
+                    >GO</button>
+                    <!-- 
+                        <p class="text-lg">
+                            Wanna see how your old filter adapts to these new comments?
+                        </p>
+                        <button 
+                            class="text-white text-xl self-end bg-blue-600 px-4 py-1 rounded-lg"   
+                            @click="test_filter();"
+                        >Test</button>
+                     -->
                 </div>
             </div>
         </div>

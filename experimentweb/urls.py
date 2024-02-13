@@ -24,6 +24,7 @@ urlpatterns = [
 
     path('groundtruth/', sharedviews.label_ground_truth),
     path('store_groundtruth/', sharedviews.store_groundtruth),
+    path('test_filter/', sharedviews.test_filter),
 
     path('load_system/', sharedviews.load_system),
     
