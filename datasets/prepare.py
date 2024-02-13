@@ -1,12 +1,17 @@
+from calendar import c
+from email import header
+from email.quoprimime import header_decode
 import json
 import os, sys
+import csv
+import comm
 import pandas as pd
 import numpy as np
 from django.conf import settings
 from sklearn.model_selection import StratifiedShuffleSplit
 
 # DATASET_NAME = "toxicity_ratings.json"
-DATASET_NAME = "jigsaw_sampled.json"
+# DATASET_NAME = "jigsaw_sampled.json"
 TRAIN_DATASET_SIZE = 1200
 VALIDATION_DATASET_SIZE = 240
 TEST_DATASET_SIZE = 240
@@ -30,7 +35,20 @@ def clean_jigsaw_comment(comment):
     if len(text) == 0:
         return None
     return {"text": text, "score": comment["toxicity"]}
-    
+
+def clean_youtube_comment(comment):
+    text = comment[0].strip()
+    # escape double quotes
+    text = text.replace('"', '').replace("\\", "").replace("`", "").replace("\n", " ")
+    if len(text) == 0:
+        return None
+    try:
+        score = int(float(comment[1]) >= 0.7)
+        return {"text": text, "score": score, "title": comment[2]}
+    except:
+        print("Error in parsing the score:", comment)
+        return None
+
 def determine_split_index(bucket_size):
     if ALL_DATASET_SIZE / SAMPLE_BUCKETS > bucket_size:
         print("Warning: the bucket size is too small to split the dataset; we use ratio instead")
@@ -43,21 +61,32 @@ def determine_split_index(bucket_size):
         test_end = valid_end + int(TEST_DATASET_SIZE/SAMPLE_BUCKETS)
         return train_end, valid_end, test_end
 
-def main():
+def main(dataset_path, clean_function, format="json"):
     """
         We split the dataset into three parts: train, validation, and test
         We ensure that each dataset have a balanced distribution of toxicity scores, i.e., each dataset has the same number of samples in each toxicity score bucket
     """
-    dataset_path = DATASET_NAME
+
     print("I am reading from dataset:", dataset_path)
     dataset = []
-    with open(dataset_path) as f:
-        for line in f:
-            comment = line.strip()
-            # comment = clean_toxicity_comment(json.loads(comment))
-            comment = clean_jigsaw_comment(json.loads(comment))
-            if comment is not None:
-                dataset.append(comment)
+    if format == "json":
+        with open(dataset_path) as f:
+            for line in f:
+                comment = line.strip()
+                comment = clean_function(json.loads(comment))
+                if comment is not None:
+                    dataset.append(comment)
+        
+    elif format == "csv":
+        with open(dataset_path, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.reader(file)
+            count = 0
+            for row in csv_reader:
+                if count < 5:
+                    print(row)
+                comment = clean_function(row)
+                if comment is not None:
+                    dataset.append(comment)
 
     dataset = pd.DataFrame(dataset)
     print("describe the dataset:", dataset.describe())
@@ -85,6 +114,43 @@ def main():
     train_set.drop(columns=['score_bucket']).to_csv("train.csv", index=False)
     validation_set.drop(columns=['score_bucket']).to_csv("validation.csv", index=False)
     test_set.drop(columns=['score_bucket']).to_csv("test.csv", index=False)
+
+def create_balanced_dataset(filename, clean_function, new_filename):
+    dataset_path = f"collected_datasets/{filename}.csv"
+    dataset = []
+    with open(dataset_path, mode='r', encoding='utf-8') as file:
+        csv_reader = csv.reader(file)
+        header = True
+        for row in csv_reader:
+            if header:
+                print(row)
+                header = False
+            else:
+                comment = clean_function(row)
+                if comment is not None:
+                    dataset.append(comment)
+                
+    dataset = pd.DataFrame(dataset)
+    # print("describe the dataset:", dataset["score"].describe())
+    # shuffle the dataset
+    dataset = dataset.sample(frac=1).reset_index(drop=True)
+
+    # sample the same number of toxic and non-toxic comments, note that the number of toxic comments is less than the number of non-toxic comments
+
+    toxic_comments = dataset[dataset["score"] > 0.5]
+    non_toxic_comments = dataset[dataset["score"] <= 0.5]
     
+    print(f"the length of the non-toxic comments: {len(non_toxic_comments)}; the length of the toxic comments: {len(toxic_comments)}")
+    non_toxic_comments = non_toxic_comments.sample(n=len(toxic_comments)).reset_index(drop=True)
+    balanced_dataset = pd.concat([toxic_comments, non_toxic_comments]).sample(frac=1).reset_index(drop=True)
+    print("describe the balanced dataset:", balanced_dataset["score"].describe())
+
+    balanced_dataset["comment_word_len"] = balanced_dataset["text"].str.split().str.len()
+    
+    balanced_dataset.to_csv(f"{new_filename}.csv", index=False)
+
+
+
 if __name__ == "__main__":
-    main()
+    create_balanced_dataset("youtube_gun_toxicity_clean", clean_youtube_comment, "old")
+    create_balanced_dataset("youtube_border_toxicity_clean", clean_youtube_comment, "new")

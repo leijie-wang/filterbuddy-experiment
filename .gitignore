@@ -10,3 +10,4 @@ db.sqlite3
 django.log
 datasets/youtube_data.ipynb
 datasets/collected_datasets/*
+datasets/youtube_gun_toxicity.csv

@@ -6,19 +6,13 @@ sys.path.append(os.path.join(settings.BASE_DIR, 'datasets'))
 logger = logging.getLogger(__name__)
 BATCH_SIZE = 30
 DATASET_SIZE = 1200
-TEST_SIZE = 50
+TEST_SIZE = 100
 
 class Dataset:
 
     
-    def __init__(self, type):
-        if type == "train":
-            self.dataset_path = os.path.join(settings.BASE_DIR, 'datasets/train.csv')
-        elif type == "validate":
-            self.dataset_path = os.path.join(settings.BASE_DIR, 'datasets/validation.csv')
-        elif type == "test":
-            self.dataset_path = os.path.join(settings.BASE_DIR, 'datasets/test.csv')
-
+    def __init__(self, filename):
+        self.dataset_path = os.path.join(settings.BASE_DIR, 'datasets', filename)
         self.dataset = []
         # load the dataset from a csv file
         with open(self.dataset_path, mode='r', encoding='utf-8') as file:
