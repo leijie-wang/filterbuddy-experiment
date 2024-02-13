@@ -1,3 +1,4 @@
+from functools import partial
 from django.db import models
 from enum import Enum
 import json, random, sympy, string
@@ -19,6 +20,13 @@ STAGES = [
     ("build", "build"),
     ("update", "update"),
 ]
+
+class ExperimentLog(models.Model):
+    participant_id = models.CharField(max_length=100)
+    # use GMT-0 time
+    time = models.DateTimeField()
+    message = models.TextField()
+    stage = models.CharField(max_length=10, choices=STAGES)
 
 class Participant(models.Model):
     participant_id = models.CharField(max_length=100)
@@ -138,6 +146,7 @@ class GroundTruth(models.Model):
     label = models.IntegerField()
     stage = models.CharField(max_length=10, choices=STAGES)
     prediction = models.IntegerField(null=True)
+    old_prediction = models.IntegerField(null=True)
 
     def __str__(self):
         return f"Participant {self.participant_id} labeled {self.text} as {self.label}"

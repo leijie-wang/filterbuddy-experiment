@@ -174,6 +174,7 @@
     var selected_prompts = [];
     var selected_prediction = "all";
 
+    var interval_id = null;
     var is_paused = false;
     var time_left = null;
 
@@ -644,8 +645,8 @@
 
             // If the countdown is over, stop the timer
             if (time_left < 0) {
-                clearInterval(x);
-                $("#timer").text("EXPIRED");
+                clearInterval(interval_id);
+                $("#timer").text("00:00");
             }
         }
     }
@@ -709,7 +710,7 @@
 
         $("#timer").text("15:00");
         time_left = 15 * 60 * 1000;;
-        setInterval(set_timer, 1000);
+        interval_id = setInterval(set_timer, 1000);
     })
     
 
