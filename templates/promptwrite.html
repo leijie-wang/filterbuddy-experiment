@@ -43,10 +43,10 @@
             
             <div class="flex items-center justify-start bg-slate-100 p-3 rounded-md">
                 <div class="text-xl text-black">
-                    Do you know you can teach a filter to think like you? 
-                    By labeling examples as <span class="text-emerald-600 font-medium">Keep</span> or <span class="text-red-600 font-medium ">Remove</span>, 
-                    you're essentially teaching the filter to understand your standards.
-                    In the next, please take up to <span class="font-medium">15 minutes</span> to label the provided examples as accurately as possible, based on what you feel fits your criteria.
+                    Do you know you can guide a filter like talking to an assistant? 
+                    Just like chatting with ChatGPT, you can outline what comments to remove through clear instructions and examples.
+                    But remember it might take a few minutes to process your instructions, so please be patient!
+                    In the next, please take up to <span class="font-medium">15 minutes</span> to write your instructions, trying to be as clear and specific as possible.
                 </div>
             </div>
             <div class="flex flex-col items-center justify-center">
@@ -87,9 +87,6 @@
                     <div class="bottom flex justify-end gap-x-2 flex-grow-0">
                         <button @click="trainLLM();" class="bg-emerald-500 text-white font-bold py-2 px-3 rounded">
                             Try filtering
-                        </button>
-                        <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
-                            Create your filter
                         </button>
                     </div>
                 </div>
@@ -137,6 +134,9 @@
                 <div class="bottom flex justify-end gap-x-2 pt-3">
                     <button @click="load_more_data" class="bg-slate-500 text-white font-bold py-2 px-3 rounded">
                         Load More Examples
+                    </button>
+                    <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
+                        Create your Filter
                     </button>
                 </div>
             </div>
