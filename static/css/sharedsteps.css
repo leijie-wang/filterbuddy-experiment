@@ -75,6 +75,10 @@
     --tags-border-color: #e4e4e7;
 }
 
+.newTag {
+    --tag-bg: #ffedd5; /* text-orange-100 */
+}
+
 /* .includeUnitSection .wordList {
     --tag-bg: #fef2f2;
     --tag-hover: #fee2e2;

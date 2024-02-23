@@ -1,10 +1,35 @@
 from django.conf import settings
 from sklearn.metrics import accuracy_score, recall_score, precision_score, confusion_matrix
 from sympy import loggamma
+from openai import OpenAI
+from django.conf import settings
 from sharedsteps.models import Participant, GroundTruth
 import logging
 
 logger = logging.getLogger(__name__)
+
+class ChatCompletion:
+
+    def __init__(self):
+        self.llm_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+    def chat_completion(self, system_prompt, user_prompt):
+        response = self.llm_client.chat.completions.create(
+            model="gpt-4-1106-preview",
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                }
+            ],
+        )
+        answer = response.choices[0].message.content
+        return answer
 
 def check_parameters(participant_id, stage=None, system=None):
     if participant_id is None:

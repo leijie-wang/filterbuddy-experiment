@@ -49,10 +49,10 @@ function get_backend(url, data, success_function){
     });
 }
 
-function post_backend(url, data, success_function){
+function post_backend(url, data, success_function=null){
     console.log("start POST to " + url);
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
-    $.ajax({
+    return $.ajax({
         url: url,
         type: "POST",
         data: JSON.stringify(data),

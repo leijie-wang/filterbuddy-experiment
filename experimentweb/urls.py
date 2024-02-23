@@ -43,4 +43,5 @@ urlpatterns = [
     path('ruleconfigure/', sharedviews.ruleconfigure),
     path('store_rules/', sharedviews.store_rules),
     path('trainTrees/', sharedviews.train_trees),
+    path('get_similar_phrases/', sharedviews.get_similar_phrases),
 ]

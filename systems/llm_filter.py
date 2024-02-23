@@ -9,6 +9,7 @@ import random
 import json
 import threading
 import time
+from sharedsteps.utils import ChatCompletion
 
 logger = logging.getLogger(__name__)
 
@@ -33,34 +34,14 @@ class LLMFilter:
         self.prompts = sorted(self.prompts, key=lambda x: x["priority"])
         self.BATCH_SIZE = batch_size
         self.system_prompt = f"""
-            For each text in the dataset, you task is to give a 1 (True) or 0 (False) prediction that represents whether the text satisfies the description in the overview and the rubrics.
-            Each text starts with "DATA" and a number. Both the number and the text are enclosed by "<" and ">".
-
+            For each text in the dataset, give a 1 (True) or 0 (False) prediction to represent whether the text satisfies the description in the rubrics. 
+            Each text starts with “DATA” and a number. Both the number and the text are enclosed by “<” and “>”. 
+            
             In the following, the user will provide one rubric to help you make your decision. 
-            The rubric comes with some examples that should be marked as True and some examples that should be marked as False for you to better understand the rubric.
-            As long as the given rubric is satisfied, you should give a True prediction. Otherwise, give a False prediction.
-
-            RETURN YOUR ANSWER as JSON `{{"results": [(index, prediction), ...]}}` where `index` is the index of the text in the dataset as an integer and prediction is the binary outcome (1 or 0).
+            If the given rubric is completely satisfied, give a True prediction. Otherwise, give a False prediction. 
+            RETURN YOUR ANSWER in the json format {{“results”: [(index, prediction), ...]}} where (index, prediction) is a tuple, index is the number of the text in the dataset, and prediction is either 1 or 0.
         """
-        self.llm_client = OpenAI(api_key=settings.OPENAI_API_KEY)
-
-    def _chat_completion(self, system_prompt, user_prompt):
-        response = self.llm_client.chat.completions.create(
-            model="gpt-4-1106-preview",
-            response_format={"type": "json_object"},
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                }
-            ],
-        )
-        answer = response.choices[0].message.content
-        return answer
+        self.llm_client = ChatCompletion()
     
     def _generate_dataset_list(self, dataset):
         """
@@ -80,7 +61,7 @@ class LLMFilter:
         """
         batch_str = "\n".join(batch)
         now_prompt = user_prompt + f"""\n\n\t### DATASETS: "{batch_str}","""
-        response = self._chat_completion(self.system_prompt, now_prompt)
+        response = self.llm_client.chat_completion(self.system_prompt, now_prompt)
         response = json.loads(response or "{}")
         if "results" in response:
             results = response["results"]

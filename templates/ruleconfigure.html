@@ -165,6 +165,44 @@
     var time_left = null;
 
     /* 
+        functions that help the authoring of prompts
+    */
+    async function getSimilarPhrases(element){
+        let word_input = $(element).closest('.unitSection').find('.wordList');
+        console.log("tagify element", );
+        let words = [];
+        $(word_input).find('.tagify__tag').each(
+            function() {
+                words.push($(this).attr('title'));
+            }
+        );
+        
+        console.log("getting similar phrases for ", words);
+        
+        let response = await post_backend(
+            "/get_similar_phrases/", 
+            {'phrases': words}
+        )
+    
+        if(!response["status"]){
+            alert(response["message"]);
+            return;
+        }
+        let similar_phrases = response.data.phrases;
+        console.log("similar phrases", similar_phrases);
+        let tagify = $(word_input[1]).data("tagify"); // get the tagify instance of the second word input
+        tagify.addTags(similar_phrases);
+
+        $(word_input[0]).find("tag").slice(-3).each(function(){
+            $(this).addClass('newTag');
+            // Set a timeout to remove the class after 2 seconds (2000 milliseconds)
+            setTimeout(() => {
+                $(this).removeClass('newTag');
+            }, 8000);
+        })
+    }
+
+    /* 
         functions that display, add, and remove rules
     */
     
@@ -189,27 +227,35 @@
 
     function getUnitSection(type, words, second_include=false){
         return `
-            <div class='unitSection ${type}UnitSection flex flex-col gap-y-2 items-start pl-4 pr-4'>
-                <div class='unitType ${type} w-fit relative text-start rounded ${type === "include" ? "bg-red-50" : "bg-emerald-50"} text-lg  py-1 px-3 italic'>
-                    <span class="font-bold ">
-                        ${
-                            type === "exclude" ? 
-                                '<i class="fa-solid fa-check fa text-emerald-600 mr-1"></i>' : 
-                                '<i class="fa-solid fa-sm fa-magnifying-glass text-red-400 mr-1"></i>'
+            <div class='unitSection ${type}UnitSection flex flex-col gap-y-2 items-stretch pl-4 pr-4'>
+                <div class='flex gap-x-2 items-center justify-between'>
+                    <div class='unitType ${type} w-fit relative text-start rounded ${type === "include" ? "bg-red-50" : "bg-emerald-50"} text-lg  py-1 px-3 italic'>
+                        <span class="font-bold ">
+                            ${
+                                type === "exclude" ? 
+                                    '<i class="fa-solid fa-check fa text-emerald-600 mr-1"></i>' : 
+                                    '<i class="fa-solid fa-sm fa-magnifying-glass text-red-400 mr-1"></i>'
+                                }
+                        </span>
+                        <span class="font-bold unitTitle">
+                            ${
+                                type === "exclude" ? "Unless they include" : second_include ? "And include" : "If they include"
                             }
-                    </span>
-                    <span class="font-bold unitTitle">
-                        ${
-                            type === "exclude" ? "Unless they include" : second_include ? "And include" : "If they include"
-                        }
-                    </span>
-                    <span class="font-base">one of the following phrases</span>
-                    <button class='absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-white rounded-full text-xs w-4 h-4 flex items-center justify-center border border-gray-300'
-                        x-on:click="${type === "include" ? "includes = includes - 1; " : "excludes = excludes - 1; "}; removeUnitSection($event);"
-                    >
-                        &times;
+                        </span>
+                        <span class="font-base">one of the following phrases</span>
+                        <button class='absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-white rounded-full text-xs w-4 h-4 flex items-center justify-center border border-gray-300'
+                            x-on:click="${type === "include" ? "includes = includes - 1; " : "excludes = excludes - 1; "}; removeUnitSection($event);"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                    <button x-data="{loading: false}" class="text-sm bg-yellow-50 p-2 rounded-lg" @click="loading = true; await getSimilarPhrases($el); loading = false">
+                        <div class="spinner-border text-orange-300 spinner-border-sm" role="status" x-show="loading">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <i class="fa-regular fa-lg fa-lightbulb text-orange-400" x-show="!loading"></i>
+                        <span>Similar phrases</span>
                     </button>
-                    
                 </div>
                 <div class='pl-6 self-stretch grow flex wordSection'>
                     <input 
@@ -241,12 +287,14 @@
         let unit_section_html = getUnitSection(type, [], number_include === 1);
         if(!has_exclude){
             unit_sections.append(unit_section_html);
-            new Tagify(
-                unit_sections.children().last().find('.wordList')[0], 
+            let input = unit_sections.children().last().find('.wordList')[0]
+            let tag = new Tagify(
+                input,
                 {
                     placeholder: "Add another word, separated by comma",
                 }
             );
+            $(input).data("tagify", tag);
         } else {
             unit_sections.children().last().before(unit_section_html);
             new Tagify(
@@ -431,6 +479,8 @@
                 let tag = new Tagify($(this)[0], {
                     placeholder: "Add another word, separate by comma",
                 });
+                $(this).data("tagify", tag);
+                
             });
         });
     }
@@ -758,6 +808,18 @@
             displayRules([
                 {
                     "action": 1,
+                    "name": "Personal attack",
+                    "variants": false,
+                    "units": [
+                        {
+                            "type": "include",
+                            "words": ["nonsense", "asshole", "stupid", "idiot", "fool", "stupidity"],
+                        },
+
+                    ]
+                },
+                {
+                    "action": 1,
                     "name": "Trump-related discussion",
                     "variants": true,
                     "units": [
@@ -782,18 +844,7 @@
                 //         },
                 //     ]   
                 // },
-                {
-                    "action": 1,
-                    "name": "Personal attack",
-                    "variants": false,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["nonsense", "asshole", "stupid", "idiot", "fool", "stupidity"],
-                        },
-
-                    ]
-                },
+                
                 // {
                 //     "action": 0,
                 //     "name": "Constructive Economy Discussion",

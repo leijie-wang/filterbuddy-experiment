@@ -7,6 +7,7 @@ from re import T
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
+from openai import chat
 from datasets.dataset import Dataset
 import sharedsteps.utils as utils
 import logging
@@ -325,6 +326,36 @@ def store_rules(request):
         },
         safe=False
     )
+
+def get_similar_phrases(request):
+    print("get_similar_phrases")
+    request_data = json.loads(request.body)
+    phrases = request_data.get("phrases")
+    chatbot = utils.ChatCompletion()
+        
+    response = chatbot.chat_completion(
+        system_prompt="""
+            You are expected to suggest 3 the most similar phrases to a given list of phrases. 
+            These phrases should also be commonly used in social media. You should also take into consideration common typos. 
+            RETURN YOUR RESULTS in the JSON format {"results": [a list of phrases]}
+        """,
+        user_prompt=f"Given the following phrases: {', '.join(phrases)}",
+    )
+    response = json.loads(response or "{}")
+    if "results" in response:
+        logger.info(response["results"])
+        return JsonResponse(
+            {
+                "status": True,
+                "message": "Successfully got the similar phrases",
+                "data": {
+                    "phrases": response["results"]
+                }
+            },
+            safe=False
+        )
+
+
 
 def validate_page(request):
     
