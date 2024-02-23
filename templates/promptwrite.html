@@ -16,6 +16,8 @@
     <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
     
     <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
@@ -86,7 +88,7 @@
                    
                     <div class="bottom flex justify-end gap-x-2 flex-grow-0">
                         <button @click="trainLLM();" class="bg-emerald-500 text-white font-bold py-2 px-3 rounded">
-                            Try filtering
+                            Apply Active Prompts
                         </button>
                     </div>
                 </div>
@@ -102,19 +104,21 @@
             <div class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1">
                 <!-- display a set of filter options -->
                 <div class="header text-lg font-bold">
-                    Which Texts are Caught by Selected Rubrics
+                    What comments are removed by your active rules?
                 </div>
-                <div class="flex flex-col items-start gap-y-1">
-                    <div class="flex justify-start items-center gap-x-2 w-[60%]">
-                        <div>Filters</div>
-                        <div class="w-[45%]">
-                            <select id="predictionFilter" class="selectpicker data-filter border rounded show-tick" title="by predictions" data-width="100%" >
-                                <option value="targeted" class="text-xs text-gray-700">Targeted comments</option>
-                                <option value="not-targeted" class="text-xs text-gray-700">Not Targeted comments</option>
-                                <option value="all" selected class="text-xs text-gray-700">All comments</option>
-                            </select>
-                        </div>
-                        <div class="w-[45%]">
+                <div class="self-stretch flex justify-between items-center gap-x-1">
+                    <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
+                    <div class="grow flex justify-start items-center gap-x-2 ">
+                        <!-- <div class="text-sm text-gray-600 ">View Options</div> -->
+                        
+                        
+                        <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
+                            <option value="removed" class=" text-xs text-gray-700">Removed comments</option>
+                            <option value="approved" selected class=" text-xs text-gray-700">Approved comments</option>
+                            <option value="all" selected class=" text-xs text-gray-700">All comments</option>
+                        </select>
+                       
+                        <!-- <div class="w-[45%]">
                             <select id="promptFilter" multiple
                                 class="selectpicker data-filter show-tick border rounded" 
                                 title="by rubrics" 
@@ -124,15 +128,14 @@
                             >
                                 
                             </select>
-                        </div>
+                        </div> -->
                     </div>
-                    <div id="countDisplay" class="text-sm text-gray-700 italic self-start"></div>
                 </div>
                 <!-- display a list of comments to be reviewed -->
                 <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow ">
                 </div>
                 <div class="bottom flex justify-end gap-x-2 pt-3">
-                    <button @click="load_more_data" class="bg-slate-500 text-white font-bold py-2 px-3 rounded">
+                    <button @click="load_more_data" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
                         Load More Examples
                     </button>
                     <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
@@ -178,6 +181,15 @@
     var is_paused = false;
     var time_left = null;
 
+    var copied_example = null;
+    function copyText(index){
+        navigator.clipboard.writeText(dataset[index].text); 
+    }
+
+    $(function() {
+        
+    });
+
     function updatePriority(){
         
         $('#promptList .promptSection').each(function(index) {
@@ -186,41 +198,47 @@
             prompts[id].priority = index;
 
             // update the priority class div of the this ruleSection
-            $(this).find('.priority').text(`${index + 1}.`);
+            // $(this).find('.priority').text(`${index + 1}.`);
         });
     }
 
-    function updateOptions(id, text){
-        // update the options of the select picker
+    function updateName(id, text){
+        // update name of the prompt with id
         prompts[id].name = text;
-        $(`#promptFilter option[value=${id}]`).text(capitalize(text));
-        $(".selectpicker").selectpicker('refresh');
     }
 
-    function display_prompts(new_prompts) {
+    function displayPrompts(new_prompts) {
         // display data on the page
         let promptList = $('#promptList');
 
         new_prompts.forEach((prompt) => {
             // create a new div element for each text with the template 
-            
+
+            // only the first prompt is open by default
+            let open = promptList.children().length === 0 ? "true" : "false";
+
             prompt.id = prompt_counter++;
             prompt.priority = promptList.children().length;
 
 
             let prompt_div_html = `
                 <div 
-                    x-data="{open: false, action: ${prompt.action}}" 
-                    class="promptSection flex flex-col gap-y-4 items-stretch border border-gray-300 rounded-lg px-3 pt-2 pb-4" 
+                    x-data="{
+                        open: ${open},
+                        active: true, 
+                        action: ${prompt.action}
+                    }" 
+                    class="promptSection flex flex-col items-stretch border !border-gray-300 rounded-lg px-2" 
+                    :class="{ 'activeSection': active, 'bg-gray-100': !active}" 
                     id="prompt-${prompt.id}"
                 >
-                    <div class="flex justify-between">
+                    <div class="flex justify-between py-2">
                         <div class="grow text-black flex items-center font-serif gap-x-2">
-                            <div class="priority text-2xl">
+                            <!-- <div class="priority text-2xl">
                                 ${prompt.priority + 1}.
-                            </div>
+                            </div> -->
                             <!-- Toggle Switch for Rule Action -->
-                            <div class="grow flex items-center font-medium text-xl ">
+                            <div class="min-w-[20%] flex items-center font-medium text-xl">
                                 <button 
                                     class="removeButton grow py-2 px-4 rounded italic" 
                                     :class="{ 'active bg-red-100': action === 1, 'bg-gray-100 text-gray-300': action !== 1}" 
@@ -228,21 +246,21 @@
                                 >
                                     Remove
                                 </button>
-                                <button 
+                                <!-- <button 
                                     class="approveButton grow py-2 px-4 rounded italic " 
                                     :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
                                     x-on:click="action = 0"
                                 >
                                     Keep
-                                </button>
+                                </button> -->
                             </div>
-                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${prompt.name}' }" class="w-[40%] .editableSectionTitle">
+                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${prompt.name}' }" class="grow editableSectionTitle">
                                 <div 
                                     contenteditable="true" 
                                     x-text="text"
-                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateOptions(${prompt.id}, text);"
-                                    class="italic font-xl border border-gray-300 p-2 rounded"
-                                    :class="{'border-red-500': inputExceedsLimit}"
+                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateName(${prompt.id}, text);"
+                                    class="promptName italic font-xl border border-gray-300 p-2 rounded"
+                                    :class="{'border-red-500': inputExceedsLimit, 'text-gray-300': !active}"
                                     data-placeholder="What Texts?"
                                 ></div>
                                 <div x-show="inputExceedsLimit" 
@@ -252,14 +270,22 @@
                             </div>
                         </div>
                         <!--have a foldable button-->
-                        <div class="flex justify-center gap-x-2 ml-4">
-                            <div class="flex items-center sortHandle focus:outline-none">
+                        <div class="flex justify-center gap-x-2 ml-2">
+                            <!-- <div class="flex items-center sortHandle focus:outline-none">
                                 <i class="fa-solid fa-up-down-left-right"></i>
-                            </div>
+                            </div> -->
+                            <button @click="active = !active; open=false;" class="focus:outline-none">
+                                <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
+                            </button>
                             <button @click="deletePrompt(${prompt.id})" class="focus:outline-none">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
-                            <button @click="open = !open" class="focus:outline-none">
+                            <button 
+                                @click="open = !open" 
+                                class="focus:outline-none"                                 
+                                :class="{'text-gray-100': !active}" 
+                                :disabled="!active"
+                            >
                                 <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -269,45 +295,61 @@
                             </button>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-y-2" x-show="open">
-                        <div class="flex flex-col gap-y-1">
-                            <div class="text-lg font-bold font-serif text-slate-600">
-                                Description
+                    <div class="flex flex-col gap-y-2 items-start p-4 pt-2" x-show="open">
+                        <div class="flex flex-col gap-y-2">
+                            <div class="w-fit text-lg italic bg-red-50 py-1 px-3 rounded">
+                                <span><i class="fa-solid fa-pencil mr-1"></i></span>
+                                <span>Describe the texts that </span>
+                                <span class="font-bold">you want to remove</span>
                             </div>
-                            <div 
-                                contenteditable="true" 
-                                class="promptRubric text-base text-gray-700 bg-zinc-50 rounded p-2"
-                            >
-                                ${prompt.rubric}
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-y-1">
-                            <div class="font-bold font-serif text-slate-600">
-                                Provide an example that <span class="italic font-medium">Should</span> be targeted
-                            </div>
-                            <div contenteditable="true"
-                                class="promptPositiveExample example bg-inherit bg-zinc-50 border-none text-sm text-gray-700 p-2">
-                                ${prompt.positives.length > 0 ? prompt.positives[0] : ""}
+                            <div class="self-stretch grow flex pl-6">
+                                <div 
+                                    contenteditable="true" 
+                                    class="promptRubric grow text-base text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                >
+                                    ${prompt.rubric}
+                                </div>
                             </div>
                         </div>
-                        <div class="flex flex-col gap-y-1">
-                            <div class="font-bold font-serif text-slate-600">
-                                Provide an example that <span class="italic font-medium">Should Not</span> be targeted
+                        <div class="flex flex-col gap-y-2">
+                            <div class="w-fit text-lg italic bg-red-50 py-1 px-3 rounded">
+                                <span><i class="fa-solid fa-sm fa-magnifying-glass text-red-400 mr-1"></i></span>
+                                <span>Provide an example that should be </span>
+                                <span class="font-bold">removed</span>
+                                
                             </div>
-                            
-                            <div contenteditable="true"
-                                class="promptNegativeExample example bg-inherit bg-zinc-50 border-none text-sm text-gray-700 p-2" 
-                            >
+                            <div class="self-stretch grow flex pl-6">
+                                <div 
+                                    contenteditable="true" 
+                                    class="promptPositiveExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                >
+                                    ${prompt.positives.length > 0 ? prompt.positives[0] : ""}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-y-2">
+                            <div class="w-fit text-lg italic bg-emerald-50 py-1 px-3 rounded">
+                                <span><i class="fa-solid fa-check fa text-emerald-600 mr-1"></i></span>
+                                <span>Provide an example that should </span>
+                                <span class="font-bold">not be removed</span>
+                            </div>
+                            <div class="self-stretch grow flex pl-6">
+                                <div 
+                                    contenteditable="true" 
+                                    class="promptNegativeExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                >
                                     ${prompt.negatives.length > 0 ? prompt.negatives[0] : ""}
+                                </div>
                             </div>
-                            
                         </div>
+                       
 
                     </div>
                 </div>`;
             $('#promptList').append(prompt_div_html);
             prompts[prompt.id] = prompt;
 
+            /*
             // add an option to the select picker for this prompt
             // prompts are not selected by default
             $('#promptFilter').append(`
@@ -318,7 +360,7 @@
             );
 
             // refresh the select picker
-            $(".selectpicker").selectpicker('refresh');
+            $(".selectpicker").selectpicker('refresh'); */
             
             
         });
@@ -333,7 +375,7 @@
             "positives": [],
             "negatives": []
         };
-        display_prompts([new_prompt]);
+        displayPrompts([new_prompt]);
     }
 
     function deletePrompt(deleted_id) {
@@ -382,7 +424,7 @@
     function showFilteredData(){
         /* iterature through dataset and hide the datum that doesn't match the filter selected_prediction and selected_prompts */
 
-        let expected_prediction = selected_prediction === "targeted" ? [1, 0] : selected_prediction === "not-targeted" ? [null] : [1, 0, null];
+        let expected_prediction = selected_prediction === "removed" ? [1] : selected_prediction === "approved" ? [0, null] : [1, 0, null];
         let counter = 0;
         let targeted_counter = 0;
         let approved_counter = 0;
@@ -391,9 +433,9 @@
         console.log("selected prompts", selected_prompts);
         console.log("selected_predictions", selected_prediction);
         dataset.forEach((datum, index) => {
-            let show = true;
+            let show = expected_prediction.includes(datum.total_prediction);
             let now_prediction = null;
-            if(expected_prediction.length < 3){
+            /* if(expected_prediction.length < 3){
                 // otherwise, regardless of what rules are selected, we all show all comments as the expectd prediction is the all
                 if (selected_prompts.length > 0){
                     // only show comments that are targeted (not targeted) by all the selected rules
@@ -405,21 +447,22 @@
                     // show all comments that are targeted (not targeted) by any of the rules
                     show = expected_prediction.includes(datum.total_prediction);
                 }
-            }
+            }*/
 
             if (show){
                 $(`#datum-${index}`).parent().show();
-                counter++;
-                targeted_counter += datum.total_prediction !== null ? 1 : 0;
-                approved_counter += datum.total_prediction === 0 ? 1 : 0;
-                removed_counter += datum.total_prediction === 1 ? 1 : 0;
             } else{
                 $(`#datum-${index}`).parent().hide();
             }
+
+            counter++;
+            targeted_counter += datum.total_prediction !== null ? 1 : 0;
+            approved_counter += datum.total_prediction === 0 ? 1 : 0;
+            removed_counter += datum.total_prediction === 1 ? 1 : 0;
         });
 
-        let text = ""
-        if(expected_prediction.length === 3) 
+        let text = `Your filter will remove ${removed_counter} out of ${dataset.length} comments in total.`
+        /* if(expected_prediction.length === 3) 
             text = `There are ${targeted_counter}/${counter} targeted comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
         else if(selected_prompts.length === 0 && selected_prediction === "targeted"){
             text = `There are ${counter} ${selected_prediction} comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
@@ -428,7 +471,7 @@
         } else {
             text = `
                 There are ${counter} comments that are ${selected_prediction} by all of your selected prompts, ${approved_counter} approved and ${removed_counter} removed`;
-        }
+        }*/
 
         $('#countDisplay').text(text);
 
@@ -440,25 +483,24 @@
         
     });
 
-    $("#promptFilter").on("change", function() {
+    /* $("#promptFilter").on("change", function() {
         selected_prompts = [$(this).val()].map((value) => +value )
         showFilteredData();
-    });
+    }); */
 
 
-
-
-    function generateExplanation(datum){
+    function generateExplanation(datum, datum_index){
         /* generate the explanation for each prediction made by the LLMs */
 
-        if (datum.total_prediction === null){
-            return "This comment is not targeted by any of your prompts, so it will be approved by default.";
+        if (datum.total_prediction === null || datum.total_prediction === 0){
+            return "This comment will not be removed by any of your prompts.";
         }
         else {
-            let explanation = `<p>This comment is targeted by the following prompts :</p><ul class='list-none pl-0 text-gray-600'>`;
+            let explanation = `<p>This comment will be removed by the following prompts :</p><ul class='list-none pl-0 text-gray-600'>`;
             // iterate through the dict object and format each prompt in a new line and with italic font
 
             let highest_priority_id = null;
+            let highest_priority = 0;
             for (let i = 0; i < datum.predictions.length; i++) {
                 const pred = datum.predictions[i];
                 if (pred.prediction !== null){
@@ -475,11 +517,6 @@
                 }
             }
             explanation += "</ul>";
-
-            let highest_priority_prompt = prompts[highest_priority_id];
-            explanation += `<br/><p>
-                As the prompt <span class="font-bold italic font-serif">${highest_priority_prompt.name}</span> has the highest priority ${highest_priority + 1}, 
-                this comment should be <span class="font-bold italic">${datum.total_prediction === 1 ? "removed" : "approved"}</span>.`;
             
             return explanation;
         }
@@ -507,7 +544,7 @@
             tooltip_div.addClass(new_class);
 
             // update the tooltip content
-            let explanation = generateExplanation(dataset[i]);
+            let explanation = generateExplanation(dataset[i], i);
             // set the second child of the tooltip div to be the explanation, use innerhtml
 
             tooltip_div.children().eq(1).html(explanation);
@@ -522,17 +559,23 @@
         $("#promptList .promptSection").each(function(index){
             let id = +$(this).attr('id').split('-')[1];
             let prompt = prompts[id];
-            // the name is always updated
-            prompt.action = $(this).find('.approveButton').hasClass('active') ? 0 : 1;
-            prompt.rubric = escape_single_quote($(this).find('.promptRubric').text().trim());
+            let active = $(this).hasClass('activeSection');
+            if(active){
+                // the name is always updated
+                prompt.name = escape_single_quote($(this).find('.promptName').text().trim());
+                prompt.priority = index;
+                prompt.action =  $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
+                prompt.rubric = escape_single_quote($(this).find('.promptRubric').text().trim());
+                
+                let positive_example = $(this).find('.promptPositiveExample').text().trim();
+                if(positive_example) prompt.positives[0] = escape_single_quote(positive_example);
+
+                let negative_example = $(this).find('.promptNegativeExample').text().trim();
+                if(negative_example) prompt.negatives[0] = escape_single_quote(negative_example);
+
+                if(prompt.rubric.length > 0) now_prompts.push(prompt);
+            }
             
-            let positive_example = $(this).find('.promptPositiveExample').text().trim();
-            if(positive_example) prompt.positives[0] = escape_single_quote(positive_example);
-
-            let negative_example = $(this).find('.promptNegativeExample').text().trim();
-            if(negative_example) prompt.negatives[0] = escape_single_quote(negative_example);
-
-            if(prompt.rubric.length > 0) now_prompts.push(prompt);
 
         });
         console.log("parsed out prompts", now_prompts);
@@ -542,7 +585,6 @@
 
     function trainLLM() {
         let now_prompts = parseContent();
-
         
         is_paused = true;
 
@@ -656,32 +698,23 @@
         Note that when you use defer, the scripts are executed only after the entire document has been parsed, but before the DOMContentLoaded event.
     */
     $(document).ready(function(){
+        $(".copyButton").tooltip();
         load_more_data(false);
-        $("#promptList").sortable({
-            animation: 150,
-            handle: ".sortHandle",
-            filter: ".addButton",
-            onEnd: function(event, ui) {
-                // console.log("updating priority");
-                updatePriority();
-            }
-        });
+
+        // $("#promptList").sortable({
+        //     animation: 150,
+        //     handle: ".sortHandle",
+        //     filter: ".addButton",
+        //     onEnd: function(event, ui) {
+        //         // console.log("updating priority");
+        //         updatePriority();
+        //     }
+        // });
 
         if(STAGE === "update"){
-            display_prompts(JSON.parse(`{{prompts | safe}}`));
+            displayPrompts(JSON.parse(`{{prompts | safe}}`));
         } else {
-            display_prompts([
-                {
-                    "name": "Economy Discussions",
-                    "action": 0,
-                    "rubric": "Permit texts that engage in respectful, informed, and constructive dialogue about economic policies.",
-                    "positives": [
-                        "His carbon tax will have a greater negative effect on the middle class.",
-                    ],
-                    "negatives": [
-                        "Anyone who supports that economic policy is an idiot.",
-                    ]
-                },
+            displayPrompts([
                 {
                     "name": "Racial hate speech",
                     "action": 1,
@@ -690,14 +723,14 @@
                     "negatives": ["83% of US blacks are Christians"],
                 },
                
-                // {
-                //     "name": "Violence calls",
-                //     "action": 1,
-                //     "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
-                //     "positives": ["it pleases me to know you will die"],
-                //     "negatives": []
+                {
+                    "name": "Violence calls",
+                    "action": 1,
+                    "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
+                    "positives": ["it pleases me to know you will die"],
+                    "negatives": []
 
-                // },
+                },
                 // {   
                 //     "name": "Gender hate speech",
                 //     "action": 1,

@@ -168,7 +168,6 @@
         functions that display, add, and remove rules
     */
     
-    
     function updatePriority(){
         
         $('#ruleList .ruleSection').each(function(index) {
@@ -201,10 +200,10 @@
                     </span>
                     <span class="font-bold unitTitle">
                         ${
-                            type === "exclude" ? "Unless including" : second_include ? "And include" : "If they include"
+                            type === "exclude" ? "Unless they include" : second_include ? "And include" : "If they include"
                         }
                     </span>
-                    <span class="font-base">one of the following words</span>
+                    <span class="font-base">one of the following phrases</span>
                     <button class='absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-white rounded-full text-xs w-4 h-4 flex items-center justify-center border border-gray-300'
                         x-on:click="${type === "include" ? "includes = includes - 1; " : "excludes = excludes - 1; "}; removeUnitSection($event);"
                     >
@@ -292,134 +291,129 @@
                         includes: ${rule.units.filter(unit => unit.type === "include").length}, 
                         excludes: ${rule.units.filter(unit => unit.type === "exclude").length},
                     }" 
-                    class="ruleSection flex items-start gap-x-2"
-                    :class="{ 'activeRuleSection': active, 'bg-gray-100': !active}" 
+                    class="ruleSection flex flex-col items-stretch border !border-gray-300 rounded-lg px-2"
+                    :class="{ 'activeSection': active, 'bg-gray-100': !active}" 
                     id="rule-${rule.id}"
                 >   
-
-                    <div class="grow flex flex-col items-stretch border !border-gray-300 rounded-lg px-2">
-                        <div class="flex justify-between py-2">
-                            <div class="grow text-black flex items-center font-serif gap-x-2">
-                                <!-- <div class="priority text-2xl">
-                                    ${rule.priority + 1}.
-                                </div> -->
-                                <!-- Toggle Switch for Rule Action -->
-                                <div class="min-w-[20%] flex items-center font-medium text-xl ">
-                                    <button 
-                                        class="removeButton grow py-2 px-4 rounded italic" 
-                                        :class="{ 'active bg-red-100': action === 1 && active, 'bg-gray-100 text-gray-300': action !== 1 || !active}" 
-                                        x-on:click="action = 1"
+                    <div class="flex justify-between py-2">
+                        <div class="grow text-black flex items-center font-serif gap-x-2">
+                            <!-- <div class="priority text-2xl">
+                                ${rule.priority + 1}.
+                            </div> -->
+                            <!-- Toggle Switch for Rule Action -->
+                            <div class="min-w-[20%] flex items-center font-medium text-xl ">
+                                <button 
+                                    class="removeButton grow py-2 px-4 rounded italic" 
+                                    :class="{ 'active bg-red-100': action === 1 && active, 'bg-gray-100 text-gray-300': action !== 1 || !active}" 
+                                    x-on:click="action = 1"
+                                >
+                                    Remove 
+                                </button>
+                                <!-- <button 
+                                        class="approveButton grow py-2 px-4 rounded italic " 
+                                        :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
+                                        x-on:click="action = 0"
                                     >
-                                        Remove 
-                                    </button>
-                                    <!-- <button 
-                                            class="approveButton grow py-2 px-4 rounded italic " 
-                                            :class="{ 'active bg-emerald-100': action === 0, 'bg-gray-100 text-gray-300': action !== 0 }" 
-                                            x-on:click="action = 0"
-                                        >
-                                            Keep
-                                    </button> -->
-                                    <span></span>
-                                </div>
-                                <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${rule.name}' }" class="grow editableSectionTitle">
-                                    <div 
-                                        contenteditable="true" 
-                                        x-text="text"
-                                        x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateOptions(${rule.id}, text);"
-                                        class="ruleName italic font-xl border border-gray-300 p-2 rounded"
-                                        :class="{'border-red-500': inputExceedsLimit, 'text-gray-300': !active}"
-                                        data-placeholder="What Texts?"
-                                    ></div>
-                                    
-                                    <div x-show="inputExceedsLimit" 
-                                        class="text-red-600 text-sm mt-1" 
-                                        x-text="'The title should be less than ' + charLimit + ' characters.'"
-                                    ></div>
-                                </div>
+                                        Keep
+                                </button> -->
+                            </div>
+                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${rule.name}' }" class="grow editableSectionTitle">
+                                <div 
+                                    contenteditable="true" 
+                                    x-text="text"
+                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateOptions(${rule.id}, text);"
+                                    class="ruleName italic font-xl border border-gray-300 p-2 rounded"
+                                    :class="{'border-red-500': inputExceedsLimit, 'text-gray-300': !active}"
+                                    data-placeholder="What Texts?"
+                                ></div>
                                 
-                            </div>
-                            <!--have a foldable button-->
-                            <div class="flex justify-center gap-x-2 ml-2">
-                                <!-- <div class="flex items-center sortHandle focus:outline-none">
-                                    <i class="fa-solid fa-up-down-left-right"></i>
-                                </div> -->
-                                <button @click="active = !active; open=false;" class="focus:outline-none">
-                                    <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
-                                </button>
-                                <button @click="deleteRule(${rule.id})" class="focus:outline-none">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                                <button 
-                                    @click="open = !open" 
-                                    class="focus:outline-none" 
-                                    :class="{'text-gray-100': !active}" 
-                                    :disabled="!active" 
-                                >
-                                    <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                    <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div 
-                            class="unitSections flex flex-col gap-y-4 py-2" x-show="open"
-                        >
-                            ${unit_section_html}
-                        </div>
-                        <div class="self-stretch flex justify-between gap-x-2 py-2 items-center" x-show="open">
-                            <div class="">
-                                <button 
-                                    class="addInclude px-2 py-1 text-sm rounded"
-                                    :class="{'bg-red-50': includes < 2, 'bg-gray-50 text-gray-400 cursor-not-allowed': includes >= 2}" 
-                                    x-on:click="includes = includes + 1; addNewUnit($el, 'include')"
-                                    :disabled="includes >= 2"
-                                >
-                                    <i class="fa-solid fa-magnifying-glass"  :class="{'text-red-400': includes < 2, 'text-gray-400': includes >= 2}"></i>
-                                    Add Include
-                                </button>
-                                <button 
-                                    class="addExclude px-2 py-1 text-sm rounded" 
-                                    :class="{'bg-emerald-50': excludes < 1, 'bg-gray-50 text-gray-400 cursor-not-allowed': excludes >= 1}" 
-                                    x-on:click="excludes = excludes + 1; addNewUnit($el, 'exclude')"
-                                    :disabled="excludes >= 1"
-                                >
-                                    <i class="fa-solid fa-check" :class="{'text-emerald-600': excludes < 1, 'text-gray-400': excludes >= 1}"></i>
-                                    Add Exceptions
-                                </button>
-                            </div>
-                            <div class="flex p-1 gap-x-1 items-center">
-                                <input type="checkbox" class="variantsCheckbox h-3 w-3" ${rule.variants ? "checked" : ""}/>
-                                <label class="text-sm text-gray-600 font-medium">Detect spelling variants</label>
-                                
-                                <div x-data="{ open: false}">
-                                    <!-- Tooltip Trigger -->
-                                    <button 
-                                        @click="open = !open" 
-                                        class="p-1 rounded-full text-gray-700 hover:bg-gray-100"
-                                    >
-                                        <i class="fas fa-circle-question"></i>
-                                    </button>
-
-                                    <!-- Tooltip Content -->
-                                    <div x-show="open" @click.away="open = false" 
-                                        class="fixed z-50 w-fit p-2 text-sm text-white bg-gray-600 rounded-md shadow-lg" 
-                                        
-                                    >
-                                        We only use the most common ways of spelling variants:
-                                        <ul class="list-disc list-inside">
-                                            <li>repeating letters (cool -> coool)</li>
-                                            <li>mixed upper and lower case (cool -> cOoL)</li>
-                                            <li>using similar looking characters (cool -> c00l)</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                <div x-show="inputExceedsLimit" 
+                                    class="text-red-600 text-sm mt-1" 
+                                    x-text="'The title should be less than ' + charLimit + ' characters.'"
+                                ></div>
                             </div>
                             
                         </div>
+                        <!--have a foldable button-->
+                        <div class="flex justify-center gap-x-2 ml-2">
+                            <!-- <div class="flex items-center sortHandle focus:outline-none">
+                                <i class="fa-solid fa-up-down-left-right"></i>
+                            </div> -->
+                            <button @click="active = !active; open=false;" class="focus:outline-none">
+                                <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
+                            </button>
+                            <button @click="deleteRule(${rule.id})" class="focus:outline-none">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            <button 
+                                @click="open = !open" 
+                                class="focus:outline-none" 
+                                :class="{'text-gray-100': !active}" 
+                                :disabled="!active" 
+                            >
+                                <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                                <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
+                    <div 
+                        class="unitSections flex flex-col gap-y-4 py-2" x-show="open"
+                    >
+                        ${unit_section_html}
+                    </div>
+                    <div class="self-stretch flex justify-between gap-x-2 py-2 items-center" x-show="open">
+                        <div class="">
+                            <button 
+                                class="addInclude px-2 py-1 text-sm rounded"
+                                :class="{'bg-red-50': includes < 2, 'bg-gray-50 text-gray-400 cursor-not-allowed': includes >= 2}" 
+                                x-on:click="includes = includes + 1; addNewUnit($el, 'include')"
+                                :disabled="includes >= 2"
+                            >
+                                <i class="fa-solid fa-magnifying-glass"  :class="{'text-red-400': includes < 2, 'text-gray-400': includes >= 2}"></i>
+                                Add Include
+                            </button>
+                            <button 
+                                class="addExclude px-2 py-1 text-sm rounded" 
+                                :class="{'bg-emerald-50': excludes < 1, 'bg-gray-50 text-gray-400 cursor-not-allowed': excludes >= 1}" 
+                                x-on:click="excludes = excludes + 1; addNewUnit($el, 'exclude')"
+                                :disabled="excludes >= 1"
+                            >
+                                <i class="fa-solid fa-check" :class="{'text-emerald-600': excludes < 1, 'text-gray-400': excludes >= 1}"></i>
+                                Add Exceptions
+                            </button>
+                        </div>
+                        <div class="flex p-1 gap-x-1 items-center">
+                            <input type="checkbox" class="variantsCheckbox h-3 w-3" ${rule.variants ? "checked" : ""}/>
+                            <label class="text-sm text-gray-600 font-medium">Detect spelling variants</label>
+                            
+                            <div x-data="{ open: false}">
+                                <!-- Tooltip Trigger -->
+                                <button 
+                                    @click="open = !open" 
+                                    class="p-1 rounded-full text-gray-700 hover:bg-gray-100"
+                                >
+                                    <i class="fas fa-circle-question"></i>
+                                </button>
+
+                                <!-- Tooltip Content -->
+                                <div x-show="open" @click.away="open = false" 
+                                    class="fixed z-50 w-fit p-2 text-sm text-white bg-gray-600 rounded-md shadow-lg" 
+                                    
+                                >
+                                    We only use the most common ways of spelling variants:
+                                    <ul class="list-disc list-inside">
+                                        <li>repeating letters (cool -> coool)</li>
+                                        <li>mixed upper and lower case (cool -> cOoL)</li>
+                                        <li>using similar looking characters (cool -> c00l)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>   
                 </div>
             `;
         
@@ -427,8 +421,8 @@
             rules[rule.id] = rule;
 
             // add an option to the select picker for this prompt, rules are not selected by default
-            $('#ruleFilter').append(`<option value=${rule.id} class="text-xs">${rule.name.length === 0 ? "Unnamed Rule" : rule.name}</option>`);
-            $(".selectpicker").selectpicker('refresh');
+            // $('#ruleFilter').append(`<option value=${rule.id} class="text-xs">${rule.name.length === 0 ? "Unnamed Rule" : rule.name}</option>`);
+            // $(".selectpicker").selectpicker('refresh');
             
             // selected_rules.push(rule.id);
 
@@ -651,7 +645,7 @@
             // parse out the id of the ruleSection
             let id = +$(this).attr('id').split('-')[1];
             let rule = rules[id];
-            let active = $(this).hasClass('activeRuleSection');
+            let active = $(this).hasClass('activeSection');
             if(active){
                 rule.name = $(this).find('.ruleName').text();
                 rule.priority = index; // not used for now

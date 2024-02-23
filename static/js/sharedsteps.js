@@ -75,7 +75,7 @@ function redirect(url, parameters){
     window.location.href = new_url;
 }
 
-function display_data(new_dataset, dataset, new_separator=true){
+function display_data(new_dataset, dataset, new_separator=true, enable_copy=false){
     // display data on the page, this is not for users to label data
     let textList = $(`#textList`);
 
@@ -102,11 +102,32 @@ function display_data(new_dataset, dataset, new_separator=true){
         let text_div_html = `
             <div class="flex flex-col gap-y-1 mb-2" x-data="{ showTooltip: false }">   
                 <div id="datum-${i + start_index}" 
-                    class="datum flex flex-row py-1 px-2 self-stretch unLabel"
+                    class="datum flex flex-row py-1 px-2 self-stretch unLabel relative"
                 >
                     <div class="datumText flex-grow w-7/10 px-2 py-1 self-center">${escape_html(new_dataset[i].text)}</div>
-                    <div class="self-end" @click="showTooltip = !showTooltip">
-                        <i class="fa-solid fa-circle-info fa-xs" style="color: #868788;"></i>
+                    <div class="self-end flex gap-x-2">
+                        <div 
+                            x-data="{ copied: false, isHovering: false}" 
+                            @click="copied = true; copyText(${i+start_index}); setTimeout(() => copied = false, 500);" 
+                            @mouseenter="isHovering = true" 
+                            @mouseleave="isHovering = false" 
+                            class="tooltipEnabled cursor-pointer"
+                            title="Copy the example"
+                        >
+                            <i class="fa-solid fa-copy text-stone-400 fa"></i>
+                            <div x-show="copied" 
+                                class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 py-2 px-4 text-white bg-gray-600 text-sm rounded">
+                                Copied to Your Clipboard
+                            </div>
+                            
+                        </div>
+                        <div 
+                            class="tooltipEnabled" 
+                            title="See explanation"
+                            @click="showTooltip = !showTooltip"
+                        >
+                            <i class="fa-solid fa-circle-info text-gray-500 fa"></i>
+                        </div>
                     </div>
                 </div>
                 <div 

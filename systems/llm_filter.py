@@ -214,11 +214,11 @@ class LLMFilter:
                     prediction[index] = pred["prediction"]
                     break
         
+        # we treat None (not affected texts) as approved texts, which is 0
+        prediction = [(0 if pred is None else pred) for pred in prediction]
+
         # if the user builds the model interactively, then y_test will be None
-        if y_test is not None:
-            # we treat None (not affected texts) as approved texts, which is 0
-            prediction = [(0 if pred is None else pred) for pred in prediction]
-            
+        if y_test is not None:            
             performance = calculate_algorithm_metrics(y_test, prediction)
         else:
             performance = {}
