@@ -56,14 +56,15 @@
             
         </div>
         <div class="grow flex flex-row mx-4 items-stretch">
-            <div class="flex flex-col gap-y-2 w-2/3">
+            <div class="flex flex-col items-stretch gap-y-2 w-2/3">
                 <div class="grow-0 flex justify-start">
                     <div id="countDisplay" class="text-base text-blue-600"></div>
                 </div>
-                <!-- display a list of comments to be reviewed -->
-                <div id="textList-header" class="datum flex justify-between font-serif italic py-0.5">   
-                    <div>Whether your filter's decision matches your label</div>
-                    <div>What you labeled</div>
+                <!-- display a list of comments to be reviewed --> 
+                <div id="textList-header" class="min-w-[20%] datum flex justify-end gap-x-4 font-serif italic py-0.5 pr-4">   
+                    <div>Your label</div>
+                    <div>Filter decision</div>
+                    
                 </div>
                 <div id="textList"
                     class="grow flex flex-col h-16 overflow-y-auto border border-gray-600 rounded"
@@ -168,16 +169,16 @@
             // You can customize this HTML as needed
             datum.total_prediction = results.prediction[index];
             datum.predictions = results.texts_predictions?.[index] || null;
+            $(`#datum-${index} > :last-child`).append(`<span class="text-gray-300 font-serif"> v.s. </span>`);
             let new_div = `
-                    <div class="flex-col items-stretch grow-0 font-bold w-[5%] text-center">
-                        ${datum.label == datum.total_prediction ? 
-                            "<span class='text-blue-400'><i class='fa-solid fa-check px-2 fa-xl'></i></span>" : 
-                            "<span class='text-red-500'><i class='fa-solid fa-xmark px-2 fa-xl'></i></span>"
+                        ${datum.total_prediction ? 
+                            "<div class='text-red-500 font-medium text-base rounded ml-1'>Remove</div>" : 
+                            "<div class='text-emerald-500 font-medium text-base rounded ml-1'>Approve</div>"
                         }
-                    </div>`;
+                    `;
 
-            // Append the new div to the current datum div
-            $(`#datum-${index}`).prepend(new_div);
+            // Append the new div to the last child div of the current datum div
+            $(`#datum-${index} > :last-child`).append(new_div);
             $(`#datum-${index}`).addClass(datum.label == datum.total_prediction ? "" : "bg-rose-100");
         });
          
@@ -232,12 +233,12 @@
         // for testing purposes, use the score to simulate the user's label
         dataset.forEach((datum, index) => {
             let text_div_html = `
-                <div id="datum-${index}" class="px-4 datum flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
-                    <div id="text-${index}" class="grow w-[85%] p-2">${escape_html(datum.text)}</div>
-                    <div class="flex-col items-stretch grow-0 w-[10%] text-center">
+                <div id="datum-${index}" class="px-4 datum flex flex-row items-center justify-between gap-x-1 py-1 border-b border-gray-300">   
+                    <div id="text-${index}" class="grow p-2">${escape_html(datum.text)}</div>
+                    <div class="min-w-[20%] flex justify-end">
                         ${datum.label == 1 ? 
-                            "<div class='w-full text-white bg-red-400 text-base p-1 rounded'>Remove</div>" : 
-                            "<div class='w-full text-white bg-emerald-400 text-base p-1 rounded'>Approve</div>"
+                            "<div class='text-red-500 font-medium text-base rounded mr-2'>Remove</div>" : 
+                            "<div class='text-emerald-500 font-medium text-base rounded mr-2'>Approve</div>"
                         }
                     </div>
                 </div>`;
