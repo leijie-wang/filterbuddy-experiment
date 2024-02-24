@@ -33,7 +33,6 @@ SECRET_KEY = 'django-insecure-tb(!k$rbo+k6_y#^+_8!p6xtb)vw^l-^h3y9hxbc^*jr5he!_$
 # SECURITY WARNING: don't run with debug turned on in production!s
 DEBUG = env('DEBUG') == 'True'
 
-
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=["*"])
 
 
@@ -137,6 +136,7 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 OPENAI_API_KEY = env('OPENAI_API_KEY')
+LLM_DEBUG = False
 
 LOGGING_DIR = os.path.join(BASE_DIR, 'logs')
 if not os.path.exists(LOGGING_DIR):

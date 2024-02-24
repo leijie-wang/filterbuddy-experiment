@@ -1,17 +1,11 @@
 from calendar import c
-from cgi import test
-from distutils.command import build
-from functools import partial
-from math import log
-from re import T
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
-from openai import chat
 from datasets.dataset import Dataset
 import sharedsteps.utils as utils
 import logging
-import json, random
+import json
 from sharedsteps.models import SYSTEMS, Participant
 
 logger = logging.getLogger(__name__)
@@ -510,6 +504,7 @@ def test_system(participant_id, stage, test_dataset):
 
     
 def train_LLM(request):
+    logger.info(f"settings.LLM_DEBUG: {settings.LLM_DEBUG}")
     from sharedsteps.tasks import train_llm_task
     logger.info(f"starting training the LLM model")
     request_data = json.loads(request.body)
