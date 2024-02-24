@@ -2,7 +2,11 @@
 
 // we assume every single quote is properly escaped; this should be ensured when adding them to the list
 // for now, we only require users to input one example for each category
-function escape_single_quote(text) {
+function escape_single_quote(text, remove_newline=false) {
+    text = text.trim();
+    if (remove_newline) {
+        text = text.replace(/\r?\n/g, "");
+    }
     return text.replace(/'/g, "\\'");
 }
 
@@ -202,3 +206,5 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
     dataset = dataset.concat(new_dataset);
     return dataset;
 }
+
+

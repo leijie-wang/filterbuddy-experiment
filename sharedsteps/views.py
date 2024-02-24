@@ -355,7 +355,39 @@ def get_similar_phrases(request):
             safe=False
         )
 
+def get_rephrase_prompt(request):
+    request_data = json.loads(request.body)
+    prompt = request_data.get("prompt")
+    chatbot = utils.ChatCompletion()
+        
+    response = chatbot.chat_completion(
+        system_prompt="""
+            Users are writing prompts to decide which content they want to keep or remove from their social media. You are expected to improve their prompts. 
+            Specifically, you should find out ambiguous concepts or phrases and add annotations. You should only make changes under 10 words.
 
+            ##### Examples
+            1. Catch all comments that promote hate speech ==> Remove comments that promote hate speech targeting races, genders, or religions
+            2. Delete all comments that claim that we should not impose gun control policies ==> Remove comments that reject gun control policies without any supporting argument.
+            3. Do not keep comments that directly insult a specific person using words like insane, stupid, morons ==> Remove comments that directly insult a specific person,  using derogatory words such as "insane," "stupid," or "morons."
+
+            RETURN YOUR RESULTS in the JSON format {"results": "the improved prompt"}. REMEMBER to keep your changes under 10 words.
+        """,
+        user_prompt=f"Given the following prompt: {prompt}",
+    )
+
+    response = json.loads(response or "{}")
+    if "results" in response:
+        logger.info(response["results"])
+        return JsonResponse(
+            {
+                "status": True,
+                "message": "Successfully rephrased the prompt",
+                "data": {
+                    "prompt": response["results"]
+                }
+            },
+            safe=False
+        )
 
 def validate_page(request):
     

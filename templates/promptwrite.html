@@ -15,8 +15,9 @@
     <!-- base layout -->
     <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
     
-    <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+    <script src="{% static 'js/jquery-3.7.1.js' %}"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="{% static 'js/diff_match_patch_uncompressed.js' %}"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
@@ -181,14 +182,101 @@
     var is_paused = false;
     var time_left = null;
 
+    /*
+        functions that help the authoring of prompts
+    */
+
     var copied_example = null;
     function copyText(index){
         navigator.clipboard.writeText(dataset[index].text);
     }
 
-    $(function() {
+    function diff_wordMode(text1, text2) {
+        var dmp = new diff_match_patch();
+        var a = dmp.diff_wordsToChars_(text1, text2);
+        var lineText1 = a.chars1;
+        var lineText2 = a.chars2;
+        var lineArray = a.lineArray;
+        var diffs = dmp.diff_main(lineText1, lineText2, false);
+        dmp.diff_charsToLines_(diffs, lineArray);
+        dmp.diff_cleanupSemantic(diffs);
+        return diffs;
+    }
+    function getCleanPhrases(prompt_input, accept=true){
+        if(accept){
+            $(prompt_input).find(".deletion").remove();
+            $(prompt_input).find(".insertion").each(function(){
+                let text = $(this).text();
+                $(this).replaceWith(text);
+            });
+            $(prompt_input).find("button").remove();
+        } else {
+            $(prompt_input).find(".insertion").remove();
+            $(prompt_input).find(".deletion").each(function(){
+                let text = $(this).text();
+                $(this).replaceWith(text);
+            });
+            $(prompt_input).find("button").remove();
+        }
+    }
+    function acceptNewPhrases(element){
+        let prompt_input = $(element).closest('.promptRubric');
+        getCleanPhrases(prompt_input, true);
+    }
+
+    function rejectNewPhrases(element){
+        let prompt_input = $(element).closest('.promptRubric');
+        getCleanPhrases(prompt_input, false);
+    }
+
+    async function getRephrasePrompt(element){
+        let prompt_input = $(element).closest('.promptSection').find('.promptRubric');
+        let prompt = prompt_input.text().trim();
         
-    });
+        
+        let response = await post_backend(
+            "/get_rephrase_prompt/", 
+            {'prompt': prompt}
+        )
+    
+        if(!response["status"]){
+            alert(response["message"]);
+            return;
+        }
+        let rephrase_prompt = response.data.prompt;
+        console.log("rephrase prompt", rephrase_prompt);
+        
+        // update the prompt input with the rephrase prompt
+       
+        let diffs = diff_wordMode(prompt, rephrase_prompt);
+        
+       
+        let diff_html = "";
+        diffs.forEach(diff => {
+            let op = diff[0];
+            let text = diff[1];
+            if(op === 1) {
+                // insertion
+                diff_html += `
+                    <span class="insertion text-orange-500">${text}</span>`;
+            } else if(op === -1) {
+                // deletion
+                diff_html += `
+                    <span class="deletion text-slate-500 line-through">${text}</span>`;
+            } else {
+                diff_html += `<span>${text}</span>`;
+            }
+        });
+        diff_html += `
+                <button @click='enabled = true; acceptNewPhrases($el)' 
+                    class='ml-1 p-1 bg-orange-100 rounded font-serif font-bold shadow-sm'
+                > Accept </button>
+                <button @click='enabled = true; rejectNewPhrases($el)' 
+                    class='ml-1 p-1 bg-slate-100 rounded font-serif font-bold shadow-sm'
+                > Reject </button>
+                `
+        prompt_input.html(diff_html);
+    }
 
     function updatePriority(){
         
@@ -296,11 +384,26 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-y-2 items-start p-4 pt-2" x-show="open">
-                        <div class="flex flex-col gap-y-2">
-                            <div class="w-fit text-lg italic bg-red-50 py-1 px-3 rounded">
-                                <span><i class="fa-solid fa-pencil mr-1"></i></span>
-                                <span>Describe the texts that </span>
-                                <span class="font-bold">you want to remove</span>
+                        <div x-data="{loading: false, enabled: true}" class="flex flex-col items-stretch gap-y-2">
+                            <div class="flex justify-between">
+                                <div class="w-fit text-lg italic bg-red-50 py-1 px-3 rounded">
+                                    <span><i class="fa-solid fa-pencil mr-1"></i></span>
+                                    <span>Describe the texts </span>
+                                    <span class="font-bold">you want to remove</span>
+                                </div>
+                                <button :disabled="!enabled"  
+                                    class="text-sm p-2 rounded-lg"
+                                    :class="{'cursor-not-allowed bg-gray-50': !enabled, 'bg-yellow-50': enabled}"
+                                    @click="loading = true; await getRephrasePrompt($el); enabled = false; loading = false"
+                                >
+                                    <div class="spinner-border text-orange-300 spinner-border-sm" role="status" x-show="loading">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                    <i class="fa-regular fa-lg fa-lightbulb" 
+                                        :class="{'text-gray-400': !enabled, 'text-orange-400': enabled}"
+                                        x-show="!loading"></i>
+                                    <span>Improve</span>
+                                </button>
                             </div>
                             <div class="self-stretch grow flex pl-6">
                                 <div 
@@ -562,16 +665,17 @@
             let active = $(this).hasClass('activeSection');
             if(active){
                 // the name is always updated
-                prompt.name = escape_single_quote($(this).find('.promptName').text().trim());
+                prompt.name = escape_single_quote($(this).find('.promptName').text());
                 prompt.priority = index;
                 prompt.action =  $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
-                prompt.rubric = escape_single_quote($(this).find('.promptRubric').text().trim());
+                getCleanPhrases($(this).find('.promptRubric'), true); // accept by default
+                prompt.rubric = escape_single_quote($(this).find('.promptRubric').text(), remove_newline=true);
                 
-                let positive_example = $(this).find('.promptPositiveExample').text().trim();
-                if(positive_example) prompt.positives[0] = escape_single_quote(positive_example);
+                let positive_example = $(this).find('.promptPositiveExample').text();
+                if(positive_example) prompt.positives[0] = escape_single_quote(positive_example, remove_newline=true);
 
-                let negative_example = $(this).find('.promptNegativeExample').text().trim();
-                if(negative_example) prompt.negatives[0] = escape_single_quote(negative_example);
+                let negative_example = $(this).find('.promptNegativeExample').text();
+                if(negative_example) prompt.negatives[0] = escape_single_quote(negative_example, remove_newline=true);
 
                 if(prompt.rubric.length > 0) now_prompts.push(prompt);
             }
