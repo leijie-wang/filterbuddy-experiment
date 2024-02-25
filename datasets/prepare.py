@@ -145,7 +145,7 @@ def create_balanced_dataset(filename, clean_function, new_filename):
     balanced_dataset = pd.concat([toxic_comments, non_toxic_comments]).sample(frac=1).reset_index(drop=True)
     print("describe the balanced dataset:", balanced_dataset["score"].describe())
 
-    balanced_dataset["comment_word_len"] = balanced_dataset["text"].str.split().str.len()
+    # balanced_dataset["comment_word_len"] = balanced_dataset["text"].str.split().str.len()
     
     balanced_dataset.to_csv(f"{new_filename}.csv", index=False)
 
