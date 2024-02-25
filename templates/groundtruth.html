@@ -4,21 +4,24 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tell us your criteria</title>
-  <!-- use bootstrap UI -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tell us your criteria</title>
+    <!-- use bootstrap UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-  <!-- base layout -->
-  <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
-  <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- base layout -->
+    <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
+    <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="{% static 'js/base.js' %}"></script>
+    <script src="{% static 'js/label.js' %}"></script>
+    <script src="{% static 'js/sharedsteps.js' %}"></script>
 </head>
 
-<body class="h-screen w-screen overflow-y-hidden flex flex-col">
+<body class="flex flex-col py-3 px-4 h-screen w-screen overflow-y-hidden">
 
     <!-- 
       The <noscript> tag encloses the content that will be displayed 
@@ -31,23 +34,33 @@
     {% csrf_token %}
 
     <!-- display a list of comments to be reviewed -->
-    <div x-data="{ atBottom: false }" class="grow w-full flex flex-col gap-y-2 mb-5 px-4">   
-        <div class="grow-0 header flex flex-col gap-y-2 items-stretch bg-slate-100 p-4 rounded">
+    <div x-data="{ atBottom: false }" class="flex flex-col gap-y-4 h-full w-full pb-4">   
+        <div class="grow-0 flex gap-x-2 items-stretch m">
+            <div class="grow flex flex-col gap-y-2 py-2 px-4 items-start justify-start bg-slate-100  rounded-md">
                 {% if stage == "build" %}
                     <p class="text-2xl font-semibold">Set Your Filter's Goal</p>
-                    <p class="text-lg text-start font-sans">
+                    <p class="text-xl text-start font-sans">
                        Before building your filter, please take a moment to label these comments as <span class="text-emerald-600 font-medium">Keep</span> or <span class="text-red-600 font-medium ">Remove</span>.
-                       <br/>Your labels will be the gold standards for your filter to match. 
+                       <br/> Your labels will be the gold standards for your filter to match. 
                        We'll use your labeled examples to assess how effectively your filter works. 
                     </p>
                 {% elif stage == "update" %}
                     <p class="text-2xl font-semibold">Update Your Word Filters!</p>
                     <p class="text-lg text-start font-sans">
-                        The world of social media is always changing, and so are the types of comments you see. <br/>
-                        Before you update your word filter to these new trends, we need your help in labeling a fresh set of comments <br/>
+                        The world of social media is always changing, and so are the types of comments you see.
+                        <br/> Before you update your word filter to these new trends, we need your help in labeling a fresh set of comments.
                         Please label this new set of comments, which reflect recent trends. Your labels will help us evaluate the effectiveness of your updated filter 
                     </p>
                 {% endif %}
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <div id="timer" class="flex items-center justify-center grow-0 text-3xl font-bold p-2 rounded-full border border-gray-500 aspect-square min-w-32">
+                    15:00
+                </div>
+                <div class="text-base italic whitespace-nowrap">
+                    minutes left
+                </div>
+            </div>
         </div>
         <div class="grow flex mx-4 items-stretch">
             <div class="w-[70%] flex flex-col gap-y-2 items-start">
@@ -72,94 +85,87 @@
                     <button 
                         class="text-white text-2xl self-end bg-blue-600 px-4 py-2 rounded-lg"
                         
-                        @click="go_to_system();"
+                        @click="complete();"
                     >
                         GO
                     </button>
                 </div>
             </div>
         </div>
+        <div id="alertModal"  x-data="{}" class="hidden fixed inset-0 bg-slate-300 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto py-8 px-4 border w-fit shadow-lg rounded-lg bg-white flex flex-col justify-between gap-y-8">
+                <div id="alertModalText" class="grow text-center text-xl">
+                    <!-- Your alert message here -->
+                </div>
+                <button 
+                    @click="hideAlertModal();" 
+                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
+                >
+                    Okay
+                </button>
+            </div>
+        </div>
     </div>
+    
 </body> <!-- closes container -->
 <!-- custom js -->
-<script src="{% static 'js/sharedsteps.js' %}" defer></script>
-<script defer>
+<script>
+    SYSTEM= "GroundTruth"
+
     const PARTICIPANT_ID = "{{participant_id}}";
     const STAGE = "{{stage}}";
 
-    var old_performance = null;
-    var logs = [];
-    var dataset = [];
-    var positive_number = 0;
-    var label_number = 0;
-
-    function change_label(index, new_label){
-        let message = "";
-        if(dataset[index].label == null){
-            message = `[GroundTruth: LabelExamples] Labeled this text as ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
-        } else {
-            message = `[GroundTruth: LabelExamples] Changed the label of the text to ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
-        }
-        logs.push({
-            time: new Date().toISOString(),
-            message: message
-        })
-        // change the label of the text at the given index
-        label_number = label_number + (dataset[index].label == null ? 1 : 0);
-
-        dataset[index].label = new_label;
-        // change the button color
-        if(dataset[index].label){
-            $(`#datum-${index} .yes-button`).removeClass('unselected-button').addClass('selected-button');
-            $(`#datum-${index} .no-button`).removeClass('selected-button').addClass('unselected-button');
-        } else {
-            $(`#datum-${index} .no-button`).removeClass('unselected-button').addClass('selected-button');
-            $(`#datum-${index} .yes-button`).removeClass('selected-button').addClass('unselected-button');
-
-        }
-
-        // update the number of positive examples
-        positive_number = positive_number + (dataset[index].label ? 1 : 0);
-        $('#positive-number').text(positive_number);
-        $('#label-number').text(label_number);
-
-    }
-
-    function complete_label(callback_function){
-        if(label_number < dataset.length){
-                alert("Please label all the examples before proceeding");
-                return;
-            }
-
-        logs.push({
-            time: new Date().toISOString(),
-            message: `[GroundTruth: Complete] Finished labeling groundtruth examples with ${positive_number} positive examples out of ${label_number} labeled examples.`,
-        })
-
+    function complete(timeout){
+        if(!timeout && (label_number < dataset.length)){
+            // if users still have time but not all examples are labeled
+            showAlertModal("Please label all the examples before proceeding");
+            return;
+        } else if(timeout && (label_number < dataset.length)){
+            // if users run out of time but not all examples are labeled
+            showAlertModal("Time's up! Please label all the examples before proceeding");
+            return;
+        } 
+        // show the first five logs
+        console.log(logs.slice(0, 5));
+        addLog(`[${SYSTEM}: Complete] Finished labeling groundtruth examples with ${positive_number} positive examples out of ${label_number} labeled examples.`);
+        
         post_backend(
                 "/store_groundtruth/", {'dataset': dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'logs': logs},
                 function(response) {
-                    // if the json response has the response code 200
-                    console.log(response);
+                    if(DEBUG) console.log(response);
                     if (!response['status']) {
-                        alert(response['message']);
+                        showAlertModal(response['message']);
                         return;
                     }
-                    callback_function();
+                    redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE});
                 }
             );
     }
     
-    function show_results(test_results, old_performance){
+
+    $(document).ready(function(){
+        displayLabelingData(JSON.parse(`{{dataset | safe}}`), false);
+        startTimer(10);
+
+        if(DEBUG){
+            // for testing purposes, use the score to simulate the user's label
+            dataset.forEach((datum, index) => {
+                if(index >= 0){
+                    changeLabel(index, +parseFloat(datum.score) >= 0.5);
+                }
+            })
+        }
+    });
+
+    /* function showResults(test_results, old_performance){
         let performance = test_results.performance;
-        // show texts like build_performance.acuracy --> update_performance.accuracy
         $('#test-accuracy').html(`${to_percentage(old_performance.accuracy)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.accuracy)}`);
         $('#test-precision').html(`${to_percentage(old_performance.precision)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.precision)}`);
         $('#test-recall').html(`${to_percentage(old_performance.recall)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.recall)}`);
         $('#test-fpr').html(`${to_percentage(old_performance.fpr)}<i class="fa-solid fa-arrow-right text-gray-400 fa-sm px-4"></i>${to_percentage(performance.fpr)}`);
-    }
+    }*/
 
-    function test_filter(){
+    /* function test_filter(){
         complete_label(
             function(){
                 post_backend(
@@ -181,37 +187,7 @@
                 );
             }
         );    
-    }
-
-    function go_to_system(){
-        if(STAGE === "build"){
-            complete_label(
-                function(){
-                    redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE});
-                }
-            );
-        } else if(STAGE === "update"){
-            complete_label(
-                function(){
-                    redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE});
-                }
-            );
-        }
-        
-    }
-
-    $(document).ready(function(){
-        dataset = display_labeling_data(JSON.parse(`{{dataset | safe}}`), dataset, false);
-        
-        // for testing purposes, use the score to simulate the user's label
-        dataset.forEach((datum, index) => {
-            if(index >= 0){
-                change_label(index, +parseFloat(datum.score) >= 0.5);
-            }
-        })
-    });
-
-    
+    } */
 
 
 </script>

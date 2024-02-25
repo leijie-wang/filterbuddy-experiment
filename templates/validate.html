@@ -136,24 +136,6 @@
 
     var dataset = JSON.parse(`{{dataset | safe}}`);
 
-    var positive_number = 0;
-    function change_label(index, new_label){
-        dataset[index].label = new_label;
-        // change the button color
-        if(dataset[index].label){
-            $(`#datum-${index} .yes-button`).removeClass('unselected-button').addClass('selected-button');
-            $(`#datum-${index} .no-button`).removeClass('selected-button').addClass('unselected-button');
-        } else {
-            $(`#datum-${index} .no-button`).removeClass('unselected-button').addClass('selected-button');
-            $(`#datum-${index} .yes-button`).removeClass('selected-button').addClass('unselected-button');
-
-        }
-
-        // update the number of positive examples
-        positive_number = positive_number + (dataset[index].label ? 1 : 0);
-        $('#positive-number').text(positive_number);
-    }
-
     function go_to_system(){
         redirect("/onboarding/", {'participant_id': PARTICIPANT_ID});
     }
