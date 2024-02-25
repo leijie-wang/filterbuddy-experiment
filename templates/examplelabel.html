@@ -65,7 +65,7 @@
                 class="body flex flex-col overflow-y-auto py-4 px-4 border border-gray-600 rounded h-full">
             </div>
             <div class="bottom flex justify-end gap-x-2">
-                <button @click="load_more_data" class="bg-stone-200 font-bold py-2 px-3 rounded" >
+                <button @click="load_more_data(true, true);" class="bg-stone-200 font-bold py-2 px-3 rounded" >
                     Load More Examples
                 </button>
                 <button id="complete-button" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
@@ -88,12 +88,14 @@
 <script defer>
     const COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
     const BATCH_SIZE = 30;
+    const ACTIVE_LEARNING = true;
     const PARTICIPANT_ID = "{{participant_id}}";
     const SYSTEM = "{{system}}";
     const STAGE = "{{stage}}";
 
     var logs = [];
     var dataset = [];
+    var excluded_ids = JSON.parse(`{{excluded_ids | safe}}`);
     // the current batch of data that is loaded
     var current_batch = 0; 
     // whether the user wants to see only the toxic comments
@@ -160,28 +162,48 @@
 
     }
 
-    function load_more_data(new_separator=true){
-        // load more data from the server
-        /* get_backend(
-            "/load_more_data/", 
-            {'participant_id': participant_id},
-            function(data){
-                data = JSON.parse(data);
-                console.log(`load ${data.length} new data`);
-                dataset = display_labeling_data(data, dataset, true);
-            }
-        );*/
+    async function load_more_data(new_separator=true, active_learning=true){
+        // check that the user has labeled all existing examples
+        if(label_number < dataset.length){
+            alert("Please label all the examples before loading more data.");
+            return;
+        }
+
         logs.push({
             time: new Date().toISOString(),
             message: `[ExampleLabel: LoadExamples] Loaded another batch of ${BATCH_SIZE} examples.`
         })
+        
+        if(active_learning && dataset.length > 0){
+            $('#loadingModal').removeClass('hidden');
+            $('#loadingModalText').text('Loading more examples...');
+            try {
+                let response = await post_backend(
+                    "/active_learning/", 
+                    {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'dataset': dataset, "excluded_ids": excluded_ids, "active_learning": ACTIVE_LEARNING},
+                )
 
-        let start = current_batch * BATCH_SIZE;
-        let end = (current_batch + 1) * BATCH_SIZE;
-        if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
-        let new_data = COMPLETE_DATASET.slice(start, end);
+                if(response["status"]){
+                    new_data = response.data.next_batch;
+                    new_ids = new_data.map(datum => datum.id);
+                    excluded_ids = excluded_ids.concat(new_ids);
+                } else {
+                    alert(response["message"]);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+
+        } else {
+            let start = current_batch * BATCH_SIZE;
+            let end = (current_batch + 1) * BATCH_SIZE;
+            if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
+            new_data = COMPLETE_DATASET.slice(start, end);
+            current_batch++;
+        }
+        
         dataset = display_labeling_data(new_data, dataset, new_separator);
-        current_batch++;
+        $('#loadingModal').addClass('hidden');
         $('#countDisplay').html(`<span id="label-number">${label_number}</span> / ${dataset.length} labeled examples; <span id="positive-number">${positive_number}</span> example(s) labeled as "Remove".`);
     
         // for testing purposes, using labels in the dataset instead of manual labeling all the data

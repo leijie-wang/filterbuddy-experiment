@@ -1,12 +1,15 @@
-from calendar import c
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
-from datasets.dataset import Dataset
+from datasets.dataset import BATCH_SIZE, Dataset
 import sharedsteps.utils as utils
 import logging
-import json
+import json, random
 from sharedsteps.models import SYSTEMS, Participant
+from systems.ml_filter import MLFilter
+from systems.trees_filter import TreesFilter
+from systems.llm_filter import LLMFilter
+
 
 logger = logging.getLogger(__name__)
 
@@ -112,17 +115,64 @@ def examplelabel(request):
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = []
+    excluded_ids = []
     if stage == "build":
-        dataset = BuildDataSet.load_train_dataset(participant_id)
+        dataset = BuildDataSet.load_train_dataset(participant_id, size=BATCH_SIZE)
+        excluded_ids = BuildDataSet.get_excluded_ids(participant_id, size=BATCH_SIZE)
     elif stage == "update":
-        dataset = UpdateDataSet.load_train_dataset(participant_id)
+        dataset = UpdateDataSet.load_train_dataset(participant_id, size=BATCH_SIZE)
+        excluded_ids = UpdateDataSet.get_excluded_ids(participant_id, size=BATCH_SIZE)
 
     return render(request, 'examplelabel.html', {
             "dataset": json.dumps(dataset),
+            "excluded_ids": json.dumps(excluded_ids),
             "participant_id": participant_id,
             "stage": stage,
             "system": system,
         })
+
+def active_learning(request):
+    request_data = json.loads(request.body)
+    
+    stage = request_data.get('stage')
+    dataset = request_data.get('dataset')
+    excluded_ids = request_data.get('excluded_ids')
+    active_learning = request_data.get('active_learning')
+
+    dataset_left = []
+    if stage == "build":
+        dataset_left = BuildDataSet.load_data_from_ids(excluded_ids=excluded_ids)
+    elif stage == "update":
+        dataset_left = UpdateDataSet.load_data_from_ids(excluded_ids=excluded_ids)
+    
+    if active_learning:
+        X_train = [item["text"] for item in dataset]
+        y_train = [item["label"] for item in dataset]
+
+        logger.info(f"training a model with {len(X_train)} examples labeled by the participant on a total of {len(dataset_left)} examples left")
+        ml_filter = MLFilter("Bayes")
+        ml_filter.train_model(X=X_train, y=y_train)
+
+        X_predict = [item["text"] for item in dataset_left]
+        y_prob = ml_filter.predict_prob(X=X_predict)
+        uncertainties = [ 1 - abs(prob[0] - prob[1]) for prob in y_prob]
+        # get the indices of the most uncertain samples
+        selected_indices = sorted(range(len(uncertainties)), key=lambda i: uncertainties[i], reverse=True)[:BATCH_SIZE]
+        logger.info(f"selected {BATCH_SIZE} samples with the uncertainties greater than {uncertainties[selected_indices[-1]]}")
+        next_batch = [dataset_left[i] for i in selected_indices]
+    else:
+        # randomly select the next batch
+        next_batch = random.sample(dataset_left, BATCH_SIZE)
+
+    return JsonResponse(
+        {
+            "status": True,
+            "message": "Successfully selected the next batch",
+            "data": {
+                "next_batch": next_batch
+            }}, 
+        safe=False
+    )
 
 def store_labels(request):
     """
@@ -473,16 +523,13 @@ def test_system(participant_id, stage, test_dataset):
     
     classifier_class = None
     if system == SYSTEMS.EXAMPLES_ML.value:
-        from systems.ml_filter import MLFilter
         classifier_class = MLFilter
     elif system == SYSTEMS.PROMPTS_LLM.value:
-        from systems.llm_filter import LLMFilter
         classifier_class = LLMFilter
     elif system == SYSTEMS.PROMPTS_ML.value:
         from systems.llm_ml_filter import LLM_ML_MixedFilter
         classifier_class = LLM_ML_MixedFilter
     elif system == SYSTEMS.RULES_TREES.value:
-        from systems.trees_filter import TreesFilter
         classifier_class = TreesFilter
     elif system == SYSTEMS.RULES_ML.value:
         from systems.trees_ml_filter import Trees_ML_MixedFilter
@@ -501,8 +548,7 @@ def test_system(participant_id, stage, test_dataset):
     else:
         test_results = classifier.test_model(X=X_test, y=y_test)
         return 2, test_results
-
-    
+   
 def train_LLM(request):
     logger.info(f"settings.LLM_DEBUG: {settings.LLM_DEBUG}")
     from sharedsteps.tasks import train_llm_task

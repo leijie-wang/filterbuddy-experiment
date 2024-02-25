@@ -204,6 +204,10 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
     }
     // :class="{'bg-blue-500 hover:bg-blue-600': selected == true, 'bg-gray-300 hover:bg-gray-400': selected == false}" 
     dataset = dataset.concat(new_dataset);
+    if(new_separator){
+        textList.find('.newSeparator').last().get(0).scrollIntoView({behavior: "smooth"});
+    }
+    
     return dataset;
 }
 

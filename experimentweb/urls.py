@@ -33,6 +33,7 @@ urlpatterns = [
     
     path('examplelabel/', sharedviews.examplelabel),
     path('store_labels/', sharedviews.store_labels),
+    path('active_learning/', sharedviews.active_learning),
 
     path('promptwrite/', sharedviews.promptwrite),
     path("store_prompts/", sharedviews.store_prompts),

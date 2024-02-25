@@ -98,3 +98,7 @@ class MLFilter:
             "prediction": y_pred.tolist(),
             "performance": performance
         }
+    
+    def predict_prob(self, X):
+        X = self.embeddings.encode(X)
+        return self.pipe.predict_proba(X)

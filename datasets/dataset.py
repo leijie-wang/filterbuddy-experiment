@@ -1,6 +1,7 @@
 import json, logging, os, sys, csv, random
 from django.conf import settings
 import sympy
+from torch import rand
 sys.path.append(os.path.join(settings.BASE_DIR, 'datasets'))
 
 logger = logging.getLogger(__name__)
@@ -17,10 +18,14 @@ class Dataset:
         # load the dataset from a csv file
         with open(self.dataset_path, mode='r', encoding='utf-8') as file:
             csv_reader = csv.DictReader(file)
+            count = 0
             for row in csv_reader:
+                row["id"] = count
                 self.dataset.append(row)
+                count += 1
         
         self.size = len(self.dataset)
+        self.train_size = self.size - TEST_SIZE
         
     def load_all(self):
         return self.dataset
@@ -48,6 +53,18 @@ class Dataset:
         participant = Participant.objects.get(participant_id=participant_id)
         # checks are already done in the view
         return participant.random_seed
+    
+    def get_excluded_ids(self, participant_id, size):
+        """
+            return the list of ids that have already been used in the first batch and the testing set
+        """
+        random_seed = self._get_random_seed(participant_id)
+        seeds_ids =  [(random_seed * id % self.size) for id in range(0, size)]
+        test_ids = [(random_seed * id % self.size) for id in range(self.size - TEST_SIZE, self.size)]
+        return seeds_ids + test_ids
+    
+    def load_data_from_ids(self, excluded_ids):
+        return [self.dataset[id] for id in range(0, self.size) if id not in excluded_ids]
     
     def load_train_dataset(self, participant_id, size=DATASET_SIZE-TEST_SIZE):
         random_seed = self._get_random_seed(participant_id)
