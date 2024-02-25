@@ -183,17 +183,19 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
         // create a new div element for each text with the template below
         let index = i + start_index;
         let text_div_html = `
-            <div id="datum-${index}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
+            <div id="datum-${index}" x-data="{label: null}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
                 <div id="text-${index}" class="flex-grow w-7/10 p-2">${escape_html(new_dataset[i].text)}</div>
                 <div class="flex flex-row w-3/10 justify-center space-x-2">
                     <button 
-                        @click="change_label(${index}, true);" 
+                        @click="label = true; change_label(${index}, true);"
+                        :disabled="label == true"
                         class="text-white py-1 px-3 rounded unselected-button yes-button"
                     >
                         Remove
                     </button>
                     <button
-                        @click="change_label(${index}, false);" 
+                        @click="label = false; change_label(${index}, false);" 
+                        :disabled="label == false"
                         class="text-white py-1 px-3 rounded unselected-button no-button"
                     >
                         Keep
@@ -211,4 +213,12 @@ function display_labeling_data(new_dataset, dataset, new_separator=true){
     return dataset;
 }
 
+function showAlertModal(message){
+    console.log("show alert modal with message: " + message);
+    $("#alertModalText").text(message);
+    $("#alertModal").removeClass("hidden");    
+}
 
+function hideAlertModal(){
+    $("#alertModal").addClass("hidden");
+}

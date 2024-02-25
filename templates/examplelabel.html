@@ -68,17 +68,30 @@
                 <button @click="load_more_data(true, true);" class="bg-stone-200 font-bold py-2 px-3 rounded" >
                     Load More Examples
                 </button>
-                <button id="complete-button" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
+                <button @click="complete()" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
                     Create your Filter
                 </button>
             </div>
         </div>
 
-        <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-1/3 mx-auto p-5 border w-fit shadow-lg rounded-md bg-white">
-                <div id="loadingModalText" class="text-center text-xl">
+        <div id="loadingModal" class="hidden fixed inset-0 bg-slate-300 !bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto py-8 px-4 border w-fit shadow-lg rounded-lg bg-white">
+                <div id="loadingModalText" class="text-center text-xl font-semibold">
                     Loading...
                 </div>
+            </div>
+        </div>
+        <div id="alertModal"  class="hidden fixed inset-0 bg-slate-300 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto py-8 px-4 border w-fit shadow-lg rounded-lg bg-white flex flex-col justify-between gap-y-8">
+                <div id="alertModalText" class="grow text-center text-xl">
+                    <!-- Your alert message here -->
+                </div>
+                <button 
+                    @click="hideAlertModal();" 
+                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
+                >
+                    Okay
+                </button>
             </div>
         </div>
     </div>
@@ -86,31 +99,40 @@
 <!-- custom js -->
 <script src="{% static 'js/sharedsteps.js' %}" defer></script>
 <script defer>
-    const COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
-    const BATCH_SIZE = 30;
+    DEBUG = true;
+    /* experiment parameters */
     const ACTIVE_LEARNING = true;
     const PARTICIPANT_ID = "{{participant_id}}";
     const SYSTEM = "{{system}}";
     const STAGE = "{{stage}}";
-
-    var logs = [];
+    
+    /* dataset information */
     var dataset = [];
     var excluded_ids = JSON.parse(`{{excluded_ids | safe}}`);
-    // the current batch of data that is loaded
-    var current_batch = 0; 
-    // whether the user wants to see only the toxic comments
-    var yes_filtered = false;
-    // how many examples are labeled as toxic
-    var positive_number = 0;
-    // how many examples are labeled
-    var label_number = 0;
-
+    
+    /* time the labeling process */
     var interval_id = null;
     var is_paused = false;
     var time_left = null;
 
+    /* display labeling statistics */    
+    var yes_filtered = false; // whether the user wants to see only the toxic comments
+    var positive_number = 0; // how many examples are labeled as toxic   
+    var label_number = 0; // how many examples are labeled
+
+    var logs = [];
+    
+    function add_log(message){
+        logs.push({
+            timestamp: new Date().toISOString(),
+            time_left: time_left,
+            message: message
+        })
+    }
+
+
     $("#yesFilter").change(function(){
-        
+        add_log(`[ExampleLabel: Filter] User changed the filter to ${$(this).is(":checked") ? "show only toxic comments" : "show all comments"}.`);
         yes_filtered = $(this).is(":checked");
         if(yes_filtered){
             dataset.forEach((datum, index) => {
@@ -118,7 +140,6 @@
                     $(`#datum-${index}`).show();
                 else
                     $(`#datum-${index}`).hide();
-                    
             });
         } else {
             dataset.forEach((datum, index) => {
@@ -127,26 +148,24 @@
         }
     });
 
-
     function change_label(index, new_label){
+        /* 
+            Change the label of the text; 
+            We restrict in the UI that this function will only be triggered when the new_label is different from the old label 
+        */
+
+        // add a log message
         let message = "";
         if(dataset[index].label == null){
-            message = `[ExampleLabel: LabelExamples] Labeled this text as ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
+            message = `[ExampleLabel: LabelExamples] Labeled the ${index}-th text as ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
         } else {
-            message = `[ExampleLabel: LabelExamples] Changed the label of the text to ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
+            message = `[ExampleLabel: LabelExamples] Changed the label of the ${index}-th text to ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
         }
-        logs.push({
-            time: new Date().toISOString(),
-            message: message
-        })
+        add_log(message);
 
-        // change the label of the text at the given index
-        label_number = label_number + (dataset[index].label == null ? 1 : 0);
-
-        dataset[index].label = new_label;
-        
-        // change the button color
-        if(dataset[index].label){
+        ;
+        // update the button color
+        if(new_label){
             $(`#datum-${index} .yes-button`).removeClass('unselected-button').addClass('selected-button');
             $(`#datum-${index} .no-button`).removeClass('selected-button').addClass('unselected-button');
         } else {
@@ -155,34 +174,34 @@
 
         }
 
-        // update the number of positive examples
-        positive_number = positive_number + (dataset[index].label ? 1 : 0);
+        // update the labeling statistics
+        positive_number = positive_number + (new_label === true ? 1 : (dataset[index].label === true ? -1 : 0));
+        label_number = label_number + (dataset[index].label == null ? 1 : 0);
         $('#positive-number').text(positive_number);
         $('#label-number').text(label_number);
+
+        dataset[index].label = new_label;
 
     }
 
     async function load_more_data(new_separator=true, active_learning=true){
         // check that the user has labeled all existing examples
         if(label_number < dataset.length){
-            alert("Please label all the examples before loading more data.");
+            showAlertModal("Please label all the examples before loading more.");
             return;
         }
-
-        logs.push({
-            time: new Date().toISOString(),
-            message: `[ExampleLabel: LoadExamples] Loaded another batch of ${BATCH_SIZE} examples.`
-        })
         
-        if(active_learning && dataset.length > 0){
+        if(dataset.length === 0){
+            new_data = JSON.parse(`{{dataset | safe}}`);
+        } else {
+            is_paused = true;
             $('#loadingModal').removeClass('hidden');
             $('#loadingModalText').text('Loading more examples...');
             try {
                 let response = await post_backend(
                     "/active_learning/", 
-                    {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'dataset': dataset, "excluded_ids": excluded_ids, "active_learning": ACTIVE_LEARNING},
+                    {'participant_id': PARTICIPANT_ID, 'stage': STAGE, "active_learning": ACTIVE_LEARNING, 'dataset': dataset, "excluded_ids": excluded_ids},
                 )
-
                 if(response["status"]){
                     new_data = response.data.next_batch;
                     new_ids = new_data.map(datum => datum.id);
@@ -193,71 +212,76 @@
             } catch (error) {
                 console.error(error);
             }
-
-        } else {
-            let start = current_batch * BATCH_SIZE;
-            let end = (current_batch + 1) * BATCH_SIZE;
-            if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
-            new_data = COMPLETE_DATASET.slice(start, end);
-            current_batch++;
-        }
+        } 
         
+        logs.push({
+            time: new Date().toISOString(),
+            message: `[ExampleLabel: LoadExamples] Loaded another batch of ${new_data.length} examples.`
+        })
+
         dataset = display_labeling_data(new_data, dataset, new_separator);
+        is_paused = false;
         $('#loadingModal').addClass('hidden');
         $('#countDisplay').html(`<span id="label-number">${label_number}</span> / ${dataset.length} labeled examples; <span id="positive-number">${positive_number}</span> example(s) labeled as "Remove".`);
     
         // for testing purposes, using labels in the dataset instead of manual labeling all the data
-        dataset.forEach((datum, index) => {
-            if(index >= 0) {
-                let new_label = +parseFloat(datum.score) >= 0.5;
-                change_label(index, new_label);
-            }
-        });
+        if(DEBUG){
+            dataset.forEach((datum, index) => {
+                if(index >= 0) {
+                    let new_label = +parseFloat(datum.score) >= 0.5;
+                    change_label(index, new_label);
+                }
+            });
+        }
     }
 
-    $('#complete-button').click( function(){
-        // train the ML model
+    function complete(time_out=false){
+        /* store the labeled examples and then redirect to the validation page where an ML model will be trained */
+        
+        if(time_out){
+            message = "This session ends. Thank you for your time. We are now evaluating how your filter performs, so please wait for a moment.";
+        } else {
+            message = "We are evaluating how your filter performs, so please wait for a moment.";
+        }
         is_paused = true;
+        $('#loadingModal').removeClass('hidden');
+        $('#loadingModalText').text(message);
 
-        logs.push({
-            time: new Date().toISOString(),
-            message: `[ExampleLabel: Complete] Finished labeling groundtruth examples with ${positive_number} positive examples out of ${label_number} labeled examples.`,
-        })
+        add_log(`[ExampleLabel: Complete] Finished labeling groundtruth examples with ${positive_number} positive examples out of ${label_number} labeled examples.`);
 
-        // filter out the unlabeled data
+        // filter out the unlabeled data， at this point, we do not require users to label all the examples they have loaded
         let labeled_dataset = dataset.filter(datum => datum.label != null);
 
         post_backend(
             "/store_labels/",
             {'dataset': labeled_dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'logs': logs},
             function(response) {
-                $('#loadingModal').removeClass('hidden');
-                $('#loadingModalText').text('We are evaluating how your filter performs, so please wait for a moment.');
                 if(!response["status"]){
-                    alert(response["message"]);
                     $('#loadingModal').addClass('hidden');
+                    alert(response["message"]);
                 } else {
+                    // we do not hide the loading modal here, because redirecting to the validation page will take some time
+                    add_log(`[ExampleLabel: StoreLabels] Successfully stored the labeled examples and then redirected to the validation page.`);
                     redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
                 }
             }
         ); 
-    });
+    }
 
     function set_timer(){
         if (!is_paused) {
             time_left = time_left - 1000;
-
             // Time calculations for minutes and seconds
             var minutes = Math.floor((time_left % (1000 * 60 * 60)) / (1000 * 60));
             var seconds = Math.floor((time_left % (1000 * 60)) / 1000);
 
-            // Output the result in the element with id="timer"
             $("#timer").text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
 
             // If the countdown is over, stop the timer
             if (time_left < 0) {
                 clearInterval(interval_id);
                 $("#timer").text("00:00");
+                complete(true);
             }
         }
     }
@@ -267,8 +291,10 @@
         load_more_data(false);
 
         $("#timer").text("15:00");
-        time_left = 15 * 60 * 1000;;
+        time_left = 15 * 60 * 1000;
         interval_id = setInterval(set_timer, 1000);
+
+        add_log(`[ExampleLabel: Start] Users loaded the page to label examples.`);
     });
 
 

@@ -162,6 +162,7 @@ def save_logs(participant_id, stage, logs):
         ExperimentLog.objects.create(
             participant_id=participant_id,
             stage=stage,
-            time=log['time'],
+            timestamp=log['time'],
+            time_left=log["time_left"],
             message=log["message"]
         ).save()

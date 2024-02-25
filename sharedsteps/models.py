@@ -24,7 +24,8 @@ STAGES = [
 class ExperimentLog(models.Model):
     participant_id = models.CharField(max_length=100)
     # use GMT-0 time
-    time = models.DateTimeField()
+    timestamp = models.DateTimeField()
+    time_left = models.IntegerField()
     message = models.TextField()
     stage = models.CharField(max_length=10, choices=STAGES)
 
