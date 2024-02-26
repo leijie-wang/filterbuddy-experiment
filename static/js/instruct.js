@@ -19,12 +19,14 @@ function updateName(id, text){
 }
 
 function addNewInstruction(){
+    logEvents("AddNewInstruction", {});
     // read from configuring instruction panel and add this new instruction to the instructions in jquery
     displayInstructions([{...new_instruction_template}]);
 }
 
 function deleteInstruction(deleted_id) {
-    console.log(`deleting instruction ${deleted_id}`);
+    logEvents("ActivateInstruction", {instruction_id: deleted_id});
+
     delete instructions[deleted_id];
     $(`#instruction-${deleted_id}`).remove();
 
@@ -32,7 +34,12 @@ function deleteInstruction(deleted_id) {
     selected_instructions = selected_instructions.filter((id) => id != deleted_id);
 }
 
-function displayData(new_dataset, new_separator=true, enable_copy=false){
+function copyText(index){
+    navigator.clipboard.writeText(dataset[index].text);
+    logEvents("CopyText", {text: dataset[index].text});
+}
+
+function displayData(new_dataset, new_separator=true){
     let textList = $(`#textList`);
 
     if (new_separator) {
@@ -56,7 +63,7 @@ function displayData(new_dataset, new_separator=true, enable_copy=false){
     for (let i = 0; i < new_dataset.length; i++) {
         /* Here i use mb-2 instead of adding a gap-y-2 to the textList div because the latter will still keep gaps for hidden elements */
         let copy_button = "";
-        if(enable_copy){
+        if(INSTRUCTION_NAME === "prompt"){
             copy_button = `
                 <div x-data="{ copied: false, isHovering: false}" 
                     @click="copied = true; copyText(${i+start_index}); setTimeout(() => copied = false, 500);" 
@@ -84,7 +91,7 @@ function displayData(new_dataset, new_separator=true, enable_copy=false){
                         <div 
                             class="tooltipEnabled" 
                             title="See explanation"
-                            @click="showTooltip = !showTooltip"
+                            @click="showTooltip = !showTooltip; logEvents('ShowExplanation', {datum_id: ${i + start_index}, show_tooltip: showTooltip});"
                         >
                             <i class="fa-solid fa-circle-info text-gray-500 fa"></i>
                         </div>
@@ -112,10 +119,13 @@ function displayData(new_dataset, new_separator=true, enable_copy=false){
 }
 
 function loadMoreData(new_separator=true){
+    
     let start = current_batch * BATCH_SIZE;
     let end = (current_batch + 1) * BATCH_SIZE;
     if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
     let new_data = COMPLETE_DATASET.slice(start, end);
+    logEvents("LoadMoreData", {batch_size: new_data.length});
+
     displayData(new_data, new_separator);
     current_batch++;
 }
@@ -229,6 +239,7 @@ function updateDataLabels(results) {
 $(document).ready(function(){
     $("#predictionFilter").on("change", function() {
         selected_prediction = $(this).val();
+        addLog(`[${SYSTEM}: PredictionFilter] Changed the prediction filter to ${selected_prediction}.`);
         showFilteredData();
     });
 });

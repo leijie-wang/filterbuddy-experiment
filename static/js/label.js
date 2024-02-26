@@ -29,8 +29,8 @@ function displayLabelingData(new_dataset, new_separator=true){
         let index = i + start_index;
         let text_div_html = `
             <div id="datum-${index}" x-data="{label: null}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
-                <div id="text-${index}" class="flex-grow w-7/10 p-2">${escape_html(new_dataset[i].text)}</div>
-                <div class="flex flex-row w-3/10 justify-center space-x-2">
+                <div id="text-${index}" class="flex-grow max-w-[80%] p-2">${escape_html(new_dataset[i].text)}</div>
+                <div class="grow-0 flex flex-row w-fit justify-center space-x-2">
                     <button 
                         @click="label = true; changeLabel(${index}, true);"
                         :disabled="label == true"
@@ -58,13 +58,9 @@ function displayLabelingData(new_dataset, new_separator=true){
 
 function changeLabel(index, new_label){
     if(new_label === dataset[index].label) return;
-    let message = "";
-    if(dataset[index].label == null){
-        message = `[${SYSTEM}: LabelExamples] Labeled this text as ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
-    } else {
-        message = `[${SYSTEM}: LabelExamples] Changed the label of the text to ${new_label ? "positive" : "negative"}: "${dataset[index].text}"`;
-    }
-    addLog(message);
+
+
+    logEvents("LabelExamples", {new_label: new_label, text: dataset[index].text, new: dataset[index].label == null});
 
     positive_number = positive_number + (new_label === true ? 1 : (dataset[index].label === true ? -1 : 0));
     label_number = label_number + (dataset[index].label == null ? 1 : 0);

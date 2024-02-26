@@ -1,3 +1,4 @@
+from math import log
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -189,7 +190,8 @@ def store_labels(request):
                 }
             ],
             "participant_id": "123456"
-            "stage": "build" or "update"
+            "stage": "build" or "update",
+            "logs": [...]
         }
     """
     request_data = json.loads(request.body)
@@ -260,7 +262,9 @@ def store_prompts(request):
     prompts = request_data.get("instructions")
     participant_id = request_data.get('participant_id')
     stage = request_data.get("stage")
-
+    
+    logs = request_data.get('logs')
+    utils.save_logs(participant_id, stage, logs)
     from sharedsteps.models import PromptWrite
     # delete the labels of the participant from the database first, for the testing purposes
     PromptWrite.objects.filter(participant_id=participant_id, stage=stage).delete()
@@ -331,13 +335,17 @@ def store_rules(request):
             },
         ],
         "participant_id": "123456",
-        "stage": "build" or "update"
+        "stage": "build" or "update",
+        "logs": [...]
     }
     """
     request_data = json.loads(request.body)
     rules = request_data.get("instructions")
     participant_id = request_data.get('participant_id')
     stage = request_data.get('stage')
+    
+    logs = request_data.get('logs')
+    utils.save_logs(participant_id, stage, logs)
 
     from sharedsteps.models import RuleConfigure, RuleUnit
     # delete the existing rules of the participant from the database, note we only deleted rules of the corresponding stage

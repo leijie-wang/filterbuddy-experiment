@@ -218,10 +218,6 @@
         functions that help the authoring of instructions
     */
 
-    function copyText(index){
-        navigator.clipboard.writeText(dataset[index].text);
-    }
-
     function getCleanPhrases(instruction_input, accept=true){
         if(accept){
             $(instruction_input).find(".deletion").remove();
@@ -241,16 +237,21 @@
     }
     
     function acceptNewPhrases(element){
+        logEvents("AcceptNewPhrases", {instruction_id: $(element).closest('.instructionSection').attr('id')});
         let instruction_input = $(element).closest('.instructionRubric');
         getCleanPhrases(instruction_input, true);
+        
     }
 
     function rejectNewPhrases(element){
+        logEvents("RejectNewPhrases", {instruction_id: $(element).closest('.instructionSection').attr('id')});
         let instruction_input = $(element).closest('.instructionRubric');
         getCleanPhrases(instruction_input, false);
+        
     }
 
     async function getRephraseInstruction(element){
+        let instruction_id = $(element).closest('.instructionSection').attr('id');
         let instruction_input = $(element).closest('.instructionSection').find('.instructionRubric');
         let instruction = instruction_input.text().trim();
         
@@ -265,7 +266,7 @@
             return;
         }
         let rephrase_instruction = response.data.instruction;
-        console.log("rephrase instruction", rephrase_instruction);
+        logEvents("RephraseInstruction", {instruction: instruction, rephrase_instruction: rephrase_instruction, instruction_id: instruction_id})
         
         // update the instruction input with the rephrase instruction
        
@@ -361,7 +362,7 @@
                             <!-- <div class="flex items-center sortHandle focus:outline-none">
                                 <i class="fa-solid fa-up-down-left-right"></i>
                             </div> -->
-                            <button @click="active = !active; open=false;" class="focus:outline-none">
+                            <button @click="active = !active; open=false; logEvents('ActivateInstruction', {active: active, instruction_id: ${instruction.id}});" class="focus:outline-none">
                                 <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
                             </button>
                             <button @click="deleteInstruction(${instruction.id})" class="focus:outline-none">
@@ -487,6 +488,7 @@
     function trainLLM() {
         let now_instructions = parseContent();
         
+
         // add a countdown timer to the loading modal
         let estimated_time = Math.ceil(40 / 120 * now_instructions.length * dataset.length);
         showLoadingModal(`We are evaluating the performance of your filters. <br/> It is estimated to take <b>${estimated_time}</b> seconds, please wait for a moment.`);
@@ -510,6 +512,7 @@
                     return;
                 }
                 let task_id = response.data.task_id;
+                logEvents("TrainLLM", {instruction_len: now_instructions.length, dataset_len: dataset.length, task_id: task_id})
                 pollForResults(task_id, countdown_timer);
 
             }
@@ -531,6 +534,7 @@
                         hideLoadingModal();
                         clearInterval(countdown_timer);
                         clearInterval(poll); // Stop polling since task is complete
+                        logEvents("LLMResults", {task_id: task_id})
                     } else {
                         console.log("Task is still processing...");
                     }
@@ -559,10 +563,10 @@
         showLoadingModal(message);
         
         let now_instructions = parseContent();
-        
+        logEvents("Complete", {instruction_len: now_instructions.length, dataset_len: dataset.length});
         post_backend(
             "/store_prompts/", 
-            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
+            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'logs': logs},
             function(response){
                 if(!response["status"]){
                     hideLoadingModal();
@@ -577,7 +581,7 @@
 
     $(document).ready(function(){
         $(".copyButton").tooltip();
-        loadMoreData(false);
+        
 
     
         if(STAGE === "update"){
@@ -587,6 +591,8 @@
         }
 
         startTimer(SESSION_TIME);
+        loadMoreData(false);
+        logEvents("Start", {})
     })
     
 

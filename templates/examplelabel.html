@@ -116,7 +116,8 @@
     var yes_filtered = false; // whether the user wants to see only the toxic comments
 
     $("#yesFilter").change(function(){
-        addLog(`[${SYSTEM}: Filter] User changed the filter to ${$(this).is(":checked") ? "show only toxic comments" : "show all comments"}.`);
+        logEvents("Filter", {"checked": $(this).is(":checked")});
+        
         yes_filtered = $(this).is(":checked");
         if(yes_filtered){
             dataset.forEach((datum, index) => {
@@ -160,7 +161,8 @@
             }
         } 
 
-        addLog(`[ExampleLabel: LoadExamples] Loaded another batch of ${new_data.length} examples.`);
+        
+        logEvents("LoadExamples", {"active_learning": active_learning, "dataset_len": new_data.length});
 
         displayLabelingData(new_data, new_separator);
         $('#countDisplay').html(`<span id="label-number">${label_number}</span> / ${dataset.length} labeled examples; <span id="positive-number">${positive_number}</span> example(s) labeled as "Remove".`);
@@ -189,7 +191,7 @@
 
         showLoadingModal(message);
 
-        addLog(`[ExampleLabel: Complete] Finished labeling groundtruth examples with ${positive_number} positive examples out of ${label_number} labeled examples.`);
+        logEvents("Complete", {"positive_number": positive_number, "label_number": label_number});
 
         // filter out the unlabeled data， at this point, we do not require users to label all the examples they have loaded
         let labeled_dataset = dataset.filter(datum => datum.label != null);
@@ -203,7 +205,6 @@
                     showAlertModal(response["message"]);
                 } else {
                     // we do not hide the loading modal here, because redirecting to the validation page will take some time
-                    addLog(`[ExampleLabel: StoreLabels] Successfully stored the labeled examples and then redirected to the validation page.`);
                     redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
                 }
             }
@@ -212,7 +213,7 @@
 
     $(document).ready(function(){
         startTimer(15);
-        addLog(`[ExampleLabel: Start] Users loaded the page to label examples.`);
+        logEvents("Start", {});
         loadMoreData(false);
     });
 

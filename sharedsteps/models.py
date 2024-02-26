@@ -23,11 +23,18 @@ STAGES = [
 
 class ExperimentLog(models.Model):
     participant_id = models.CharField(max_length=100)
+    
     # use GMT-0 time
     timestamp = models.DateTimeField()
     time_left = models.IntegerField()
-    message = models.TextField()
+    
     stage = models.CharField(max_length=10, choices=STAGES)
+    system = models.CharField(max_length=100)
+    codename = models.CharField(max_length=100)
+    description = models.TextField()
+
+    def __str__(self):
+        return f"{self.timestamp}-{self.system}-{self.stage}\n{self.codename}\t{self.description[:100]}\n"
 
 class Participant(models.Model):
     participant_id = models.CharField(max_length=100)

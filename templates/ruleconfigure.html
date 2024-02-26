@@ -202,6 +202,23 @@
     /* 
         functions that help the authoring of prompts
     */
+    function initialize_tagify(element, instruction_id){
+        let tagify = new Tagify(
+                element,
+                {
+                    placeholder: "Add another word, separated by comma",
+                }
+            );
+        $(element).data("tagify", tagify);
+        tagify.on("add", function(e){
+            logEvents("AddTagifyPhrase", {phrase: e.detail.data.value, instruction_id: instruction_id});
+        });
+
+        tagify.on("remove", function(e){
+            logEvents("RemoveTagifyPhrase", {phrase: e.detail.data.value, instruction_id: instruction_id});
+        })
+    }
+
     async function getSimilarPhrases(element){
         let word_input = $(element).closest('.unitSection').find('.wordList');
         let words = [];
@@ -237,6 +254,8 @@
                 $(this).removeClass('newTag');
             }, 8000);
         })
+
+        logEvents("SuggestSynonyms", {words: words.join(", ")});
     }
 
     /* functions that display, add, and remove instructions */
@@ -284,12 +303,18 @@
     }
     
     function removeUnitSection(event){
-        $(event.target).closest(`.unitSection`).remove();
+        let unit_section = $(event.target).closest('.unitSection');
+        let type = $(unit_section).hasClass('includeUnitSection') ? "include" : "exclude";
+        let instruction_id = $(unit_section).closest('.instructionSection').attr('id');
+        
+        logEvents("RemoveUnit", {type: type, instruction_id: instruction_id});
+        $(unit_section).remove();
         // update the title of the second include unit if there are two include units
-        $(event.target).closest('.unitSections').find(".includeUnitSection").first().find('.unitTitle').text("If they include");
+        $(unit_section).find(".includeUnitSection").first().find('.unitTitle').text("If they include");
     }
     
     function addNewUnit(element, type){
+        let instruction_id = $(element).closest('.instructionSection').attr('id');
         let unit_sections = $(element).closest('.instructionSection').find('.unitSections');
         // see how many unit sections are there
         let number_include = unit_sections.find('.includeUnitSection').length;
@@ -300,6 +325,8 @@
             return;
         }
         
+
+        logEvents("AddNewUnit", {type: type, instruction_id: instruction_id});
         let unit_section_html = getUnitSection(type, [], number_include === 1);
         let input;
         if(!has_exclude){
@@ -310,13 +337,7 @@
             input = unit_sections.children().eq(-2).find('.wordList')[0];
         }
         // tagify the newly added unit section
-        let tag = new Tagify(
-                input,
-                {
-                    placeholder: "Add another word, separated by comma",
-                }
-            );
-            $(input).data("tagify", tag);
+        initialize_tagify(input, instruction_id);
         
         
     }
@@ -403,7 +424,7 @@
                                 <i class="fa-solid fa-up-down-left-right"></i>
                             </div> -->
                             <!-- Toggle on or off this instruction -->
-                            <button @click="active = !active; open=false;" class="focus:outline-none">
+                            <button @click="active = !active; open=false; logEvents('ActivateInstruction', {active: active, instruction_id: ${instruction.id}})" class="focus:outline-none">
                                 <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
                             </button>
                             <!-- Delete this instruction -->
@@ -452,11 +473,11 @@
                                 Add Exceptions
                             </button>
                         </div>
-                        <div class="flex p-1 gap-x-1 items-center">
-                            <input type="checkbox" class="variantsCheckbox h-3 w-3" ${instruction.variants ? "checked" : ""}/>
+                        <div x-data="{ checked: ${instruction.variants}, open: false}" class="flex p-1 gap-x-1 items-center">
+                            <input type="checkbox" x-model="checked" class="variantsCheckbox h-3 w-3" @click="checked = !checked; logEvents('SpellingVariants', {checked: checked, instruction_id: ${instruction.id}})"/>
                             <label class="text-sm text-gray-600 font-medium">Detect spelling variants</label>
                             
-                            <div x-data="{ open: false}">
+                            <div>
                                 <!-- Tooltip Trigger -->
                                 <button 
                                     @click="open = !open" 
@@ -488,11 +509,7 @@
 
             $(`#instruction-${instruction.id} input.wordList`).each(function() {
                 // Initialize Tagify on each input element
-                let tag = new Tagify($(this)[0], {
-                    placeholder: "Add another word, separate by comma",
-                });
-                $(this).data("tagify", tag);
-                
+                initialize_tagify($(this)[0], instruction.id);
             });
         });
     }
@@ -544,7 +561,8 @@
     function trainTrees() {
         let now_instructions = parseContent();
         showLoadingModal("Waiting for the results")
-
+        logEvents("TrainTrees", {instruction_len: now_instructions.length, dataset_len: dataset.length});
+        
         post_backend(
             "/trainTrees/", 
             {'dataset': dataset, 'instructions': now_instructions},
@@ -577,13 +595,15 @@
             message = "We are evaluating how your filter performs, so please wait for a moment.";
             return;
         }
-
+        
+       
         showLoadingModal(message);
         
         let now_instructions = parseContent();
+        logEvents("Complete", {instruction_len: now_instructions.length, dataset_len: dataset.length});
         post_backend(
             "/store_rules/", 
-            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
+            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, "logs": logs},
             function(response){
                 if(!response["status"]){
                     hideLoadingModal();
@@ -601,15 +621,17 @@
     }
 
     $(document).ready(function(){
-        loadMoreData(false);
+        
         
         if(STAGE === "update"){
             displayInstructions(JSON.parse(`{{instructions | safe}}`));
         } else if(DEBUG) {
             displayInstructions(TEST_INSTRUCTIONS);
         }
-
+        
         startTimer(SESSION_TIME);
+        loadMoreData(false);
+        logEvents("Start", {})
     })
   
     /* function updatePriority(){

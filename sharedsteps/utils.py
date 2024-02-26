@@ -167,10 +167,17 @@ def save_logs(participant_id, stage, logs):
     
     from sharedsteps.models import ExperimentLog
     for log in logs:
-        ExperimentLog.objects.create(
-            participant_id=participant_id,
-            stage=stage,
-            timestamp=log['timestamp'],
-            time_left=log["time_left"],
-            message=log["message"]
-        ).save()
+        try:
+            log = ExperimentLog.objects.create(
+                participant_id = participant_id,
+                stage = stage,
+                timestamp = log['timestamp'],
+                time_left = log["time_left"],
+                system = log["system"],
+                codename = log["codename"],
+                description=log["description"]
+            )
+            if not log.codename == "LabelExamples":
+                print(str(log))
+        except:
+            print("Error saving log", log)

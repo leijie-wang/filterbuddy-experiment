@@ -63,7 +63,7 @@
             </div>
         </div>
         <div class="grow flex mx-4 items-stretch">
-            <div class="w-[70%] flex flex-col gap-y-2 items-start">
+            <div class="grow-0 w-[70%] flex flex-col gap-y-2 items-stretch">
 
                 <div id="countDisplay" class="grow-0 text-base italic text-blue-600"></div>
 
@@ -73,7 +73,7 @@
                     class="grow flex flex-col px-4 border border-gray-600 rounded h-16 overflow-y-auto"
                 ></div>
             </div>
-            <div x-show="atBottom" class="w-[30%] flex flex-col justify-end items-center px-4">
+            <div x-show="atBottom" class="grow-0 w-[30%] flex flex-col justify-end items-center px-4">
                 <div class="flex flex-col gap-y-2  bg-slate-100 rounded p-4">
                     <p class="text-lg">
                         {% if stage == "build" %}
@@ -127,7 +127,9 @@
         } 
         // show the first five logs
         console.log(logs.slice(0, 5));
-        addLog(`[${SYSTEM}: Complete] Finished labeling groundtruth examples with ${positive_number} positive examples out of ${label_number} labeled examples.`);
+        
+
+        logEvents("Complete", {"positive_number": positive_number, "label_number": label_number});
         
         post_backend(
                 "/store_groundtruth/", {'dataset': dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'logs': logs},
@@ -146,7 +148,7 @@
     $(document).ready(function(){
         displayLabelingData(JSON.parse(`{{dataset | safe}}`), false);
         startTimer(10);
-
+        logEvents("Start", {});
         if(DEBUG){
             // for testing purposes, use the score to simulate the user's label
             dataset.forEach((datum, index) => {
