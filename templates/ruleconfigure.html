@@ -25,6 +25,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.1/Sortable.min.js" integrity="sha512-3N7dD+tlndNxwAC0PwGNWnnEpzHQwgNl6/c9XW6+nqptoMhbI9Rb6kQiUFtYmXrox60oIELVSFAO0dCSfKb2tw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-sortablejs@latest/jquery-sortable.js"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script src="{% static 'js/base.js' %}"></script>
+    <script src="{% static 'js/instruct.js' %}"></script>
+    
     
 </head>
 
@@ -64,13 +68,13 @@
             <!-- the section where users configure prompts -->
             <div class="flex flex-col items-stretch gap-y-4 rounded w-1/2 flex-grow">
                 
-                <!-- the section where users see all rules -->
+                <!-- the section where users see all instructions -->
                 <div class="section-body flex flex-col flex-grow gap-y-4 pb-4">
                     <div class="flex flex-col gap-y-2 flex-grow h-1 pr-2 overflow-y-auto">
-                        <div id="ruleList" class="flex flex-col gap-y-2">
+                        <div id="instructionList" class="flex flex-col gap-y-2">
  
                         </div>
-                        <div @click="addNewRule" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
+                        <div @click="addNewInstruction" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
                             <div class="text-3xl text-gray-500">+</div>
                         </div>
                      </div>
@@ -93,33 +97,18 @@
                     <div class="self-stretch flex justify-between items-center gap-x-1">
                         <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
                         <div class="grow flex justify-start items-center gap-x-2 ">
-                            <!-- <div class="text-sm text-gray-600 ">View Options</div> -->
-                            
-                            
                             <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
                                 <option value="removed" class=" text-xs text-gray-700">Removed comments</option>
                                 <option value="approved" selected class=" text-xs text-gray-700">Approved comments</option>
                                 <option value="all" selected class=" text-xs text-gray-700">All comments</option>
                             </select>
-                           
-                            <!-- <div class="w-[45%]">
-                                <select id="ruleFilter" multiple
-                                    class="selectpicker data-filter show-tick border rounded" 
-                                    title="by rules" 
-                                    data-width="100%"
-                                    data-selected-text-format="count"
-                                    data-count-selected-text="{0} rules selected"
-                                >
-                                    
-                                </select>
-                            </div> -->
                         </div>
                         
                     </div>
                     <!-- display a list of comments to be reviewed -->
                     <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
                     <div class="bottom flex justify-end gap-x-2 pt-3">
-                        <button @click="load_more_data" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
+                        <button @click="loadMoreData()" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
                             Load More Examples
                         </button>
                         <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
@@ -132,44 +121,89 @@
         
         <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
             <div class="relative top-1/3 mx-auto p-5 border w-fit shadow-lg rounded-md bg-white">
-                <div id="loadingModalText" class="text-center text-xl">
+                <div id="loadingModalText" class="text-start text-xl text-gray-600">
                     Loading...
                 </div>
             </div>
         </div>
-
+        <div id="alertModal"  class="hidden fixed inset-0 bg-slate-300 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto py-8 px-4 border w-fit shadow-lg rounded-lg bg-white flex flex-col justify-between gap-y-8">
+                <div id="alertModalText" class="grow text-start text-xl text-gray-600">
+                    <!-- Your alert message here -->
+                </div>
+                <button 
+                    id="alertModalButton"
+                    @click="hideAlertModal();" 
+                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
+                >
+                    Okay
+                </button>
+            </div>
+        </div>
     </div>
 </body> <!-- closes container -->
 <!-- custom js -->
-<script src="{% static 'js/sharedsteps.js' %}" defer></script>
-<script defer>
-    const COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
-    const BATCH_SIZE = 30;
-    const SYSTEM = "{{system}}";
-    const PARTICIPANT_ID = "{{participant_id}}";
-    const STAGE = "{{stage}}";
+<script>
+
+    PARTICIPANT_ID = "{{participant_id}}";
+    STAGE = "{{stage}}";
+    SYSTEM = "{{system}}";
     
+    INSTRUCTION_NAME = "rule";
+    COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
+    
+    TEST_INSTRUCTIONS = [
+                {
+                    "action": 1,
+                    "name": "Personal attack",
+                    "variants": false,
+                    "units": [
+                        {
+                            "type": "include",
+                            "words": ["nonsense", "asshole", "stupid", "idiot", "fool", "stupidity"],
+                        },
 
-    var dataset = [];
-    var current_batch = 0; 
-    // we assume every single quote is properly escaped; this should be ensured when adding them to the list
-    // for now, we only require users to input one example for each category
-    var rules = {};
-    var rule_counter = 0; // indicate the higher id that has been used
+                    ]
+                },
+                {
+                    "action": 1,
+                    "name": "Sexual accusation",
+                    "variants": false,
+                    "units": [
+                        {
+                            "type": "include",
+                            "words": ["sex offender", "rapists", "fuck"],
+                        },
+                    ]   
+                },
+                {
+                    "action": 1,
+                    "name": "Terrorist accusation",
+                    "variants": true,
+                    "units": [
+                        {
+                            "type": "include",
+                            "words": ["terrorists", "terrorist", "kill", "killing"]
+                        },
+                    ]
 
-    var selected_rules = [];
-    var selected_prediction = "all";
-
-    var interval_id = null;
-    var is_paused = false;
-    var time_left = null;
+                }
+            ]
+    
+    new_instruction_template = {
+        "action": 1,
+        "name": [],
+        "units": [{
+            "type": "include",
+            "words": [],
+        }]   
+    };
 
     /* 
         functions that help the authoring of prompts
     */
     async function getSimilarPhrases(element){
         let word_input = $(element).closest('.unitSection').find('.wordList');
-        console.log("tagify element", );
         let words = [];
         $(word_input).find('.tagify__tag').each(
             function() {
@@ -177,19 +211,22 @@
             }
         );
         
-        console.log("getting similar phrases for ", words);
-        
+        if(words.length === 0){
+            showAlertModal("Please add at least one word to get similar phrases.");
+            return;
+        }
+                
         let response = await post_backend(
             "/get_similar_phrases/", 
             {'phrases': words}
         )
     
         if(!response["status"]){
-            alert(response["message"]);
+            showAlertModal(response["message"]);
             return;
         }
+        
         let similar_phrases = response.data.phrases;
-        console.log("similar phrases", similar_phrases);
         let tagify = $(word_input[1]).data("tagify"); // get the tagify instance of the second word input
         tagify.addTags(similar_phrases);
 
@@ -202,29 +239,8 @@
         })
     }
 
-    /* 
-        functions that display, add, and remove rules
-    */
+    /* functions that display, add, and remove instructions */
     
-    function updatePriority(){
-        
-        $('#ruleList .ruleSection').each(function(index) {
-            // get the id of the ruleSection
-            let id = +$(this).attr('id').split('-')[1];
-            rules[id].priority = index;
-
-            // update the priority class div of the this ruleSection
-            // $(this).find('.priority').text(`${index + 1}.`);
-        });
-    }
-
-    function updateOptions(id, text){
-        // update the options of the select picker
-        rules[id].name = text;
-        // $(`#ruleFilter option[value=${id}]`).text(capitalize(text));
-        // $(".selectpicker").selectpicker('refresh');
-    }
-
     function getUnitSection(type, words, second_include=false){
         return `
             <div class='unitSection ${type}UnitSection flex flex-col gap-y-2 items-stretch pl-4 pr-4'>
@@ -268,13 +284,13 @@
     }
     
     function removeUnitSection(event){
-        let unit_sections = $(event.target).closest('.unitSections');
         $(event.target).closest(`.unitSection`).remove();
-        unit_sections.find(".includeUnitSection").first().find('.unitTitle').text("If they include");
+        // update the title of the second include unit if there are two include units
+        $(event.target).closest('.unitSections').find(".includeUnitSection").first().find('.unitTitle').text("If they include");
     }
     
     function addNewUnit(element, type){
-        let unit_sections = $(element).closest('.ruleSection').find('.unitSections');
+        let unit_sections = $(element).closest('.instructionSection').find('.unitSections');
         // see how many unit sections are there
         let number_include = unit_sections.find('.includeUnitSection').length;
         let has_exclude = unit_sections.find('.excludeUnitSection').length > 0;
@@ -285,70 +301,69 @@
         }
         
         let unit_section_html = getUnitSection(type, [], number_include === 1);
+        let input;
         if(!has_exclude){
             unit_sections.append(unit_section_html);
-            let input = unit_sections.children().last().find('.wordList')[0]
-            let tag = new Tagify(
+            input = unit_sections.children().last().find('.wordList')[0]
+        } else {
+            unit_sections.children().last().before(unit_section_html);
+            input = unit_sections.children().eq(-2).find('.wordList')[0];
+        }
+        // tagify the newly added unit section
+        let tag = new Tagify(
                 input,
                 {
                     placeholder: "Add another word, separated by comma",
                 }
             );
             $(input).data("tagify", tag);
-        } else {
-            unit_sections.children().last().before(unit_section_html);
-            new Tagify(
-                unit_sections.children().eq(-2).find('.wordList')[0],
-                {
-                    placeholder: "Add another word, separated by comma",
-                }
-            );
-        }
-        // tagify the newly added unit section
+        
         
     }
 
-    function displayRules(new_rules){
-        // display the rules in the ruleList
-        let ruleList = $('#ruleList');
+    function displayInstructions(new_instructions){
+        // display the instructions in the instructionList
+        let instructionList = $('#instructionList');
         
-        
-        new_rules.forEach((rule) => {
-            let open = ruleList.children().length === 0 ? "true" : "false";
-            rule.id = rule_counter++;
-            // the priority is the existing number of ruleSection items in the ruleList div
-            rule.priority = ruleList.children().length;
+        new_instructions.forEach((instruction) => {
+            // only the first instruction is open by default
+            let open = instructionList.children().length === 0 ? "true" : "false";
+            // the priority is the existing number of instructionSection items in the instructionList div
+            instruction.priority = instructionList.children().length;
+            instruction.id = instruction_counter++;
+            
+            
             let unit_section_html = "";
             /*
-                rule-section: where users select the corresponding action
+                instruction-section: the instruction block
                     unit-sections: where users configure include or exclude units
                         word-section: where users configure the word and its variants
+
+                For now, we assumes that there will be at most 2 include units and 1 exclude unit. 
+                The second include unit should add additional "add" description to the unit title.
             */
-            second_include = false;
-            rule.units.forEach((unit) => {
+            second_include = false; 
+            instruction.units.forEach((unit) => {
                 unit_section_html  += getUnitSection(unit.type, unit.words, second_include);
                 if(unit.type === "include") second_include = true;
             });
 
-            let rule_div_html = `
+            let instruction_div_html = `
                 <div 
                     x-data="{
                         open: ${open}, 
                         active: true,
-                        action: ${rule.action}, 
-                        includes: ${rule.units.filter(unit => unit.type === "include").length}, 
-                        excludes: ${rule.units.filter(unit => unit.type === "exclude").length},
+                        action: ${instruction.action}, 
+                        includes: ${instruction.units.filter(unit => unit.type === "include").length}, 
+                        excludes: ${instruction.units.filter(unit => unit.type === "exclude").length},
                     }" 
-                    class="ruleSection flex flex-col items-stretch border !border-gray-300 rounded-lg px-2"
+                    class="instructionSection flex flex-col items-stretch border !border-gray-300 rounded-lg px-2"
                     :class="{ 'activeSection': active, 'bg-gray-100': !active}" 
-                    id="rule-${rule.id}"
+                    id="instruction-${instruction.id}"
                 >   
                     <div class="flex justify-between py-2">
                         <div class="grow text-black flex items-center font-serif gap-x-2">
-                            <!-- <div class="priority text-2xl">
-                                ${rule.priority + 1}.
-                            </div> -->
-                            <!-- Toggle Switch for Rule Action -->
+                            <!-- Toggle Switch for instruction Action -->
                             <div class="min-w-[20%] flex items-center font-medium text-xl ">
                                 <button 
                                     class="removeButton grow py-2 px-4 rounded italic" 
@@ -365,12 +380,13 @@
                                         Keep
                                 </button> -->
                             </div>
-                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${rule.name}' }" class="grow editableSectionTitle">
+                            <!-- Name of this instruction block -->
+                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${instruction.name}' }" class="grow editableSectionTitle">
                                 <div 
                                     contenteditable="true" 
                                     x-text="text"
-                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateOptions(${rule.id}, text);"
-                                    class="ruleName italic font-xl border border-gray-300 p-2 rounded"
+                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateName(${instruction.id}, text);"
+                                    class="instructionName italic font-xl border border-gray-300 p-2 rounded"
                                     :class="{'border-red-500': inputExceedsLimit, 'text-gray-300': !active}"
                                     data-placeholder="What Texts?"
                                 ></div>
@@ -382,17 +398,19 @@
                             </div>
                             
                         </div>
-                        <!--have a foldable button-->
                         <div class="flex justify-center gap-x-2 ml-2">
                             <!-- <div class="flex items-center sortHandle focus:outline-none">
                                 <i class="fa-solid fa-up-down-left-right"></i>
                             </div> -->
+                            <!-- Toggle on or off this instruction -->
                             <button @click="active = !active; open=false;" class="focus:outline-none">
                                 <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
                             </button>
-                            <button @click="deleteRule(${rule.id})" class="focus:outline-none">
+                            <!-- Delete this instruction -->
+                            <button @click="deleteInstruction(${instruction.id})" class="focus:outline-none">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
+                            <!-- Fold or unfold this instruction -->
                             <button 
                                 @click="open = !open" 
                                 class="focus:outline-none" 
@@ -435,7 +453,7 @@
                             </button>
                         </div>
                         <div class="flex p-1 gap-x-1 items-center">
-                            <input type="checkbox" class="variantsCheckbox h-3 w-3" ${rule.variants ? "checked" : ""}/>
+                            <input type="checkbox" class="variantsCheckbox h-3 w-3" ${instruction.variants ? "checked" : ""}/>
                             <label class="text-sm text-gray-600 font-medium">Detect spelling variants</label>
                             
                             <div x-data="{ open: false}">
@@ -465,16 +483,10 @@
                 </div>
             `;
         
-            $('#ruleList').append(rule_div_html);
-            rules[rule.id] = rule;
+            $('#instructionList').append(instruction_div_html);
+            instructions[instruction.id] = instruction;
 
-            // add an option to the select picker for this prompt, rules are not selected by default
-            // $('#ruleFilter').append(`<option value=${rule.id} class="text-xs">${rule.name.length === 0 ? "Unnamed Rule" : rule.name}</option>`);
-            // $(".selectpicker").selectpicker('refresh');
-            
-            // selected_rules.push(rule.id);
-
-            $(`#rule-${rule.id} input.wordList`).each(function() {
+            $(`#instruction-${instruction.id} input.wordList`).each(function() {
                 // Initialize Tagify on each input element
                 let tag = new Tagify($(this)[0], {
                     placeholder: "Add another word, separate by comma",
@@ -485,222 +497,25 @@
         });
     }
 
-    function deleteRule(deleted_id) {
-        console.log(`deleting rule ${deleted_id}`);
-        delete rules[deleted_id];
-        $(`#rule-${deleted_id}`).remove();
-
-        // remove the option from the select picker
-        $(`#ruleFilter option[value=${deleted_id}]`).remove();
-        $(".selectpicker").selectpicker('refresh');
-
-        // remove the rule from selected_prompts if needed
-        selected_rules = selected_rules.filter((id) => id != deleted_id);
-
-        updatePriority();
-    }
-
-    function addNewRule(){
-        // read from configuring rule panel and add this new rule to the rules in jquery
-        let new_rule = {
-                "action": 1,
-                "name": [],
-                "units": [{
-                    "type": "include",
-                    "words": [],
-                }]   
-            };
-        displayRules([new_rule]);
-    }
-
-    /* 
-        functions that handle the display of the data 
-    */
-    function load_more_data(new_separator=true){
-        // load more data from the server
-        /* get_backend(
-            "/load_more_data/", 
-            {'participant_id': participant_id},
-            function(data){
-                data = JSON.parse(data);
-                dataset = display_data(data, dataset);
-            }
-        );*/
-
-        let start = current_batch * BATCH_SIZE;
-        let end = (current_batch + 1) * BATCH_SIZE;
-        if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
-        let new_data = COMPLETE_DATASET.slice(start, end);
-        dataset = display_data(new_data, dataset, new_separator);
-        current_batch++;
-    }
-
-    function showFilteredData(){
-        /* iterature through dataset and hide the datum that doesn't match the filter selected_prediction and selected_prompts */
-
-        let expected_prediction = selected_prediction === "removed" ? [1] : selected_prediction === "approved" ? [0, null] : [1, 0, null];
-        let counter = 0;
-        let targeted_counter = 0;
-        let approved_counter = 0;
-        let removed_counter = 0;
-
-        console.log("selected rules", selected_rules);
-        console.log("selected_predictions", selected_prediction)
-        dataset.forEach((datum, index) => {
-            let show = expected_prediction.includes(datum.total_prediction);
-            let now_prediction = null;
-            /*  if(expected_prediction.length < 3){
-                
-                // otherwise, regardless of what rules are selected, we all show all comments as the expectd prediction is the all
-                if (selected_rules.length > 0){
-                    // only show comments that are targeted (not targeted) by all the selected rules
-                    show = selected_rules.every(rule_id => {
-                        let found_pred = datum.predictions.find(rule => rule.id === rule_id);
-                        return found_pred !== undefined && expected_prediction.includes(found_pred.prediction);
-                    })
-                } else {
-                    // show all comments that are targeted (not targeted) by any of the rules
-                    show = expected_prediction.includes(datum.total_prediction);
-                }
-            } */
-
-            
-            if (show){
-                $(`#datum-${index}`).parent().show();
-            } else{
-                $(`#datum-${index}`).parent().hide();
-            }
-
-            counter++;
-            targeted_counter += datum.total_prediction !== null ? 1 : 0;
-            approved_counter += datum.total_prediction === 0 ? 1 : 0;
-            removed_counter += datum.total_prediction === 1 ? 1 : 0;
-        });
-
-        let text = `Your filter will remove ${removed_counter} out of ${dataset.length} comments in total.`;
-        /* if(expected_prediction.length === 3) 
-            text = `There are ${targeted_counter}/${counter} targeted comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
-        else if(selected_rules.length === 0 && selected_prediction === "targeted"){
-            text = `There are ${counter} ${selected_prediction} comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
-        } else if(selected_rules.length === 0 && selected_prediction === "not-targeted"){
-            text = `There are ${counter} ${selected_prediction} comments, so they are approvedy by default`;
-        } else {
-            text = `
-                There are ${counter} comments that are ${selected_prediction} by all selected rules, ${approved_counter} approved and ${removed_counter} removed`;
-        } */
-
-        $('#countDisplay').text(text);
-
-    }
-
-    $("#predictionFilter").on("change", function() {
-        selected_prediction = $(this).val();
-        showFilteredData();
-        
-    });
-
-    /* $("#ruleFilter").on("change", function() {
-        selected_rules = [$(this).val()].map((value) => +value )
-        showFilteredData();
-    }); */
-    
-    function generateExplanation(datum, datum_index){
-        /* generate the explanation for each prediction made by the LLMs */
-        if (datum.total_prediction === null || datum.total_prediction === 0){
-            $(`#datum-${datum_index}`).find('.datumText').html(datum.text);
-            return "This comment will not be removed by any of your rules";
-        }
-        else {
-            let explanation = `<p>This comment will be removed by the following rules :</p><ul class='list-none pl-0 text-gray-600'>`;
-            // iterate through the dict object and format each prompt in a new line and with italic font
-
-            let highest_priority_id = null;
-            let highest_priority = 0;
-            for (let i = 0; i < datum.predictions.length; i++) {
-                const pred = datum.predictions[i];
-                if (pred.prediction !== null){
-                    let rule = rules[pred.id];
-                    
-                    explanation += `
-                        <li class="before:content-['•'] before:mr-2">
-                            Rule <span class="font-medium italic font-serif">${rule.name}</span>
-                        </li>`;
-                    if (highest_priority_id === null){
-                        highest_priority = i;
-                        highest_priority_id = pred.id;
-                    }
-                }
-            }
-            explanation += "</ul>";
-
-            let highest_priority_rule = rules[highest_priority_id];
-            explanation += `<br/><p>
-                For the Rule <span class="font-bold italic font-serif">${highest_priority_rule.name}</span>, we highlight matched words in the comment.`;
-            
-            
-
-            let replace_text = datum.text
-            datum.predictions.find(pred => pred.id === highest_priority_id).patterns.forEach((pattern) => {
-                let type = pattern[0];
-                let word = pattern[1]
-                replace_text = replace_text.replace(word, `<span class="font-bold text-lg italic">${word}</span>`);
-            });
-            
-            $(`#datum-${datum_index}`).find('.datumText').html(replace_text);
-            return explanation;
-        }
-    }
-
-    function updateDataLabels(results) {
-        /* update the labels of the data according to the predictions given by LLMs */
-        let true_counter = 0;
-        let prediction = results["prediction"];
-        let texts_predictions = results["texts_predictions"];
-    
-        for (let i = 0; i < prediction.length; i++) {
-            dataset[i].total_prediction = prediction[i];
-            dataset[i].predictions = texts_predictions[i];
-            
-            // update the label according to the total prediction
-            let new_class = dataset[i].total_prediction === null ? "unLabel" : dataset[i].total_prediction ? "trueLabel" : "falseLabel";
-            const datum = $(`#datum-${i}`);
-            datum.removeClass("unLabel trueLabel falseLabel");
-            datum.addClass(new_class);
-
-            // select the tooltip
-            const tooltip_div = $(`#datumTooltip-${i}`);
-            tooltip_div.removeClass("unLabel trueLabel falseLabel");
-            tooltip_div.addClass(new_class);
-
-            // update the tooltip content
-            let explanation = generateExplanation(dataset[i], i);
-            // set the second child of the tooltip div to be the explanation, use innerhtml
-
-            tooltip_div.children().eq(1).html(explanation);
-        }
-    }
-
-    /* 
-        functions that handle the training of the tree classifier 
-    */
+    /* functions that handle the training of the tree classifier */
 
     function parseContent() {
-        /* we do not listen to the changes of the rules actively but instead parse the content when the user clicks the complete or classify button */
-        // for each div element with the id format rules-${rule.rule_id}-${setting_index}, iterate over all children of the class termSection
+        /* we do not listen to the changes of the instructions actively but instead parse the content when the user clicks the complete or classify button */
+        // for each div element with the id format instructions-${instruction.instruction_id}-${setting_index}, iterate over all children of the class termSection
         // for each termSection get the value of the synonyms via the class synonyms and the value of the checkbox via the class spellingVariants
-        // update the corresponding rule's setting_index'th setting's value accordingly
+        // update the corresponding instruction's setting_index'th setting's value accordingly
 
-        let now_rules = []
-        $('#ruleList .ruleSection').each(function(index) {
-            // parse out the id of the ruleSection
+        let now_instructions = []
+        $('#instructionList .instructionSection').each(function(index) {
+            // parse out the id of the instructionSection
             let id = +$(this).attr('id').split('-')[1];
-            let rule = rules[id];
+            let instruction = instructions[id];
             let active = $(this).hasClass('activeSection');
             if(active){
-                rule.name = $(this).find('.ruleName').text();
-                rule.priority = index; // not used for now
-                rule.action = $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
-                rule.variants = $(this).find('.variantsCheckbox').is(':checked');
+                instruction.name = $(this).find('.instructionName').text();
+                instruction.priority = index; // not used for now
+                instruction.action = $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
+                instruction.variants = $(this).find('.variantsCheckbox').is(':checked');
                 
                 let units = [];
                 $(this).find('.unitSection').each(function() {
@@ -716,27 +531,26 @@
                         units.push(unit);
                     }
                 });
-                rule.units = units;
-                if(rule.units.length > 0){
-                    now_rules.push(rule);
+                instruction.units = units;
+                if(instruction.units.length > 0){
+                    now_instructions.push(instruction);
                 }
             }
         });
-        console.log("parsed out rules: ", now_rules);
-        return now_rules;
+        console.log("parsed out instructions: ", now_instructions);
+        return now_instructions;
     }
 
     function trainTrees() {
-        let now_rules = parseContent();
-        $('#loadingModal').removeClass('hidden');
-        $('#loadingModalText').text('Waiting for algorithms');
-        is_paused = true;
+        let now_instructions = parseContent();
+        showLoadingModal("Waiting for the results")
+
         post_backend(
             "/trainTrees/", 
-            {'dataset': dataset, 'rules': now_rules},
+            {'dataset': dataset, 'instructions': now_instructions},
             function(response){
                 if(!response["status"]){
-                    alert(response["message"]);
+                    showAlertModal(response["message"]);
                     return;
                 }
                 
@@ -744,142 +558,82 @@
                 updateDataLabels(response.data.results);
                 showFilteredData();
                 
-                $('#loadingModal').addClass('hidden');
-                is_paused = false;
+                hideLoadingModal();
             }
         );
     }
 
-    function complete(){
-        is_paused = true;
-        /* store the prompts written by the user */
-        let now_rules = parseContent();
+    function complete(timeout=false){
+        /* store the labeled examples and then redirect to the validation page where an ML model will be trained */
+        
+        if(timeout){
+            message = "This session ends. Thank you for your time. <br/>We are now evaluating how your filter performs, so please wait for a moment.";
+        } else {
+            showAlertModal(
+                "You still have time to further improve your filter. <br/> Are you sure you want to complete?", 
+                "Continue", 
+                () => complete(true)
+            )
+            message = "We are evaluating how your filter performs, so please wait for a moment.";
+            return;
+        }
+
+        showLoadingModal(message);
+        
+        let now_instructions = parseContent();
         post_backend(
             "/store_rules/", 
-            {'rules': now_rules, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
+            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
             function(response){
-                $('#loadingModal').removeClass('hidden');
-                $('#loadingModalText').text('We are evaluating the performance of your filters, please wait for a moment.');
                 if(!response["status"]){
-                    alert(response["message"]);
-                    $('#loadingModal').addClass('hidden');
+                    hideLoadingModal();
+                    showAlertModal(response["message"]);
                 } else {
-                    redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
+                    // the rule training is too fast, so we add a delay to show the loading modal
+                    setTimeout(function(){
+                        redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
+                    }, 3000);
+                   
                 }
             }
         )
 
     }
 
-    function set_timer(){
-        if (!is_paused) {
-            time_left = time_left - 1000;
-
-            // Time calculations for minutes and seconds
-            var minutes = Math.floor((time_left % (1000 * 60 * 60)) / (1000 * 60));
-            var seconds = Math.floor((time_left % (1000 * 60)) / 1000);
-
-            // Output the result in the element with id="timer"
-            $("#timer").text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
-
-            // If the countdown is over, stop the timer
-            if (time_left < 0) {
-                clearInterval(interval_id);
-                $("#timer").text("00:00");
-            }
-        }
-    }
-
     $(document).ready(function(){
-        load_more_data(false);
-        // $("#ruleList").sortable({
-        //     animation: 150,
-        //     handle: ".sortHandle",
-        //     filter: ".addButton",
-        //     onEnd: function(event, ui) {
-        //         // console.log("updating priority");
-        //         updatePriority();
-        //     }
-        // });
-
+        loadMoreData(false);
+        
         if(STAGE === "update"){
-            displayRules(JSON.parse(`{{rules | safe}}`));
-        } else {
-            displayRules([
-                {
-                    "action": 1,
-                    "name": "Personal attack",
-                    "variants": false,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["nonsense", "asshole", "stupid", "idiot", "fool", "stupidity"],
-                        },
-
-                    ]
-                },
-                {
-                    "action": 1,
-                    "name": "Trump-related discussion",
-                    "variants": true,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["Trump", "Donald Trump"],
-                        },
-                        {
-                            "type": "exclude",
-                            "words": ["trumpet", "trump card"],
-                        }
-                    ]
-                },
-                // {
-                //     "action": 1,
-                //     "name": "Sexual accusation",
-                //     "variants": false,
-                //     "units": [
-                //         {
-                //             "type": "include",
-                //             "words": ["sex offender", "rapists", "fuck"],
-                //         },
-                //     ]   
-                // },
-                
-                // {
-                //     "action": 0,
-                //     "name": "Constructive Economy Discussion",
-                //     "variants": true,
-                //     "units": [
-                //         {
-                //             "type": "include",
-                //             "words": ["progressive", "equity", "investing", "renewable", "growth", "sustainability", "balanced", "benefit", "protecting"]
-                //         },
-                //         {
-                //             "type": "exclude",
-                //             "words": ["ignorant", "stupid", "waste", "thieves", "stealing"]
-                //         }
-
-                //     ]
-                // },
-                {
-                    "action": 1,
-                    "name": "Terrorist accusation",
-                    "variants": true,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["terrorists", "terrorist", "kill", "killing"]
-                        },
-                    ]
-
-                }
-            ]);
+            displayInstructions(JSON.parse(`{{instructions | safe}}`));
+        } else if(DEBUG) {
+            displayInstructions(TEST_INSTRUCTIONS);
         }
 
-        $("#timer").text("15:00");
-        time_left = 15 * 60 * 1000;;
-        interval_id = setInterval(set_timer, 1000);
+        startTimer(SESSION_TIME);
     })
   
+    /* function updatePriority(){
+        
+        $('#instructionList .instructionSection').each(function(index) {
+            // get the id of the instructionSection
+            let id = +$(this).attr('id').split('-')[1];
+            instructions[id].priority = index;
+
+            // update the priority class div of the this instructionSection
+            // $(this).find('.priority').text(`${index + 1}.`);
+        });
+    } */ 
+
+    /* $("#instructionList").sortable({
+            animation: 150,
+            handle: ".sortHandle",
+            filter: ".addButton",
+            onEnd: function(event, ui) {
+                // console.log("updating priority");
+                updatePriority();
+            }
+        }); */
+
+
 </script>
 </html>

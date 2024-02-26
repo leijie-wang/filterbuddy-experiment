@@ -15,6 +15,11 @@ def train_llm_task(prompts, dataset_text_list):
 
 @shared_task
 def test_llm_classifier(prompts, X, y):
-
-    llm_filter = LLMFilter(prompts, debug=settings.LLM_DEBUG)
-    return llm_filter.test_model(X, y)
+    try:
+        logger.info(f"Initializing LLM model with {len(prompts)} prompts.")
+        llm_filter = LLMFilter(prompts, debug=settings.LLM_DEBUG)
+        logger.info(f"Testing LLM model with {len(X)} examples.")
+        return llm_filter.test_model(X, y)
+    except Exception as e:
+        logger.warning(f"Error in test_llm_classifier: {e}")
+        return {}

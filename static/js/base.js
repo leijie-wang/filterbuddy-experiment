@@ -1,5 +1,7 @@
 const DEBUG = true;
-var SYSTEM = null;
+let SYSTEM;
+let PARTICIPANT_ID;
+let STAGE;
 
 /* time the labeling process */
 var interval_id = null;
@@ -46,20 +48,31 @@ function addLog(message){
 function showLoadingModal(message){
     is_paused = true;
     $('#loadingModal').removeClass('hidden');
-    $('#loadingModalText').text(message);
+    $('#loadingModalText').html(message);
 }
 
 function hideLoadingModal(){
-    is_paused = false;
-    $('#loadingModal').addClass('hidden');
+    // when called, wait for 2 seconds before hiding the modal
+    setTimeout(function(){
+        is_paused = false;
+        $('#loadingModal').addClass('hidden');  
+    }, 1000);
+
 }
 
-function showAlertModal(message){
-    $("#alertModalText").text(message);
+let hide_callback = null;
+function showAlertModal(message, button="Okay", callback=null){
+    $("#alertModalButton").text(button);
+    $("#alertModalText").html(message);
     $("#alertModal").removeClass("hidden");    
+    hide_callback = callback;
 }
 
 function hideAlertModal(){
+    if (hide_callback != null){
+        hide_callback();
+        hide_callback = null;
+    }
     $("#alertModal").addClass("hidden");
 }
 

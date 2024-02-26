@@ -239,7 +239,7 @@ def promptwrite(request):
         "stage": stage,
         "system": system,
         "dataset": json.dumps(dataset),
-        "prompts": json.dumps(prompts)
+        "instructions": json.dumps(prompts)
     })
 
 def store_prompts(request):
@@ -257,7 +257,7 @@ def store_prompts(request):
         }
     """
     request_data = json.loads(request.body)
-    prompts = request_data.get("prompts")
+    prompts = request_data.get("instructions")
     participant_id = request_data.get('participant_id')
     stage = request_data.get("stage")
 
@@ -311,7 +311,7 @@ def ruleconfigure(request):
             "stage": stage,
             "system": system,
             "dataset": json.dumps(dataset),
-            "rules": json.dumps(rules)
+            "instructions": json.dumps(rules)
         })
 
 def store_rules(request):
@@ -335,7 +335,7 @@ def store_rules(request):
     }
     """
     request_data = json.loads(request.body)
-    rules = request_data.get("rules")
+    rules = request_data.get("instructions")
     participant_id = request_data.get('participant_id')
     stage = request_data.get('stage')
 
@@ -372,7 +372,6 @@ def store_rules(request):
     )
 
 def get_similar_phrases(request):
-    print("get_similar_phrases")
     request_data = json.loads(request.body)
     phrases = request_data.get("phrases")
     chatbot = utils.ChatCompletion()
@@ -385,6 +384,7 @@ def get_similar_phrases(request):
         """,
         user_prompt=f"Given the following phrases: {', '.join(phrases)}",
     )
+    logger.info(response)
     response = json.loads(response or "{}")
     if "results" in response:
         logger.info(response["results"])
@@ -399,9 +399,9 @@ def get_similar_phrases(request):
             safe=False
         )
 
-def get_rephrase_prompt(request):
+def get_rephrase_instruction(request):
     request_data = json.loads(request.body)
-    prompt = request_data.get("prompt")
+    instruction = request_data.get("instruction")
     chatbot = utils.ChatCompletion()
         
     response = chatbot.chat_completion(
@@ -416,7 +416,7 @@ def get_rephrase_prompt(request):
 
             RETURN YOUR RESULTS in the JSON format {"results": "the improved prompt"}. REMEMBER to keep your changes under 10 words.
         """,
-        user_prompt=f"Given the following prompt: {prompt}",
+        user_prompt=f"Given the following prompt: {instruction}",
     )
 
     response = json.loads(response or "{}")
@@ -427,7 +427,7 @@ def get_rephrase_prompt(request):
                 "status": True,
                 "message": "Successfully rephrased the prompt",
                 "data": {
-                    "prompt": response["results"]
+                    "instruction": response["results"]
                 }
             },
             safe=False
@@ -449,28 +449,37 @@ def validate_page(request):
     if status == 0:
         return HttpResponse(f"Error: {response}")
     elif status == 1:
+        # for the LLM filter, we set up a job in the backend
         task_id = response
-        status, build_task_id = test_system(participant_id, "build", dataset) if stage == "update" else (2, "")
+        if stage == "update":
+            _, old_task_id = test_system(participant_id, "build", dataset)
+        else:
+            old_task_id = ""
+
         return render(request, 'validate.html', {
             "dataset": json.dumps(dataset),
             "participant_id": participant_id,
             "system": system,
             "stage": stage,
-            "build_task_id": build_task_id,
+            "old_task_id": old_task_id,
             "task_id": task_id,
         })
     else:
         test_results = response
         utils.save_test_results(participant_id, stage, test_results["prediction"])
         # we want to show the performance of the old system on the new dataset
-        status, old_results = test_system(participant_id, "build", dataset) if stage == "update" else (2, {})
+        old_test_results = {}
+        if stage == "update":
+            status, old_test_results = test_system(participant_id, "build", dataset)
+            utils.save_test_results(participant_id, "update", old_test_results["prediction"], old=True)
+
         return render(request, 'validate.html', {
             "dataset": json.dumps(dataset),
             "participant_id": participant_id,
             "system": system,
             "stage": stage,
             "test_results": json.dumps(test_results),
-            "old_results": json.dumps(old_results),
+            "old_test_results": json.dumps(old_test_results),
             "task_id": ""
         })
         
@@ -535,7 +544,11 @@ def test_system(participant_id, stage, test_dataset):
         from systems.trees_ml_filter import Trees_ML_MixedFilter
         classifier_class = Trees_ML_MixedFilter
 
-    training_dataset = BuildDataSet if stage == "build" else UpdateDataSet # used in the llm_ml_filter and trees_ml_filter
+    """
+        here the training_dataset is used for the LLM ML mixed filter and Trees ML mixed filter
+        For other three filter we primarily test, each will read user-related input from the database using both the participant_id and the stage information
+    """
+    training_dataset = BuildDataSet if stage == "build" else UpdateDataSet 
     status, classifier = classifier_class.train(participant_id, dataset=training_dataset, stage=stage)
     if not status:
         return 0, classifier # the error message
@@ -555,7 +568,7 @@ def train_LLM(request):
     logger.info(f"starting training the LLM model")
     request_data = json.loads(request.body)
     
-    prompts = request_data.get('prompts')
+    prompts = request_data.get('instructions')
     dataset = request_data.get('dataset')
     
     dataset = [item["text"] for item in dataset]
@@ -604,14 +617,11 @@ def get_validate_results(request):
         results = task_result.get()
         
         utils.save_test_results(participant_id, stage, results["prediction"])
-        build_performance = utils.calculate_stage_performance(participant_id, "build") if stage == "update" else {}
-
         return JsonResponse({
             "status": True,
             "message": f"Task {task_id} is completed",
             "data": {
                 "test_results": results,
-                "build_performance": build_performance
             }
         })
     else:
@@ -624,7 +634,7 @@ def train_trees(request):
     from systems.trees_filter import TreesFilter
 
     request_data = json.loads(request.body)
-    rules = request_data.get('rules')
+    rules = request_data.get('instructions')
     dataset = request_data.get('dataset')
 
     dataset = [item["text"] for item in dataset]

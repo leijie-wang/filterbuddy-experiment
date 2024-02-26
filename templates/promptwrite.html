@@ -26,7 +26,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.1/Sortable.min.js" integrity="sha512-3N7dD+tlndNxwAC0PwGNWnnEpzHQwgNl6/c9XW6+nqptoMhbI9Rb6kQiUFtYmXrox60oIELVSFAO0dCSfKb2tw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-sortablejs@latest/jquery-sortable.js"></script>
-    
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script src="{% static 'js/base.js' %}"></script>
+    <script src="{% static 'js/instruct.js' %}"></script>
     
 </head>
 
@@ -47,9 +49,9 @@
             <div class="flex items-center justify-start bg-slate-100 p-3 rounded-md">
                 <div class="text-xl text-black">
                     Do you know you can guide a filter like talking to an assistant? 
-                    Just like chatting with ChatGPT, you can outline what comments to remove through clear instructions and examples.
-                    But remember it might take a few minutes to process your instructions, so please be patient!
-                    In the next, please take up to <span class="font-medium">15 minutes</span> to write your instructions, trying to be as clear and specific as possible.
+                    Just like chatting with ChatGPT, you can outline what comments to remove through clear prompts and examples.
+                    But remember it might take a few minutes to process your prompts, so please be patient!
+                    In the next, please take up to <span class="font-medium">15 minutes</span> to write your prompts, trying to be as clear and specific as possible.
                 </div>
             </div>
             <div class="flex flex-col items-center justify-center">
@@ -63,26 +65,26 @@
         </div>
 
         <div class="flex items-stretch w-full gap-x-4 flex-grow">
-            <!-- the section where users configure prompts -->
+            <!-- the section where users configure instructions -->
             <div x-data="" class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow">
                 <!-- <div class="section-header text-xl font-bold text-blue-600 flex-grow-0 self-center">
-                Write Your Prompts
+                Write Your Instructions
             </div> -->
 
-                <!-- the section where users see all prompts -->
+                <!-- the section where users see all instructions -->
                 <div class="section-body flex flex-col flex-grow gap-y-4 pb-4">
                     <!-- <div class="flex flex-col gap-y-2 flex-grow-0">
                         <div class="text-lg italic">
-                            Prompt Introduction
+                            Instruction Introduction
                         </div>
-                        <textarea rows="2" id="promptOverview" class="bg-gray-100 border border-gray-300 rounded-lg p-2 text-base w-full" placeholder="Write an overview of your prompt"></textarea>
+                        <textarea rows="2" id="instructionOverview" class="bg-gray-100 border border-gray-300 rounded-lg p-2 text-base w-full" placeholder="Write an overview of your instruction"></textarea>
                     </div> -->
                     
                     <div class="flex flex-col gap-y-2 flex-grow h-1 overflow-y-auto">
-                       <div id="promptList" class="flex flex-col gap-y-2">
+                       <div id="instructionList" class="flex flex-col gap-y-2">
 
                        </div>
-                       <div @click="addNewPrompt" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
+                       <div @click="addNewInstruction" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
                         <div class="text-3xl text-gray-500">+</div>
                     </div>
                     </div>
@@ -105,7 +107,7 @@
             <div class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1">
                 <!-- display a set of filter options -->
                 <div class="header text-lg font-bold">
-                    What comments are removed by your active rules?
+                    What comments are removed by your active prompts?
                 </div>
                 <div class="self-stretch flex justify-between items-center gap-x-1">
                     <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
@@ -120,7 +122,7 @@
                         </select>
                        
                         <!-- <div class="w-[45%]">
-                            <select id="promptFilter" multiple
+                            <select id="instructionFilter" multiple
                                 class="selectpicker data-filter show-tick border rounded" 
                                 title="by rubrics" 
                                 data-width="100%"
@@ -136,7 +138,7 @@
                 <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow ">
                 </div>
                 <div class="bottom flex justify-end gap-x-2 pt-3">
-                    <button @click="load_more_data" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
+                    <button @click="loadMoreData" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
                         Load More Examples
                     </button>
                     <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
@@ -148,107 +150,126 @@
 
         <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
             <div class="relative top-1/3 mx-auto p-5 border w-fit shadow-lg rounded-md bg-white">
-                <div id="loadingModalText" class="text-center text-xl">
+                <div id="loadingModalText" class="text-start text-xl text-gray-600">
                     Loading...
                 </div>
+            </div>
+        </div>
+        <div id="alertModal"  class="hidden fixed inset-0 bg-slate-300 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto py-8 px-4 border w-fit shadow-lg rounded-lg bg-white flex flex-col justify-between gap-y-8">
+                <div id="alertModalText" class="grow text-start text-xl text-gray-600">
+                    <!-- Your alert message here -->
+                </div>
+                <button 
+                    id="alertModalButton"
+                    @click="hideAlertModal();" 
+                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
+                >
+                    Okay
+                </button>
             </div>
         </div>
     </div>
 </body>
 <!-- closes container -->
 <!-- custom js -->
-<script src="{% static 'js/sharedsteps.js' %}" defer></script>
-<script defer>
-    const COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
-    const BATCH_SIZE = 30;
-    const SYSTEM = "{{system}}";
-    const PARTICIPANT_ID = "{{participant_id}}";
-    const STAGE = "{{stage}}";
+<script>
+    PARTICIPANT_ID = "{{participant_id}}";
+    STAGE = "{{stage}}";
+    SYSTEM = "{{system}}";
     
-    var dataset = [];
-    var current_batch = 0; 
+    INSTRUCTION_NAME = "prompt";
+    COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
+    
+    TEST_INSTRUCTIONS = [
+                {
+                    "name": "Racial hate speech",
+                    "action": 1,
+                    "rubric": "Catch all texts that promote hate, discrimination, stereotypes, or violence against individuals or groups based on their race, ethnicity, or national origin.",
+                    "positives": ["You are just some mad browskin because Europeans styled on your ass"],
+                    "negatives": ["83% of US blacks are Christians"],
+                },
+               
+                {
+                    "name": "Violence calls",
+                    "action": 1,
+                    "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
+                    "positives": ["it pleases me to know you will die"],
+                    "negatives": []
 
-    var prompts = {}
-    var prompt_counter = 0; 
-    /* the maximum prompt index that has been used so far, 
-        we want to use it as the unique id for each prompt, 
-        however, we cannot rely on the length of the prompts array as some prompts might be deleted
-    */
-
-    var selected_prompts = [];
-    var selected_prediction = "all";
-
-    var interval_id = null;
-    var is_paused = false;
-    var time_left = null;
-
+                },
+                // {   
+                //     "name": "Gender hate speech",
+                //     "action": 1,
+                //     "rubric": "Catch all texts that are derogatory, demeaning, or violent towards individuals based on their gender or gender identity",
+                //     "positives": [],
+                //     "negatives": ["What didn’t the Bitch say. I hate talking to people in the morning"]
+                // }
+            ]
+    
+    new_instruction_template = {
+            "name": "",
+            "action": 1,
+            "rubric": "",
+            "positives": [],
+            "negatives": []
+        };
     /*
-        functions that help the authoring of prompts
+        functions that help the authoring of instructions
     */
 
-    var copied_example = null;
     function copyText(index){
         navigator.clipboard.writeText(dataset[index].text);
     }
 
-    function diff_wordMode(text1, text2) {
-        var dmp = new diff_match_patch();
-        var a = dmp.diff_wordsToChars_(text1, text2);
-        var lineText1 = a.chars1;
-        var lineText2 = a.chars2;
-        var lineArray = a.lineArray;
-        var diffs = dmp.diff_main(lineText1, lineText2, false);
-        dmp.diff_charsToLines_(diffs, lineArray);
-        dmp.diff_cleanupSemantic(diffs);
-        return diffs;
-    }
-    function getCleanPhrases(prompt_input, accept=true){
+    function getCleanPhrases(instruction_input, accept=true){
         if(accept){
-            $(prompt_input).find(".deletion").remove();
-            $(prompt_input).find(".insertion").each(function(){
+            $(instruction_input).find(".deletion").remove();
+            $(instruction_input).find(".insertion").each(function(){
                 let text = $(this).text();
                 $(this).replaceWith(text);
             });
-            $(prompt_input).find("button").remove();
+            $(instruction_input).find("button").remove();
         } else {
-            $(prompt_input).find(".insertion").remove();
-            $(prompt_input).find(".deletion").each(function(){
+            $(instruction_input).find(".insertion").remove();
+            $(instruction_input).find(".deletion").each(function(){
                 let text = $(this).text();
                 $(this).replaceWith(text);
             });
-            $(prompt_input).find("button").remove();
+            $(instruction_input).find("button").remove();
         }
     }
+    
     function acceptNewPhrases(element){
-        let prompt_input = $(element).closest('.promptRubric');
-        getCleanPhrases(prompt_input, true);
+        let instruction_input = $(element).closest('.instructionRubric');
+        getCleanPhrases(instruction_input, true);
     }
 
     function rejectNewPhrases(element){
-        let prompt_input = $(element).closest('.promptRubric');
-        getCleanPhrases(prompt_input, false);
+        let instruction_input = $(element).closest('.instructionRubric');
+        getCleanPhrases(instruction_input, false);
     }
 
-    async function getRephrasePrompt(element){
-        let prompt_input = $(element).closest('.promptSection').find('.promptRubric');
-        let prompt = prompt_input.text().trim();
+    async function getRephraseInstruction(element){
+        let instruction_input = $(element).closest('.instructionSection').find('.instructionRubric');
+        let instruction = instruction_input.text().trim();
         
         
         let response = await post_backend(
-            "/get_rephrase_prompt/", 
-            {'prompt': prompt}
+            "/get_rephrase_instruction/", 
+            {'instruction': instruction}
         )
     
         if(!response["status"]){
             alert(response["message"]);
             return;
         }
-        let rephrase_prompt = response.data.prompt;
-        console.log("rephrase prompt", rephrase_prompt);
+        let rephrase_instruction = response.data.instruction;
+        console.log("rephrase instruction", rephrase_instruction);
         
-        // update the prompt input with the rephrase prompt
+        // update the instruction input with the rephrase instruction
        
-        let diffs = diff_wordMode(prompt, rephrase_prompt);
+        let diffs = diff_wordMode(instruction, rephrase_instruction);
         
        
         let diff_html = "";
@@ -257,14 +278,12 @@
             let text = diff[1];
             if(op === 1) {
                 // insertion
-                diff_html += `
-                    <span class="insertion text-orange-500">${text}</span>`;
+                diff_html += `<span class="insertion mx-0 text-orange-500">${text}</span>`;
             } else if(op === -1) {
                 // deletion
-                diff_html += `
-                    <span class="deletion text-slate-500 line-through">${text}</span>`;
+                diff_html += `<span class="deletion mx-0 text-slate-500 line-through">${text}</span>`;
             } else {
-                diff_html += `<span>${text}</span>`;
+                diff_html += `<span class="mx-0">${text}</span>`;
             }
         });
         diff_html += `
@@ -275,55 +294,35 @@
                     class='ml-1 p-1 bg-slate-100 rounded font-serif font-bold shadow-sm'
                 > Reject </button>
                 `
-        prompt_input.html(diff_html);
+        instruction_input.html(diff_html);
     }
 
-    function updatePriority(){
-        
-        $('#promptList .promptSection').each(function(index) {
-            // get the id of the ruleSection
-            let id = +$(this).attr('id').split('-')[1];
-            prompts[id].priority = index;
+    function displayInstructions(new_instructions) {
+       
+        let instructionList = $('#instructionList');
 
-            // update the priority class div of the this ruleSection
-            // $(this).find('.priority').text(`${index + 1}.`);
-        });
-    }
-
-    function updateName(id, text){
-        // update name of the prompt with id
-        prompts[id].name = text;
-    }
-
-    function displayPrompts(new_prompts) {
-        // display data on the page
-        let promptList = $('#promptList');
-
-        new_prompts.forEach((prompt) => {
-            // create a new div element for each text with the template 
-
-            // only the first prompt is open by default
-            let open = promptList.children().length === 0 ? "true" : "false";
-
-            prompt.id = prompt_counter++;
-            prompt.priority = promptList.children().length;
-
-
-            let prompt_div_html = `
+        new_instructions.forEach((instruction) => {
+            // only the first instruction is open by default
+            let open = instructionList.children().length === 0 ? "true" : "false";
+            // the priority is the existing number of instructionSection items in the instructionList div
+            instruction.priority = instructionList.children().length;
+            instruction.id = instruction_counter++;
+            
+            let instruction_div_html = `
                 <div 
                     x-data="{
                         open: ${open},
                         active: true, 
-                        action: ${prompt.action}
+                        action: ${instruction.action}
                     }" 
-                    class="promptSection flex flex-col items-stretch border !border-gray-300 rounded-lg px-2" 
+                    class="instructionSection flex flex-col items-stretch border !border-gray-300 rounded-lg px-2" 
                     :class="{ 'activeSection': active, 'bg-gray-100': !active}" 
-                    id="prompt-${prompt.id}"
+                    id="instruction-${instruction.id}"
                 >
                     <div class="flex justify-between py-2">
                         <div class="grow text-black flex items-center font-serif gap-x-2">
                             <!-- <div class="priority text-2xl">
-                                ${prompt.priority + 1}.
+                                ${instruction.priority + 1}.
                             </div> -->
                             <!-- Toggle Switch for Rule Action -->
                             <div class="min-w-[20%] flex items-center font-medium text-xl">
@@ -342,12 +341,12 @@
                                     Keep
                                 </button> -->
                             </div>
-                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${prompt.name}' }" class="grow editableSectionTitle">
+                            <div x-data="{charLimit: 30, inputExceedsLimit: false,  text: '${instruction.name}' }" class="grow editableSectionTitle">
                                 <div 
                                     contenteditable="true" 
                                     x-text="text"
-                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateName(${prompt.id}, text);"
-                                    class="promptName italic font-xl border border-gray-300 p-2 rounded"
+                                    x-on:input="text = $event.target.innerText; inputExceedsLimit = (text.length > charLimit); if(inputExceedsLimit) text = text.substr(0, charLimit); updateName(${instruction.id}, text);"
+                                    class="instructionName italic font-xl border border-gray-300 p-2 rounded"
                                     :class="{'border-red-500': inputExceedsLimit, 'text-gray-300': !active}"
                                     data-placeholder="What Texts?"
                                 ></div>
@@ -365,7 +364,7 @@
                             <button @click="active = !active; open=false;" class="focus:outline-none">
                                 <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
                             </button>
-                            <button @click="deletePrompt(${prompt.id})" class="focus:outline-none">
+                            <button @click="deleteInstruction(${instruction.id})" class="focus:outline-none">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                             <button 
@@ -394,7 +393,7 @@
                                 <button :disabled="!enabled"  
                                     class="text-sm p-2 rounded-lg"
                                     :class="{'cursor-not-allowed bg-gray-50': !enabled, 'bg-yellow-50': enabled}"
-                                    @click="loading = true; await getRephrasePrompt($el); enabled = false; loading = false"
+                                    @click="loading = true; await getRephraseInstruction($el); enabled = false; loading = false"
                                 >
                                     <div class="spinner-border text-orange-300 spinner-border-sm" role="status" x-show="loading">
                                         <span class="sr-only">Loading...</span>
@@ -408,9 +407,9 @@
                             <div class="self-stretch grow flex pl-6">
                                 <div 
                                     contenteditable="true" 
-                                    class="promptRubric grow text-base text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                    class="instructionRubric grow text-base text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
                                 >
-                                    ${prompt.rubric}
+                                    ${instruction.rubric}
                                 </div>
                             </div>
                         </div>
@@ -424,9 +423,9 @@
                             <div class="self-stretch grow flex pl-6">
                                 <div 
                                     contenteditable="true" 
-                                    class="promptPositiveExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                    class="instructionPositiveExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
                                 >
-                                    ${prompt.positives.length > 0 ? prompt.positives[0] : ""}
+                                    ${instruction.positives.length > 0 ? instruction.positives[0] : ""}
                                 </div>
                             </div>
                         </div>
@@ -439,9 +438,9 @@
                             <div class="self-stretch grow flex pl-6">
                                 <div 
                                     contenteditable="true" 
-                                    class="promptNegativeExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                    class="instructionNegativeExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
                                 >
-                                    ${prompt.negatives.length > 0 ? prompt.negatives[0] : ""}
+                                    ${instruction.negatives.length > 0 ? instruction.negatives[0] : ""}
                                 </div>
                             </div>
                         </div>
@@ -449,327 +448,125 @@
 
                     </div>
                 </div>`;
-            $('#promptList').append(prompt_div_html);
-            prompts[prompt.id] = prompt;
-
-            /*
-            // add an option to the select picker for this prompt
-            // prompts are not selected by default
-            $('#promptFilter').append(`
-                <option value=${prompt.id} class="text-xs">
-                    ${prompt.name.length === 0 ? "Unnamed Prompt" : prompt.name}
-                </option>
-                `
-            );
-
-            // refresh the select picker
-            $(".selectpicker").selectpicker('refresh'); */
-            
-            
+            $('#instructionList').append(instruction_div_html);
+            instructions[instruction.id] = instruction;            
         });
-    }
-
-    function addNewPrompt() {
-        // read from configuring prompt panel and add this new prompt to the prompts
-        let new_prompt = {
-            "name": "",
-            "action": 1,
-            "rubric": "",
-            "positives": [],
-            "negatives": []
-        };
-        displayPrompts([new_prompt]);
-    }
-
-    function deletePrompt(deleted_id) {
-        // delete the prompt at index
-        console.log(`deleting prompt ${deleted_id}`);
-        // delete the key deleted_id from prompts
-        delete prompts[deleted_id];
-        
-        // remove the div with the id prompt.${deleted_id}
-        $(`#prompt-${deleted_id}`).remove();
-
-        // remove the option from the select picker
-        $(`#promptFilter option[value=${deleted_id}]`).remove();
-        $(".selectpicker").selectpicker('refresh');
-
-        // remove the prompt from selected_prompts if needed
-        selected_prompts = selected_prompts.filter((id) => id != deleted_id);
-
-        updatePriority();
-
-    }
-    
-    /* 
-        functions that handle the display of the data 
-    */
-    function load_more_data(new_separator=true){
-        // load more data from the server
-        /* get_backend(
-            "/load_more_data/", 
-            {'participant_id': participant_id},
-            function(data){
-                data = JSON.parse(data);
-                dataset = display_data(data, dataset);
-            }
-        );*/
-
-        let start = current_batch * BATCH_SIZE;
-        let end = (current_batch + 1) * BATCH_SIZE;
-        if(end >= COMPLETE_DATASET.length) end = COMPLETE_DATASET.length;
-        let new_data = COMPLETE_DATASET.slice(start, end);
-        dataset = display_data(new_data, dataset, new_separator);
-        current_batch++;
-        
-    }
-
-    function showFilteredData(){
-        /* iterature through dataset and hide the datum that doesn't match the filter selected_prediction and selected_prompts */
-
-        let expected_prediction = selected_prediction === "removed" ? [1] : selected_prediction === "approved" ? [0, null] : [1, 0, null];
-        let counter = 0;
-        let targeted_counter = 0;
-        let approved_counter = 0;
-        let removed_counter = 0;
-
-        console.log("selected prompts", selected_prompts);
-        console.log("selected_predictions", selected_prediction);
-        dataset.forEach((datum, index) => {
-            let show = expected_prediction.includes(datum.total_prediction);
-            let now_prediction = null;
-            /* if(expected_prediction.length < 3){
-                // otherwise, regardless of what rules are selected, we all show all comments as the expectd prediction is the all
-                if (selected_prompts.length > 0){
-                    // only show comments that are targeted (not targeted) by all the selected rules
-                    show = selected_prompts.every(prompt_id => {
-                        let found_pred = datum.predictions.find(prompt => prompt.id === prompt_id);
-                        return found_pred !== undefined && expected_prediction.includes(found_pred.prediction);
-                    })
-                } else {
-                    // show all comments that are targeted (not targeted) by any of the rules
-                    show = expected_prediction.includes(datum.total_prediction);
-                }
-            }*/
-
-            if (show){
-                $(`#datum-${index}`).parent().show();
-            } else{
-                $(`#datum-${index}`).parent().hide();
-            }
-
-            counter++;
-            targeted_counter += datum.total_prediction !== null ? 1 : 0;
-            approved_counter += datum.total_prediction === 0 ? 1 : 0;
-            removed_counter += datum.total_prediction === 1 ? 1 : 0;
-        });
-
-        let text = `Your filter will remove ${removed_counter} out of ${dataset.length} comments in total.`
-        /* if(expected_prediction.length === 3) 
-            text = `There are ${targeted_counter}/${counter} targeted comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
-        else if(selected_prompts.length === 0 && selected_prediction === "targeted"){
-            text = `There are ${counter} ${selected_prediction} comments in total; among them, ${approved_counter} approved and ${removed_counter} removed`;
-        } else if(selected_prompts.length === 0 && selected_prediction === "not-targeted"){
-            text = `There are ${counter} ${selected_prediction} comments, so they are approvedy by default`;
-        } else {
-            text = `
-                There are ${counter} comments that are ${selected_prediction} by all of your selected prompts, ${approved_counter} approved and ${removed_counter} removed`;
-        }*/
-
-        $('#countDisplay').text(text);
-
-    }
-
-    $("#predictionFilter").on("change", function() {
-        selected_prediction = $(this).val();
-        showFilteredData();
-        
-    });
-
-    /* $("#promptFilter").on("change", function() {
-        selected_prompts = [$(this).val()].map((value) => +value )
-        showFilteredData();
-    }); */
-
-
-    function generateExplanation(datum, datum_index){
-        /* generate the explanation for each prediction made by the LLMs */
-
-        if (datum.total_prediction === null || datum.total_prediction === 0){
-            return "This comment will not be removed by any of your prompts.";
-        }
-        else {
-            let explanation = `<p>This comment will be removed by the following prompts :</p><ul class='list-none pl-0 text-gray-600'>`;
-            // iterate through the dict object and format each prompt in a new line and with italic font
-
-            let highest_priority_id = null;
-            let highest_priority = 0;
-            for (let i = 0; i < datum.predictions.length; i++) {
-                const pred = datum.predictions[i];
-                if (pred.prediction !== null){
-                    let prompt = prompts[pred.id];
-                    
-                    explanation += `
-                        <li class="before:content-['•'] before:mr-2">
-                            Priority ${i + 1}: Prompt <span class="font-medium italic font-serif">${prompt.name}</span>
-                        </li>`;
-                    if (highest_priority_id === null){
-                        highest_priority = i;
-                        highest_priority_id = pred.id;
-                    }
-                }
-            }
-            explanation += "</ul>";
-            
-            return explanation;
-        }
-    }
-
-    function updateDataLabels(results) {
-        /* update the labels of the data according to the predictions given by LLMs */
-        let true_counter = 0;
-        let prediction = results["prediction"];
-        let texts_predictions = results["texts_predictions"];
-
-        for (let i = 0; i < prediction.length; i++) {
-            dataset[i].total_prediction = prediction[i];
-            dataset[i].predictions = texts_predictions[i];
-            
-            // update the label according to the total prediction
-            let new_class =  dataset[i].total_prediction === null ? "unLabel" :  dataset[i].total_prediction ? "trueLabel" : "falseLabel";
-            const datum = $(`#datum-${i}`);
-            datum.removeClass("unLabel trueLabel falseLabel");
-            datum.addClass(new_class);
-
-            // select the tooltip
-            const tooltip_div = $(`#datumTooltip-${i}`);
-            tooltip_div.removeClass("unLabel trueLabel falseLabel");
-            tooltip_div.addClass(new_class);
-
-            // update the tooltip content
-            let explanation = generateExplanation(dataset[i], i);
-            // set the second child of the tooltip div to be the explanation, use innerhtml
-
-            tooltip_div.children().eq(1).html(explanation);
-            
-        }
-        // showFilteredData();
     }
 
     function parseContent() {
-        /* we do not listen to the changes of the prompts actively but instead parse the content when the user clicks the complete or classify button */
-        now_prompts = [];
-        $("#promptList .promptSection").each(function(index){
+        /* we do not listen to the changes of the instructions actively but instead parse the content when the user clicks the complete or classify button */
+        now_instructions = [];
+        $("#instructionList .instructionSection").each(function(index){
             let id = +$(this).attr('id').split('-')[1];
-            let prompt = prompts[id];
+            let instruction = instructions[id];
             let active = $(this).hasClass('activeSection');
             if(active){
                 // the name is always updated
-                prompt.name = escape_single_quote($(this).find('.promptName').text());
-                prompt.priority = index;
-                prompt.action =  $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
-                getCleanPhrases($(this).find('.promptRubric'), true); // accept by default
-                prompt.rubric = escape_single_quote($(this).find('.promptRubric').text(), remove_newline=true);
+                instruction.name = escape_single_quote($(this).find('.instructionName').text());
+                instruction.priority = index;
+                instruction.action =  $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
+                getCleanPhrases($(this).find('.instructionRubric'), true); // accept by default
+                instruction.rubric = escape_single_quote($(this).find('.instructionRubric').text(), remove_newline=true);
                 
-                let positive_example = $(this).find('.promptPositiveExample').text();
-                if(positive_example) prompt.positives[0] = escape_single_quote(positive_example, remove_newline=true);
+                let positive_example = $(this).find('.instructionPositiveExample').text();
+                if(positive_example) instruction.positives[0] = escape_single_quote(positive_example, remove_newline=true);
 
-                let negative_example = $(this).find('.promptNegativeExample').text();
-                if(negative_example) prompt.negatives[0] = escape_single_quote(negative_example, remove_newline=true);
+                let negative_example = $(this).find('.instructionNegativeExample').text();
+                if(negative_example) instruction.negatives[0] = escape_single_quote(negative_example, remove_newline=true);
 
-                if(prompt.rubric.length > 0) now_prompts.push(prompt);
+                if(instruction.rubric.length > 0) now_instructions.push(instruction);
             }
             
 
         });
-        console.log("parsed out prompts", now_prompts);
-        return now_prompts;
+        console.log("parsed out instructions", now_instructions);
+        return now_instructions;
 
     }
 
     function trainLLM() {
-        let now_prompts = parseContent();
+        let now_instructions = parseContent();
         
-        is_paused = true;
-
         // add a countdown timer to the loading modal
-        let estimated_time = Math.ceil(40 / 120 * now_prompts.length * dataset.length);
-        $('#loadingModal').removeClass('hidden');
+        let estimated_time = Math.ceil(40 / 120 * now_instructions.length * dataset.length);
+        showLoadingModal(`We are evaluating the performance of your filters. <br/> It is estimated to take <b>${estimated_time}</b> seconds, please wait for a moment.`);
+
         let countdown_timer = setInterval(function(){
-            $('#loadingModalText').html(
-                `We are evaluating the performance of your filters. <br/> It is estimated to take <b>${estimated_time}</b> seconds, please wait for a moment.`
-            );
+            showLoadingModal(`We are evaluating the performance of your filters. <br/> It is estimated to take <b>${estimated_time}</b> seconds, please wait for a moment.`)
 
             if (estimated_time <= 0) {
                 clearInterval(countdown_timer);
-                $('#loadingModalText').html('The evaluation is taking longer than expected, and thanks for your patience.');
+                showLoadingModal(`The evaluation is taking longer than expected, and thanks for your patience.`);
             }
-
             estimated_time--; 
         }, 1000);
 
         post_backend(
             "/trainLLM/", 
-            {'dataset': dataset, 'prompts': now_prompts},
+            {'dataset': dataset, 'instructions': now_instructions},
             function(response){
                 if(!response["status"]){
                     alert(response["message"]);
                     return;
                 }
                 let task_id = response.data.task_id;
-
-                // console.log(response.data.results);
-                // updateDataLabels(response.data.results);
-                // showFilteredData();
-                // $('#loadingModal').addClass('hidden');
-                pollForResults(task_id);
+                pollForResults(task_id, countdown_timer);
 
             }
         );
     }
 
-    function pollForResults(task_id) {
-        const pollInterval = 2000; // Poll every second
+    function pollForResults(task_id, countdown_timer=null) {
+        const pollInterval = 2000; // Poll every 2 seconds
         
         var poll = setInterval(function() {
-            console.log("Polling for task results...");
             $.ajax({
-                url: "/get_LLM_results/" + task_id + "/", // Adjust URL as needed
+                url: "/get_LLM_results/" + task_id + "/", 
                 type: "GET",
                 success: function(response) {
                     if (response["status"]) {
                         console.log(response.data.results);
                         updateDataLabels(response.data.results);
                         showFilteredData();
-                        $('#loadingModal').addClass('hidden');
-                        is_paused = false;
+                        hideLoadingModal();
+                        clearInterval(countdown_timer);
                         clearInterval(poll); // Stop polling since task is complete
                     } else {
                         console.log("Task is still processing...");
                     }
                 },
                 error: function() {
-                    alert("Error polling for task results.");
+                    showAlertModal("Error polling for task results.");
                     clearInterval(poll); // Stop polling on error
                 }
             });
         }, pollInterval);
     }
 
-    function complete(){
-        is_paused = true;
-        /* store the prompts written by the user */
-        let now_prompts = parseContent();
+    function complete(timeout=false){
+        if(timeout){
+            message = "This session ends. Thank you for your time. <br/>We are now evaluating how your filter performs, so please wait for a moment.";
+        } else {
+            showAlertModal(
+                "You still have time to further improve your filter. <br/> Are you sure you want to complete?", 
+                "Continue", 
+                () => complete(true)
+            )
+            message = "We are evaluating how your filter performs, so please wait for a moment.";
+            return;
+        }
+
+        showLoadingModal(message);
+        
+        let now_instructions = parseContent();
         
         post_backend(
             "/store_prompts/", 
-            {'prompts': now_prompts, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
+            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
             function(response){
-                $('#loadingModal').removeClass('hidden');
-                $('#loadingModalText').text('We are evaluating the performance of your filters, please wait for a moment.');
                 if(!response["status"]){
-                    alert(response["message"]);
-                    $('#loadingModal').addClass('hidden');
+                    hideLoadingModal();
+                    showAlertModal(response["message"]);
                 } else {
                     redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
                 }
@@ -778,76 +575,18 @@
         )
     }
 
-    function set_timer(){
-        if (!is_paused) {
-            time_left = time_left - 1000;
-
-            // Time calculations for minutes and seconds
-            var minutes = Math.floor((time_left % (1000 * 60 * 60)) / (1000 * 60));
-            var seconds = Math.floor((time_left % (1000 * 60)) / 1000);
-
-            // Output the result in the element with id="timer"
-            $("#timer").text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
-
-            // If the countdown is over, stop the timer
-            if (time_left < 0) {
-                clearInterval(interval_id);
-                $("#timer").text("00:00");
-            }
-        }
-    }
-
-    /* 
-        wrap init statements inside it so that we can ensure that both functions are both loaded and executed at the point these codes are run. 
-        Note that when you use defer, the scripts are executed only after the entire document has been parsed, but before the DOMContentLoaded event.
-    */
     $(document).ready(function(){
         $(".copyButton").tooltip();
-        load_more_data(false);
+        loadMoreData(false);
 
-        // $("#promptList").sortable({
-        //     animation: 150,
-        //     handle: ".sortHandle",
-        //     filter: ".addButton",
-        //     onEnd: function(event, ui) {
-        //         // console.log("updating priority");
-        //         updatePriority();
-        //     }
-        // });
-
+    
         if(STAGE === "update"){
-            displayPrompts(JSON.parse(`{{prompts | safe}}`));
-        } else {
-            displayPrompts([
-                {
-                    "name": "Racial hate speech",
-                    "action": 1,
-                    "rubric": "Catch all texts that promote hate, discrimination, stereotypes, or violence against individuals or groups based on their race, ethnicity, or national origin.",
-                    "positives": ["You are just some mad browskin because Europeans styled on your ass"],
-                    "negatives": ["83% of US blacks are Christians"],
-                },
-               
-                {
-                    "name": "Violence calls",
-                    "action": 1,
-                    "rubric": "Catch all texts that directly incite violence or call for harm against specific groups or individuals",
-                    "positives": ["it pleases me to know you will die"],
-                    "negatives": []
-
-                },
-                // {   
-                //     "name": "Gender hate speech",
-                //     "action": 1,
-                //     "rubric": "Catch all texts that are derogatory, demeaning, or violent towards individuals based on their gender or gender identity",
-                //     "positives": [],
-                //     "negatives": ["What didn’t the Bitch say. I hate talking to people in the morning"]
-                // }
-            ]);
+            displayInstructions(JSON.parse(`{{instructions | safe}}`));
+        } else if(DEBUG) {
+            displayInstructions(TEST_INSTRUCTIONS);
         }
 
-        $("#timer").text("15:00");
-        time_left = 15 * 60 * 1000;;
-        interval_id = setInterval(set_timer, 1000);
+        startTimer(SESSION_TIME);
     })
     
 

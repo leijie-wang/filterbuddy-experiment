@@ -16,6 +16,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="{% static 'js/utils.js' %}"></script>
+  <script src="{% static 'js/base.js' %}"></script>
 </head>
 
 <body class="h-screen w-screen overflow-y-hidden flex flex-col">
@@ -124,23 +126,44 @@
                 {% endif %}
             </div>
         </div>
+        <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto p-5 border w-fit shadow-lg rounded-md bg-white">
+                <div id="loadingModalText" class="text-start text-xl text-gray-600">
+                    Loading...
+                </div>
+            </div>
+        </div>
+        <div id="alertModal"  class="hidden fixed inset-0 bg-slate-300 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto py-8 px-4 border w-fit shadow-lg rounded-lg bg-white flex flex-col justify-between gap-y-8">
+                <div id="alertModalText" class="grow text-start text-xl text-gray-600">
+                    <!-- Your alert message here -->
+                </div>
+                <button 
+                    id="alertModalButton"
+                    @click="hideAlertModal();" 
+                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
+                >
+                    Okay
+                </button>
+            </div>
+        </div>
     </div>
 </body> <!-- closes container -->
 <!-- custom js -->
-<script src="{% static 'js/sharedsteps.js' %}" defer></script>
+
 <script defer>
-    const PARTICIPANT_ID = "{{participant_id}}";
-    const SYSTEM = "{{system}}";
-    const STAGE = "{{stage}}";
+    PARTICIPANT_ID = "{{participant_id}}";
+    SYSTEM = "{{system}}";
+    STAGE = "{{stage}}";
     const TASK_ID = "{{task_id}}";
 
-    var dataset = JSON.parse(`{{dataset | safe}}`);
+    dataset = JSON.parse(`{{dataset | safe}}`);
 
     function go_to_system(){
         redirect("/onboarding/", {'participant_id': PARTICIPANT_ID});
     }
 
-    function show_results(results, old_results){
+    function showResults(results, old_results=null){
         // enumerate all datum class div in the textList and append a div at the end of the datum div
         console.log("results", results);
         
@@ -182,29 +205,41 @@
         }
     }
 
-    function pollForResults(task_id) {
+    function pollForResults(task_dict) {
         const pollInterval = 2000; // Poll every second
+        Object.entries(task_dict).forEach(([name, task]) => {
+            task.status = false; // false indicates incomplete
+        });
         
         var poll = setInterval(function() {
-            console.log("Polling for task results...");
-            $.ajax({
-                url: "/get_validate_results/", 
-                type: "GET",
-                data: {"participant_id": PARTICIPANT_ID, "stage": STAGE, task_id: task_id},
-                success: function(response) {
-                    if (response["status"]) {
-                        console.log(response.data.results);
-                        show_results(response.data.test_results, response.data.build_performance);
-                        
-                        clearInterval(poll); // Stop polling since task is complete
-                    } else {
-                        console.log("Task is still processing...");
+            Object.entries(task_dict).forEach(([name, task]) => {
+                if (task.status) return;
+                $.ajax({
+                    url: "/get_validate_results/", 
+                    type: "GET",
+                    data: {"participant_id": PARTICIPANT_ID, "stage": STAGE, task_id: task.id},
+                    success: function(response) {
+                        if (response["status"]) {
+                            task.status = true;
+                            task.results = response.data.test_results;
+                            console.log(`Task ${task.id} is complete!`);
+
+                            let all_tasks_complete = Object.values(task_dict).every(item => item.status === true);
+                            if (all_tasks_complete) {
+                                console.log("All tasks are complete!");
+                                clearInterval(poll); // Stop polling since all tasks are complete
+                                hideLoadingModal();
+                                showResults(task_dict.now.results, task_dict.old?.results || null);
+                            }
+                        } else {
+                            console.log("Task is still processing...");
+                        }
+                    },
+                    error: function() {
+                        console.error("Error polling for task results.");
+                        clearInterval(poll); // Stop polling on error
                     }
-                },
-                error: function() {
-                    alert("Error polling for task results.");
-                    clearInterval(poll); // Stop polling on error
-                }
+                });                     
             });
         }, pollInterval);
     }
@@ -228,12 +263,22 @@
         });
 
         if(TASK_ID !== ""){
-
-            pollForResults(TASK_ID);
+            if(STAGE === "build"){
+                pollForResults({
+                    now: {id: TASK_ID}
+                });
+            } else if(STAGE === "update"){
+                let old_task_id = "{{old_task_id}}";
+                pollForResults({
+                    old: {id: old_task_id}, 
+                    now: {id: TASK_ID}
+                });
+            }
+            showLoadingModal("We are evaluating how your filter performs, so please wait for a moment.");
         } else {
             let test_results = JSON.parse(`{{test_results | safe}}`);
-            let old_results = JSON.parse(`{{old_results | safe}}`);
-            show_results(test_results, old_results);
+            let old_test_results = JSON.parse(`{{old_test_results | safe}}`);
+            showResults(test_results, old_test_results);
         }     
     });
 

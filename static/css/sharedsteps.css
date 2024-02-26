@@ -79,6 +79,9 @@
     --tag-bg: #ffedd5; /* text-orange-100 */
 }
 
+.tagify__tag {
+    z-index: 0;
+}
 /* .includeUnitSection .wordList {
     --tag-bg: #fef2f2;
     --tag-hover: #fee2e2;

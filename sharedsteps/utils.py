@@ -29,6 +29,7 @@ class ChatCompletion:
             ],
         )
         answer = response.choices[0].message.content
+    
         return answer
 
 def check_parameters(participant_id, stage=None, system=None):
@@ -53,6 +54,11 @@ def get_groundtruth_dataset(participant_id, stage):
     return list(groundtruths)
 
 def save_test_results(participant_id, stage, predictions, old=False):
+    """
+        save the predictions of the system on the ground truth dataset from the given stage
+        If the old is False, the predictions are made by the system from the same stage.
+        IF the old is True and the stage is update, the predictions are made by the system from the build stage
+    """
     # Retrieve the ground truth entries in the same order as the predictions
     groundtruths = GroundTruth.objects.filter(
         participant_id=participant_id, 
@@ -99,7 +105,9 @@ def calculate_algorithm_metrics(y, y_pred):
     }
 
 def calculate_stage_performance(participant_id, stage):
-
+    """
+        This is for testing the performance of the system in a stage on the groundtruth dataset from the same stage.
+    """
     groundtruths = GroundTruth.objects.filter(
         participant_id=participant_id, 
         stage=stage
