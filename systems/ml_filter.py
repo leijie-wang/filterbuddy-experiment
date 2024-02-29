@@ -13,15 +13,9 @@ logger = logging.getLogger(__name__)
 class MLFilter:
 
     @classmethod
-    def train(cls, participant_id, **kwargs):
+    def train(cls, system, **kwargs):
         from sharedsteps.models import ExampleLabel
-        stage = kwargs["stage"]
-        if stage == "build":
-            # only examples from the first stage will be used to train the model
-            training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id, stage=stage).values("text", "label"))
-        elif stage == "update":
-            # examples from both stages will be used to train the model
-            training_dataset = list(ExampleLabel.objects.filter(participant_id=participant_id).values("text", "label"))
+        training_dataset = system.read_examples()
         if len(training_dataset) == 0:
             return (False, "No labels found for the participant")
 

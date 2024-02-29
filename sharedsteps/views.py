@@ -1,7 +1,11 @@
 from math import log
+from os import system
+import time
+from turtle import st
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
+from matplotlib.pylab import cond
 from datasets.dataset import BATCH_SIZE, Dataset
 import sharedsteps.utils as utils
 import logging
@@ -23,29 +27,39 @@ def onboarding(request):
         the starting point of the experiment
     """
     participant_id = request.GET.get('participant_id', default=None)
+    group = request.GET.get('group', default=None)
     participant = None
     if participant_id is None:
-        system = request.GET.get('system', default=None)
-        participant = Participant.create_participant(system=system)
-        logger.info(f"participant {participant.participant_id} is created with the system {participant.system}")
+        participant = Participant.create_participant(group)
+        logger.info(f"participant {participant.participant_id} is created")
     else:
-        logger.info(f"participant {participant_id} is moving to the update stage")
         participant = Participant.objects.get(participant_id=participant_id)
-        participant.stage = "update"
-        participant.save()
-    return redirect(f"/groundtruth/?participant_id={participant.participant_id}&stage={participant.stage}")
+        stage = request.GET.get('stage', default=None)
+        system = request.GET.get('system', default=None)
+        if stage is not None and system is not None:
+            participant.update_progress(stage, system)
+    
+    progress = participant.progress
+    return render(request, 'new_onboarding.html', {
+        "participant_id": participant.participant_id,
+        "group": participant.group,
+        "progress": progress
+    })
+    # return redirect(f"/groundtruth/?participant_id={participant.participant_id}&stage={participant.stage}")
 
 def label_ground_truth(request):
     """
         for both build and update stages, the participant will label the ground truth as the first step
     """
     participant_id = request.GET.get('participant_id', default=None)
-    stage = request.GET.get('stage', default=None)
     
-    error_message = utils.check_parameters(participant_id, stage)
-    if error_message is not None:
+    status, error_message = utils.check_parameters(participant_id)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
-
+    
+    participant = Participant.objects.get(participant_id=participant_id)
+    stage, _ = participant.get_stage_system()
+    
     dataset = []
     if stage == "build":
         dataset = BuildDataSet.load_test_dataset(participant_id)
@@ -68,28 +82,25 @@ def store_groundtruth(request):
     dataset = request_data.get('dataset')
     logs = request_data.get('logs')
 
-    utils.save_logs(participant_id, stage, logs)
-    error_message = utils.check_parameters(participant_id, stage)
-    if error_message is not None:
+    # utils.save_logs(participant_id, stage, logs) // we don't save logs for the ground truth labeling
+    status, error_message = utils.check_parameters(participant_id, stage)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     from sharedsteps.models import GroundTruth
-    GroundTruth.objects.filter(participant_id=participant_id, stage=stage).delete()
-    for datum in dataset:
-        GroundTruth(participant_id=participant_id, text=datum["text"], label=datum["label"], stage=stage).save()
+    participant = Participant.objects.get(participant_id=participant_id)
+    GroundTruth.save_groundtruth(participant, stage, dataset)
     return JsonResponse({"status": True, "message": "Participants' ground truth are stored successfully"}, safe=False)
 
 def load_system(request):
     participant_id = request.GET.get('participant_id', default=None)
-    stage = request.GET.get('stage', default=None)
-
-    error_message = utils.check_parameters(participant_id, stage)
-    if error_message is not None:
+    
+    status, error_message = utils.check_parameters(participant_id)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     participant = Participant.objects.get(participant_id=participant_id)
-    system = participant.system
-    logging.debug(f"participant_id: {participant_id}, system: {system}, stage: {stage}")
+    stage, system = participant.get_stage_system()
 
     if system == SYSTEMS.EXAMPLES_ML.value:
         return redirect(f'/examplelabel/?participant_id={participant_id}&system={system}&stage={stage}')
@@ -109,10 +120,10 @@ def load_system(request):
 def examplelabel(request):
     participant_id = request.GET.get('participant_id', default=None)
     stage = request.GET.get('stage', default="build")
-    system = request.GET.get('system')
+    system_name= request.GET.get('system')
 
-    error_message = utils.check_parameters(participant_id, stage, system)
-    if error_message is not None:
+    status, error_message = utils.check_parameters(participant_id, stage, system_name)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = []
@@ -129,7 +140,7 @@ def examplelabel(request):
             "excluded_ids": json.dumps(excluded_ids),
             "participant_id": participant_id,
             "stage": stage,
-            "system": system,
+            "system": system_name,
         })
 
 def active_learning(request):
@@ -195,23 +206,24 @@ def store_labels(request):
         }
     """
     request_data = json.loads(request.body)
-    dataset = request_data.get('dataset')
-    participant_id = request_data.get('participant_id')
     stage = request_data.get('stage')
-    logs = request_data.get('logs')
-    utils.save_logs(participant_id, stage, logs)
+    participant_id = request_data.get('participant_id')
 
-    error_message = utils.check_parameters(participant_id, stage)
-    if error_message is not None:
+    status, error_message = utils.check_parameters(participant_id, stage)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
-    from sharedsteps.models import ExampleLabel
-    # delete the labels of the participant from the database first, for the testing purposes
-    ExampleLabel.objects.filter(participant_id=participant_id, stage=stage).delete()
+    participant = Participant.objects.get(participant_id=participant_id)
+    condition = participant.get_condition(SYSTEMS.EXAMPLES_ML.value)
 
-    for item in dataset:
-        example_label = ExampleLabel(participant_id=participant_id, stage=stage, text=item["text"], label=item["label"])
-        example_label.save()
+    logs = request_data.get('logs', None)
+    if logs:
+        condition.save_logs(logs)
+
+    
+    time_spent = request_data.get('time_spent')
+    system = condition.create_system(time_spent, stage)
+    system.save_system(dataset=request_data.get('dataset'))
     return JsonResponse(
                     {
                         "status": True, 
@@ -223,10 +235,10 @@ def store_labels(request):
 def promptwrite(request):
     participant_id = request.GET.get('participant_id', default=None)
     stage = request.GET.get('stage', default="build")
-    system = request.GET.get('system')
+    system_name = request.GET.get('system')
 
-    error_message = utils.check_parameters(participant_id, stage, system)
-    if error_message is not None:
+    status, error_message = utils.check_parameters(participant_id, stage, system_name)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = []
@@ -235,11 +247,18 @@ def promptwrite(request):
     elif stage == "update":
         dataset = UpdateDataSet.load_train_dataset(participant_id)
 
-    prompts = utils.read_prompts_from_database(participant_id, "build")
+    # when the participant just starts the updating stage, we should load the rules from the build stage
+    if stage == "update":
+        participant = Participant.objects.get(participant_id=participant_id)
+        condition = participant.get_condition(SYSTEMS.PROMPTS_LLM.value)
+        system = condition.get_latest_system(stage="build")
+        prompts = system.read_prompts()
+    else:
+        prompts = []
     return render(request, 'promptwrite.html', {
         "participant_id": participant_id,
         "stage": stage,
-        "system": system,
+        "system": system_name,
         "dataset": json.dumps(dataset),
         "instructions": json.dumps(prompts)
     })
@@ -259,32 +278,24 @@ def store_prompts(request):
         }
     """
     request_data = json.loads(request.body)
-    prompts = request_data.get("instructions")
     participant_id = request_data.get('participant_id')
     stage = request_data.get("stage")
     
-    logs = request_data.get('logs')
-    utils.save_logs(participant_id, stage, logs)
-    from sharedsteps.models import PromptWrite
-    # delete the labels of the participant from the database first, for the testing purposes
-    PromptWrite.objects.filter(participant_id=participant_id, stage=stage).delete()
-
-    counter = 0
-    for item in prompts:
-        prompt = PromptWrite(
-            name=item["name"], 
-            prompt_id=counter, 
-            rubric=item["rubric"], 
-            priority=item["priority"],  
-            action=item["action"],
-            participant_id=participant_id, 
-            stage=stage
-        )
-        prompt.set_positives(item["positives"])
-        prompt.set_negatives(item["negatives"])
-        prompt.save()
-        counter = counter + 1
+    status, error_message = utils.check_parameters(participant_id, stage)
+    if not status:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
     
+    participant = Participant.objects.get(participant_id=participant_id)
+    condition = participant.get_condition(SYSTEMS.PROMPTS_LLM.value)
+
+    logs = request_data.get('logs', None)
+    if logs:
+        condition.save_logs(logs)
+
+    
+    time_spent = request_data.get('time_spent')
+    system = condition.create_system(time_spent, stage)
+    system.save_system(prompts=request_data.get("instructions"))
     return JsonResponse(
                 {
                     "status": True, 
@@ -296,10 +307,10 @@ def store_prompts(request):
 def ruleconfigure(request):
     participant_id = request.GET.get('participant_id', default=None)
     stage = request.GET.get('stage', default="build")
-    system = request.GET.get('system')
+    system_name = request.GET.get('system')
 
-    error_message = utils.check_parameters(participant_id, stage, system)
-    if error_message is not None:
+    status, error_message = utils.check_parameters(participant_id, stage, system_name)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = []
@@ -309,11 +320,18 @@ def ruleconfigure(request):
         dataset = UpdateDataSet.load_train_dataset(participant_id)
 
     # when the participant just starts the updating stage, we should load the rules from the build stage
-    rules = utils.read_rules_from_database(participant_id, "build")
+    if stage == "update":
+        participant = Participant.objects.get(participant_id=participant_id)
+        condition = participant.get_condition(SYSTEMS.RULES_TREES.value)
+        system = condition.get_latest_system(stage="build")
+        rules = system.read_rules()
+    else:
+        rules = []
+
     return render(request, 'ruleconfigure.html', {
             "participant_id": participant_id,
             "stage": stage,
-            "system": system,
+            "system": system_name,
             "dataset": json.dumps(dataset),
             "instructions": json.dumps(rules)
         })
@@ -340,37 +358,24 @@ def store_rules(request):
     }
     """
     request_data = json.loads(request.body)
-    rules = request_data.get("instructions")
     participant_id = request_data.get('participant_id')
     stage = request_data.get('stage')
     
-    logs = request_data.get('logs')
-    utils.save_logs(participant_id, stage, logs)
+    status, error_message = utils.check_parameters(participant_id, stage)
+    if not status:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+    
+    participant = Participant.objects.get(participant_id=participant_id)
+    condition = participant.get_condition(SYSTEMS.RULES_TREES.value)
 
-    from sharedsteps.models import RuleConfigure, RuleUnit
-    # delete the existing rules of the participant from the database, note we only deleted rules of the corresponding stage
-    RuleConfigure.objects.filter(participant_id=participant_id, stage=stage).delete()
+    logs = request_data.get('logs', None)
+    if logs:
+        condition.save_logs(logs)
 
-    counter = 0
-    for item in rules:
-        
-        rule = RuleConfigure(
-            name=item["name"], 
-            action=item["action"], 
-            rule_id=counter, 
-            priority=item["priority"], 
-            variants=item["variants"],
-            participant_id=participant_id,
-            stage=stage
-        )
-        rule.save()
-        for unit in item["units"]:
-            rule_unit = RuleUnit(type=unit["type"], rule=rule)
-            rule_unit.set_words(unit["words"])
-            rule_unit.save()
-
-        counter = counter + 1
-
+    
+    time_spent = request_data.get('time_spent')
+    system = condition.create_system(time_spent, stage)
+    system.save_system(rules=request_data.get("instructions"))
     return JsonResponse(
         {
             "status": True,
@@ -445,46 +450,50 @@ def validate_page(request):
     
     # parse out the participant id fr dom the request GET parameters
     participant_id = request.GET.get('participant_id', default=None)
-    system = request.GET.get('system', default=None)
+    system_name = request.GET.get('system', default=None)
     stage = request.GET.get('stage', default=None)
 
-    error_message = utils.check_parameters(participant_id, stage, system)
-    if error_message is not None:
+    status, error_message = utils.check_parameters(participant_id, stage, system_name)
+    if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
-    dataset = utils.get_groundtruth_dataset(participant_id, stage)
-    status, response = test_system(participant_id, stage, dataset)
+    participant = Participant.objects.get(participant_id=participant_id)
+    condition = participant.get_condition(system_name)
+    test_dataset = condition.get_groundtruth_dataset(stage)
+
+    status, response = test_system(condition, stage, test_dataset)
     if status == 0:
         return HttpResponse(f"Error: {response}")
     elif status == 1:
         # for the LLM filter, we set up a job in the backend
         task_id = response
         if stage == "update":
-            _, old_task_id = test_system(participant_id, "build", dataset)
+            _, old_task_id = test_system(condition, "build", test_dataset)
         else:
             old_task_id = ""
 
         return render(request, 'validate.html', {
-            "dataset": json.dumps(dataset),
+            "dataset": json.dumps(test_dataset),
             "participant_id": participant_id,
-            "system": system,
+            "system": system_name,
             "stage": stage,
             "old_task_id": old_task_id,
             "task_id": task_id,
         })
     else:
         test_results = response
-        utils.save_test_results(participant_id, stage, test_results["prediction"])
+        condition.save_test_results(stage, test_results["prediction"])
+
         # we want to show the performance of the old system on the new dataset
         old_test_results = {}
         if stage == "update":
-            status, old_test_results = test_system(participant_id, "build", dataset)
-            utils.save_test_results(participant_id, "update", old_test_results["prediction"], old=True)
+            status, old_test_results = test_system(condition, "build", test_dataset)
+            condition.save_test_results("update", old_test_results["prediction"], old=True)
 
         return render(request, 'validate.html', {
-            "dataset": json.dumps(dataset),
+            "dataset": json.dumps(test_dataset),
             "participant_id": participant_id,
-            "system": system,
+            "system": system_name,
             "stage": stage,
             "test_results": json.dumps(test_results),
             "old_test_results": json.dumps(old_test_results),
@@ -523,10 +532,10 @@ def test_filter(request):
                 }
             })
 
-def test_system(participant_id, stage, test_dataset):
+def test_system(condition, stage, test_dataset):
     """
         test the system of the given stage for a participant
-        @param participant_id: the id of the participant
+        @param participant_id: the condition we are testing
         @param stage: the stage of the system we want to test
         @param test_dataset: the dataset we want to test the system on
     """
@@ -534,35 +543,24 @@ def test_system(participant_id, stage, test_dataset):
     X_test = [item["text"] for item in test_dataset]
     y_test = [item["label"] for item in test_dataset]
     
-    participant = Participant.objects.get(participant_id=participant_id)
-    system = participant.system
-    logger.info(f"participant {participant_id} tests system: {system} of the {stage} stage")
+    system_name = condition.system_name
+    participant_id = condition.participant.participant_id
+    logger.info(f"participant {participant_id} tests system: {system_name} of the {stage} stage")
     
-    classifier_class = None
-    if system == SYSTEMS.EXAMPLES_ML.value:
-        classifier_class = MLFilter
-    elif system == SYSTEMS.PROMPTS_LLM.value:
-        classifier_class = LLMFilter
-    elif system == SYSTEMS.PROMPTS_ML.value:
-        from systems.llm_ml_filter import LLM_ML_MixedFilter
-        classifier_class = LLM_ML_MixedFilter
-    elif system == SYSTEMS.RULES_TREES.value:
-        classifier_class = TreesFilter
-    elif system == SYSTEMS.RULES_ML.value:
-        from systems.trees_ml_filter import Trees_ML_MixedFilter
-        classifier_class = Trees_ML_MixedFilter
+    latest_system = condition.get_latest_system(stage=stage)
+    
 
     """
         here the training_dataset is used for the LLM ML mixed filter and Trees ML mixed filter
         For other three filter we primarily test, each will read user-related input from the database using both the participant_id and the stage information
     """
     training_dataset = BuildDataSet if stage == "build" else UpdateDataSet 
-    status, classifier = classifier_class.train(participant_id, dataset=training_dataset, stage=stage)
+    status, classifier = latest_system.train(dataset=training_dataset)
     if not status:
         return 0, classifier # the error message
     
-    logger.info(f"starting testing for participant {participant_id} at stage {stage} using system {system}")
-    if system == SYSTEMS.PROMPTS_LLM.value:
+    logger.info(f"starting testing for participant {participant_id} at stage {stage} using system {system_name}")
+    if system_name == SYSTEMS.PROMPTS_LLM.value:
         from sharedsteps.tasks import test_llm_classifier
         task = test_llm_classifier.delay(classifier.prompts, X_test, y_test)
         return 1, task.id
@@ -618,13 +616,20 @@ def get_validate_results(request):
     participant_id = request.GET.get('participant_id')
     stage = request.GET.get('stage')
     task_id = request.GET.get('task_id')
-
+    old = request.GET.get('old', default=False)
     
     task_result = AsyncResult(task_id)
     if task_result.ready():
         results = task_result.get()
         
-        utils.save_test_results(participant_id, stage, results["prediction"])
+        participant = Participant.objects.get(participant_id=participant_id)
+        condition = participant.get_condition(SYSTEMS.PROMPTS_LLM.value)
+        if old:
+            logger.info(f"save the old test results for participant {participant_id} at stage {stage}")
+            condition.save_test_results(stage, results["prediction"], old=True)
+        else:
+            logger.info(f"save the test results for participant {participant_id} at stage {stage}")
+            condition.save_test_results(stage, results["prediction"])
         return JsonResponse({
             "status": True,
             "message": f"Task {task_id} is completed",

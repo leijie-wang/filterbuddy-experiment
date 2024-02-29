@@ -160,13 +160,17 @@
                 <div id="alertModalText" class="grow text-start text-xl text-gray-600">
                     <!-- Your alert message here -->
                 </div>
-                <button 
-                    id="alertModalButton"
-                    @click="hideAlertModal();" 
-                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
-                >
-                    Okay
-                </button>
+                <div class="self-end flex gap-x-4">
+                    <button @click="hideAlertModal();" class="grow-0 text-white py-1 px-3 rounded bg-gray-400 hover:bg-gray-500 font-semibold text-lg">
+                        Cancel
+                    </button>
+                    <button id="alertModalButton"
+                        @click="nextAlertModal();" class="grow-0  text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg">
+                        Okay
+                    </button>
+                </div>
+                
+                
             </div>
         </div>
     </div>
@@ -363,7 +367,7 @@
                                 <i class="fa-solid fa-up-down-left-right"></i>
                             </div> -->
                             <button @click="active = !active; open=false; logEvents('ActivateInstruction', {active: active, instruction_id: ${instruction.id}});" class="focus:outline-none">
-                                <i :class="active ? 'fa-solid fa-lg fa-toggle-off' : 'fa-solid fa-lg fa-toggle-on'"></i>
+                                <i :class="active ? 'fa-solid fa-lg fa-toggle-on' : 'fa-solid fa-lg fa-toggle-off'"></i>
                             </button>
                             <button @click="deleteInstruction(${instruction.id})" class="focus:outline-none">
                                 <i class="fa-solid fa-trash-can"></i>
@@ -547,17 +551,17 @@
         }, pollInterval);
     }
 
-    function complete(timeout=false){
-        if(timeout){
-            message = "This session ends. Thank you for your time. <br/>We are now evaluating how your filter performs, so please wait for a moment.";
-        } else {
-            showAlertModal(
-                "You still have time to further improve your filter. <br/> Are you sure you want to complete?", 
-                "Continue", 
-                () => complete(true)
-            )
-            message = "We are evaluating how your filter performs, so please wait for a moment.";
+    function complete(timeout=false, exit=false){
+        /* store the labeled examples and then redirect to the validation page where an ML model will be trained */
+        if(!exit && !timeout){
+            showAlertModal("You still have time to label more examples. Are you sure that you want to create your filter now?", "Yes", () => complete(timeout, true));
             return;
+        } 
+
+        if(timeout){
+            message = "This session ends. Thank you for your time. We are now evaluating how your filter performs, so please wait for a moment.";
+        } else {
+            message = "We are evaluating how your filter performs, so please wait for a moment.";
         }
 
         showLoadingModal(message);
@@ -566,7 +570,7 @@
         logEvents("Complete", {instruction_len: now_instructions.length, dataset_len: dataset.length});
         post_backend(
             "/store_prompts/", 
-            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'logs': logs},
+            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'logs': logs, "time_spent": time_spent},
             function(response){
                 if(!response["status"]){
                     hideLoadingModal();

@@ -114,16 +114,16 @@
                     </div>
                 </div>
                     
-                {% if stage == "build" %}
-                    <div class="self-end grow-0 flex justify-end mx-[10%]">
-                        <button 
-                            class="text-white text-xl font-medium bg-blue-600 p-3 rounded-lg"
-                            @click="go_to_system();"
-                        >
-                            Some time later
-                        </button>
-                    </div>
-                {% endif %}
+                
+                <div class="self-end grow-0 flex justify-end mx-[10%]">
+                    <button 
+                        class="text-white text-xl font-medium bg-blue-600 p-3 rounded-lg"
+                        @click="go_to_system();"
+                    >
+                        Next
+                    </button>
+                </div>
+                
             </div>
         </div>
         <div id="loadingModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
@@ -160,7 +160,7 @@
     dataset = JSON.parse(`{{dataset | safe}}`);
 
     function go_to_system(){
-        redirect("/onboarding/", {'participant_id': PARTICIPANT_ID});
+        redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
     }
 
     function showResults(results, old_results=null){
@@ -217,7 +217,7 @@
                 $.ajax({
                     url: "/get_validate_results/", 
                     type: "GET",
-                    data: {"participant_id": PARTICIPANT_ID, "stage": STAGE, task_id: task.id},
+                    data: {"participant_id": PARTICIPANT_ID, "stage": STAGE, "task_id": task.id, "old": name === "old"},
                     success: function(response) {
                         if (response["status"]) {
                             task.status = true;

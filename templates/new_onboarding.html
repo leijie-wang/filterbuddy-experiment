@@ -1,0 +1,205 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tell us your criteria</title>
+    <!-- use bootstrap UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- base layout -->
+    <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
+    <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script src="{% static 'js/base.js' %}"></script>
+</head>
+
+<body class="flex flex-col py-3 px-4 h-screen w-screen overflow-y-hidden">
+
+    <!-- 
+      The <noscript> tag encloses the content that will be displayed 
+      only if JavaScript is disabled or not supported in the user's browser. 
+    -->
+    <noscript>
+        If you see this text, your browser does not support dynamic content
+        (JavaScript) or it has been disabled. This study website requires JavaScript.
+    </noscript> 
+    {% csrf_token %}
+
+    <!-- display a list of comments to be reviewed -->
+    <div x-data="{progress: {{progress}}}" class="flex flex-col gap-y-4 h-full w-full pb-4">   
+        <div class="grow-0 flex flex-col gap-x-2  gap-y-4 items-stretch">
+            <div class="py-4 px-4 bg-slate-100 rounded-md text-2xl leading-8 text-gray-600">
+                Picture yourself as the creator of YouTube videos focused on politics. Your comment section is bustling, but not all comments are welcome.
+                <span class="font-medium text-blue-500">You can decide which comments stay and which ones go, all based on your personal preferences</span>.
+                <br/> In this experiment, you will create filters that help you to remove comments that you do not want to see. <br/>
+            </div>
+            <div class="py-4 px-4 bg-yellow-50 rounded-md text-2xl leading-8 text-gray-600 flex flex-col gap-y-4 items-start">
+                <div>
+                    Your participant ID is <span class="font-medium text-blue-500 px-2">{{participant_id}}</span>.
+                </div>
+                <div id="instruction">
+                    In the first step, you are expected to articulate your personal criteria for the comments you want to keep or remove.
+                </div>
+                <button 
+                    @click="direct(progress);"
+                    class="self-end grow-0 text-white py-2 px-4 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-xl"
+                    :class="{'hidden': progress > 8}"
+                >Start</button>
+            </div>
+            <!-- <div class="flex flex-start">
+                You are now invited to create your filter from the very beginning.
+            </div> -->
+        </div>
+        
+        <div class="grow w-[75%] flex flex-col pt-2 justify-center gap-y-8 px-4">
+            <div class="flex flex-col gap-y-8 py-4">
+                <!-- <div class="flex justify-start">
+                    <div class="text-2xl font-medium text-gray-600">
+                        Create your filter
+                    </div>
+                </div> -->
+                <div class="flex justify-between items-center">
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                            :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 1, 'bg-gray-300 cursor-not-allowed': progress > 1, 'bg-white text-gray-600': progress < 1}"
+                        > 1 </div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 1, 'text-white': progress < 1}">Articulate your <br/> personal criteria</div>
+                    </div>
+                    <div class="w-[8%] flex-auto border-t-1 -mt-12 border-gray-50"></div>
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                            :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 2, 'bg-gray-300 cursor-not-allowed': progress > 2, 'bg-white text-gray-600': progress < 2}"
+                        >2</div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 2, 'text-white': progress < 2}">Create your filter by <br/><span class="system1 font-bold">labeling examples</span></div>
+                    </div>
+                    <div class="w-[8%] flex-auto border-t-1 -mt-12 border-gray-50"></div>
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                            :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 3, 'bg-gray-300 cursor-not-allowed': progress > 3, 'bg-white text-gray-600': progress < 3}"
+                        >3</div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 3, 'text-white': progress < 3}">Create your filter by <br/><span class="system2 font-bold">configuring rules</span></div>
+                    </div>
+                    <div class="w-[8%] flex-auto border-t-1 -mt-12 border-gray-50"></div>
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                        :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 4, 'bg-gray-300 cursor-not-allowed': progress > 4, 'bg-white text-gray-600': progress < 4}"
+                        >4</div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 4, 'text-white': progress < 4}">Create your filter by <br/><span class="system3 font-bold">talking to a ChatGPT</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col gap-y-8 pt-4">
+                <!-- <div class="flex justify-start">
+                    <div class="text-2xl font-medium text-gray-600">
+                       Update your filter
+                    </div>
+                </div> -->
+                <div class="flex justify-between items-center">
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                            :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 5, 'bg-gray-300 cursor-not-allowed': progress > 5, 'bg-white text-gray-600': progress < 5}"
+                        >5</div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 5, 'text-white': progress < 5}">Articulate your <br/> personal criteria</div>
+                    </div>
+                    <div class="w-[8%] flex-auto border-t-1 -mt-12 border-gray-50"></div>
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                            :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 6, 'bg-gray-300 cursor-not-allowed': progress > 6, 'bg-white text-gray-600': progress < 6}"
+                        >6</div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 6, 'text-white': progress < 6}">Update your filter by <br/><span class="system1 font-bold">labeling examples</span></div>
+                    </div>
+                    <div class="w-[8%] flex-auto border-t-1 -mt-12 border-gray-50"></div>
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                            :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 7, 'bg-gray-300 cursor-not-allowed': progress > 7, 'bg-white text-gray-600': progress < 7}"
+                        >7</div>
+                        <div class="text-lg text-center " :class="{'text-gray-600': progress >= 7, 'text-white': progress < 7}"
+                        >Update your filter by <br/><span class="system2 font-bold">configuring rules</span></div>
+                    </div>
+                    <div class="w-[8%] flex-auto border-t-1 -mt-12 border-gray-50"></div>
+                    <div class="w-[19%] flex flex-col items-center space-y-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
+                            :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 8, 'bg-gray-300 cursor-not-allowed': progress > 8, 'bg-white text-gray-600': progress < 8}"
+                        >8</div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 8, 'text-white': progress < 8}">Update your filter by <br/><span class="system3 font-bold">talking to a ChatGPT</span></div>
+                    </div>
+                </div>
+            </div>  
+        </div>
+        <div id="alertModal"  class="hidden fixed inset-0 bg-slate-300 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-1/3 mx-auto py-8 px-4 border w-fit shadow-lg rounded-lg bg-white flex flex-col justify-between gap-y-8">
+                <div id="alertModalText" class="grow text-start text-xl text-gray-600">
+                    <!-- Your alert message here -->
+                </div>
+                <button 
+                    id="alertModalButton"
+                    @click="hideAlertModal();" 
+                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
+                >
+                    Okay
+                </button>
+            </div>
+        </div>
+    </div>
+    
+</body> <!-- closes container -->
+<!-- custom js -->
+<script>
+    PARTICIPANT_ID = "{{participant_id}}";
+    GROUP = "{{group}}";
+    PROGRESS = +parseInt("{{progress}}");
+
+    const Group2Name = {
+        "A": "labeling examples",
+        "B": "configuring rules",
+        "C": "talking to a ChatGPT"
+    }
+
+    const Instructions = {
+        1: "In the first step, you are expected to articulate your personal criteria for the comments you want to keep or remove.",
+        5: "The world of social media is always changing, and so are the types of comments you see. Now you are expected to articulate your personal criteria for new comments."
+    }
+    function setGroupProgress() {
+        console.log("Setting group progress", GROUP);
+       // make sure that the group is valid: it can only include A, B, C, and exactly once for each
+        if (GROUP.length !== 3 || !GROUP.match(/^[ABC]{3}$/)) {
+            showAlertModal("Invalid group. The group identifier is invalid. Please contact the researcher.");
+            return;
+        }
+         
+        var group = GROUP.split("");
+        // replacing the system1 class with the actual group name
+        $(".system1").text(Group2Name[group[0]]);
+        $(".system2").text(Group2Name[group[1]]);
+        $(".system3").text(Group2Name[group[2]]);
+
+        Instructions[2] = `In the second step, you are expected to create your filter by ${Group2Name[group[0]]}.`;
+        Instructions[3] = `In the third step, you are expected to create another filter by ${Group2Name[group[1]]}.`;
+        Instructions[4] = `In the fourth step, you are expected to create another filter by ${Group2Name[group[2]]}.`;
+        Instructions[6] = `In the sixth step, you are expected to update the filter you created before by ${Group2Name[group[0]]}.`;
+        Instructions[7] = `In the seventh step, you are expected to update the filter you created before by ${Group2Name[group[1]]}.`;
+        Instructions[8] = `In the eighth step, you are expected to update the filter you created before by ${Group2Name[group[2]]}.`;
+
+    }
+
+    function direct(progress) {
+        if (progress === 1 || progress === 5) {
+            redirect("/groundtruth/", {'participant_id': PARTICIPANT_ID});
+        } else {
+            redirect("/load_system/", {'participant_id': PARTICIPANT_ID});
+        }
+    }
+    $(document).ready(function() {
+        // set the progress
+        setGroupProgress();
+        $("#instruction").text(Instructions[PROGRESS]);
+
+    });
+</script>

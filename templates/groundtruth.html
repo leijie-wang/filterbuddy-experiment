@@ -76,18 +76,14 @@
             <div x-show="atBottom" class="grow-0 w-[30%] flex flex-col justify-end items-center px-4">
                 <div class="flex flex-col gap-y-2  bg-slate-100 rounded p-4">
                     <p class="text-lg">
-                        {% if stage == "build" %}
-                            Thanks for your efforts in labeling these examples. Now start creating your filters!
-                        {% elif stage == "update" %}
-                            Thanks for your efforts in labeling these examples. Now start updating your filters!
-                        {% endif %}
+                        Thanks for your efforts in labeling these examples.                         
                     </p>
                     <button 
                         class="text-white text-2xl self-end bg-blue-600 px-4 py-2 rounded-lg"
                         
                         @click="complete();"
                     >
-                        GO
+                        Complete
                     </button>
                 </div>
             </div>
@@ -97,13 +93,15 @@
                 <div id="alertModalText" class="grow text-start text-xl text-gray-600">
                     <!-- Your alert message here -->
                 </div>
-                <button 
-                    id="alertModalButton"
-                    @click="hideAlertModal();" 
-                    class="grow-0 self-end text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg"
-                >
-                    Okay
-                </button>
+                <div class="self-end flex gap-x-4">
+                    <button @click="hideAlertModal();" class="grow-0 text-white py-1 px-3 rounded bg-gray-400 hover:bg-gray-500 font-semibold text-lg">
+                        Cancel
+                    </button>
+                    <button id="alertModalButton"
+                        @click="nextAlertModal();" class="grow-0  text-white py-1 px-3 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-lg">
+                        Okay
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -115,21 +113,22 @@
     STAGE = "{{stage}}";
     SYSTEM= "GroundTruth"
 
-    function complete(timeout){
-        if(!timeout && (label_number < dataset.length)){
-            // if users still have time but not all examples are labeled
-            showAlertModal("Please label all the examples before proceeding");
-            return;
-        } else if(timeout && (label_number < dataset.length)){
-            // if users run out of time but not all examples are labeled
-            showAlertModal("Time's up! Please label all the examples before proceeding");
-            return;
-        } 
-        // show the first five logs
-        console.log(logs.slice(0, 5));
+    function complete(timeout, exit=false){
         
-
-        logEvents("Complete", {"positive_number": positive_number, "label_number": label_number});
+        if(!exit){
+            if(!timeout && (label_number < dataset.length)){
+                // if users still have time but not all examples are labeled
+                showAlertModal("Please label all the examples before proceeding");
+                return;
+            } else if(timeout && (label_number < dataset.length)){
+                // if users run out of time but not all examples are labeled
+                showAlertModal("Time's up! Please label all the examples before proceeding");
+                return;
+            }
+            logEvents("Complete", {"positive_number": positive_number, "label_number": label_number});
+            showAlertModal("Thank you for your efforts in labeling these examples. You can now proceed to the next step.", "Continue", () => complete(true, true));
+            return;
+        }
         
         post_backend(
                 "/store_groundtruth/", {'dataset': dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'logs': logs},
@@ -139,7 +138,7 @@
                         showAlertModal(response['message']);
                         return;
                     }
-                    redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE});
+                    redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
                 }
             );
     }

@@ -7,6 +7,7 @@ let STAGE;
 var interval_id = null;
 var is_paused = false;
 var time_left = null;
+var time_spent = 0;
 
 function complete(timeout=false){
     throw new Error("complete function is not implemented");
@@ -15,6 +16,7 @@ function complete(timeout=false){
 function countDownTimer(){
     if (!is_paused) {
         time_left = time_left - 1000;
+        time_spent = time_spent + 1000;
         // Time calculations for minutes and seconds
         var minutes = Math.floor((time_left % (1000 * 60 * 60)) / (1000 * 60));
         var seconds = Math.floor((time_left % (1000 * 60)) / 1000);
@@ -60,7 +62,12 @@ function showAlertModal(message, button="Okay", callback=null){
 }
 
 function hideAlertModal(){
-    if (hide_callback != null){
+    hide_callback = null;
+    $("#alertModal").addClass("hidden");
+}
+
+function nextAlertModal(){
+    if(hide_callback != null){
         hide_callback();
         hide_callback = null;
     }
@@ -79,7 +86,7 @@ function addLog(codename, description){
 }
 
 function logEvents(event, params){
-    console.log(event, params);
+    // console.log(event, params);
     let description = "";
     if(SYSTEM === "examplesML" || SYSTEM === "GroundTruth"){
         switch(event){
