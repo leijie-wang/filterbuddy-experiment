@@ -113,6 +113,20 @@
     STAGE = "{{stage}}";
     SYSTEM= "GroundTruth"
 
+    function save_system(time_spent){
+        let labeled_dataset = dataset.filter(datum => datum.label != null);
+        post_backend(
+            "/store_groundtruth/",
+            {'dataset': labeled_dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE},
+            function(response) {
+                if(!response["status"]){
+                    console.warn(response["message"]);
+                } else {
+                    console.log(`Save the labeled groundtruths successfully at ${time_spent / 1000} seconds.`);
+                }
+            }
+        ); 
+    }
     function complete(timeout, exit=false){
         
         if(!exit){
@@ -145,6 +159,7 @@
     
 
     $(document).ready(function(){
+        
         displayLabelingData(JSON.parse(`{{dataset | safe}}`), false);
         startTimer(10);
         logEvents("Start", {});

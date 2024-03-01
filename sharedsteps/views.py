@@ -6,14 +6,12 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from matplotlib.pylab import cond
-from datasets.dataset import BATCH_SIZE, Dataset
+from datasets.dataset import BATCH_SIZE, Dataset, TEST_SIZE
 import sharedsteps.utils as utils
 import logging
 import json, random
 from sharedsteps.models import SYSTEMS, Participant
 from systems.ml_filter import MLFilter
-from systems.trees_filter import TreesFilter
-from systems.llm_filter import LLMFilter
 
 
 logger = logging.getLogger(__name__)
@@ -60,11 +58,22 @@ def label_ground_truth(request):
     participant = Participant.objects.get(participant_id=participant_id)
     stage, _ = participant.get_stage_system()
     
-    dataset = []
     if stage == "build":
         dataset = BuildDataSet.load_test_dataset(participant_id)
     elif stage == "update":
         dataset = UpdateDataSet.load_test_dataset(participant_id)
+        
+    condition = participant.get_condition(SYSTEMS.EXAMPLES_ML.value)
+    if condition:
+        labeled_examples = condition.get_groundtruth_dataset(stage)
+        if len(labeled_examples) != 0:
+            logger.warning(f"Participant has only labeled {len(dataset)} examples out of {TEST_SIZE}")
+            labeled_ids = [item["datum_id"] for item in labeled_examples]
+            for datum in dataset:
+                if datum["datum_id"] in labeled_ids:
+                    datum["label"] = labeled_examples[labeled_ids.index(datum["datum_id"])]["label"]
+            
+        
 
     return render(request, 'groundtruth.html', {
             "dataset": json.dumps(dataset),
@@ -128,12 +137,28 @@ def examplelabel(request):
     
     dataset = []
     excluded_ids = []
+    
     if stage == "build":
         dataset = BuildDataSet.load_train_dataset(participant_id, size=BATCH_SIZE)
         excluded_ids = BuildDataSet.get_excluded_ids(participant_id, size=BATCH_SIZE)
     elif stage == "update":
         dataset = UpdateDataSet.load_train_dataset(participant_id, size=BATCH_SIZE)
         excluded_ids = UpdateDataSet.get_excluded_ids(participant_id, size=BATCH_SIZE)
+
+    participant = Participant.objects.get(participant_id=participant_id)
+    condition = participant.get_condition(SYSTEMS.EXAMPLES_ML.value)
+    system = condition.get_latest_system(stage=stage)
+    if system:
+        labeled_examples = system.read_examples()
+        labeled_ids = [item["datum_id"] for item in labeled_examples]
+        logger.warning(f"Participant ${participant_id} has already labeled {len(labeled_examples)} examples")
+        for datum in dataset:
+            if datum["datum_id"] not in labeled_ids:
+                labeled_examples.append(datum)
+                labeled_ids.append(datum["datum_id"])
+        dataset = labeled_examples
+        excluded_ids = labeled_ids
+        
 
     return render(request, 'examplelabel.html', {
             "dataset": json.dumps(dataset),
@@ -247,14 +272,14 @@ def promptwrite(request):
     elif stage == "update":
         dataset = UpdateDataSet.load_train_dataset(participant_id)
 
-    # when the participant just starts the updating stage, we should load the rules from the build stage
-    if stage == "update":
-        participant = Participant.objects.get(participant_id=participant_id)
-        condition = participant.get_condition(SYSTEMS.PROMPTS_LLM.value)
-        system = condition.get_latest_system(stage="build")
+    participant = Participant.objects.get(participant_id=participant_id)
+    condition = participant.get_condition(SYSTEMS.PROMPTS_LLM.value)
+    system = condition.get_latest_system(stage=stage)
+    if system:
         prompts = system.read_prompts()
     else:
         prompts = []
+
     return render(request, 'promptwrite.html', {
         "participant_id": participant_id,
         "stage": stage,
@@ -319,11 +344,11 @@ def ruleconfigure(request):
     elif stage == "update":
         dataset = UpdateDataSet.load_train_dataset(participant_id)
 
-    # when the participant just starts the updating stage, we should load the rules from the build stage
-    if stage == "update":
-        participant = Participant.objects.get(participant_id=participant_id)
-        condition = participant.get_condition(SYSTEMS.RULES_TREES.value)
-        system = condition.get_latest_system(stage="build")
+    participant = Participant.objects.get(participant_id=participant_id)
+    condition = participant.get_condition(SYSTEMS.RULES_TREES.value)
+    system = condition.get_latest_system(stage=stage)
+    time_spent = condition.get_time_spent(stage)
+    if system:
         rules = system.read_rules()
     else:
         rules = []
@@ -333,7 +358,8 @@ def ruleconfigure(request):
             "stage": stage,
             "system": system_name,
             "dataset": json.dumps(dataset),
-            "instructions": json.dumps(rules)
+            "instructions": json.dumps(rules),
+            "time_spent": time_spent
         })
 
 def store_rules(request):

@@ -173,10 +173,14 @@ class Condition(models.Model):
         return system
 
     def get_groundtruth_dataset(self, stage):
-        return list(GroundTruth.objects.filter(condition=self, stage=stage).order_by('id').values('text', 'label'))
+        return list(GroundTruth.objects.filter(condition=self, stage=stage).order_by('id').values('text', 'label', 'datum_id'))
     
     def get_latest_system(self, stage):
-        return self.systems.filter(stage=stage).first()
+        # there might not be a system in the given stage
+        system = self.systems.filter(stage=stage).first()
+        if system is None and stage == "update":
+            system = self.systems.filter(stage="build").first()
+        return system
     
     def save_test_results(self, stage, predictions, old=False):
         """
@@ -207,6 +211,13 @@ class Condition(models.Model):
                 groundtruth.prediction = prediction
                 groundtruth.save()
     
+    def get_time_spent(self, stage):
+        system = self.systems.filter(stage=stage).first()
+        if system is not None:
+            return system.spent_time
+        else:
+            return 0
+
 class ExperimentLog(models.Model):
     condition = models.ForeignKey(Condition, related_name='logs', on_delete=models.CASCADE)
     
@@ -225,12 +236,15 @@ class System(models.Model):
         # when querying the system related to a condition,  they are returned with the most recent one first
         ordering = ['-spent_time'] # in increasing order of created_at
     
+    def __str__(self):
+        return f"created at {self.spent_time} seconds in the {self.stage} stage"
+    
     def read_examples(self, **kwargs):
         """
             read labeled examples from the database related to this system
         """
         if self.condition.system_name == SYSTEMS.EXAMPLES_ML.value:
-            return list(ExampleLabel.objects.filter(system=self).values("text", "label"))
+            return list(ExampleLabel.objects.filter(system=self).values("text", "label", "datum_id"))
         else:
             logger.error(f"System {self.condition.system_name} does not have examples")
             return []
@@ -285,7 +299,7 @@ class System(models.Model):
     def save_examples(self, **kwargs):
         dataset = kwargs["dataset"]
         for item in dataset:
-            ExampleLabel(system=self, text=item["text"], label=item["label"]).save()
+            ExampleLabel(system=self, datum_id=item["datum_id"], text=item["text"], label=item["label"]).save()
     
     def save_rules(self, **kwargs):
         rules = kwargs["rules"]
@@ -336,6 +350,7 @@ class System(models.Model):
         
 class ExampleLabel(models.Model):
     system = models.ForeignKey(System, related_name='examples', on_delete=models.CASCADE)
+    datum_id = models.IntegerField()
     text = models.TextField()
     label = models.IntegerField()
 
@@ -411,6 +426,7 @@ class GroundTruth(models.Model):
     condition = models.ForeignKey(Condition, related_name='groundtruths', on_delete=models.CASCADE)
     stage = models.CharField(max_length=10, choices=STAGES)
 
+    datum_id = models.IntegerField()
     text = models.TextField()
     label = models.IntegerField()
     prediction = models.IntegerField(null=True)
@@ -425,4 +441,4 @@ class GroundTruth(models.Model):
         for condition in conditions:
             GroundTruth.objects.filter(condition=condition, stage=stage).delete()
             for datum in dataset:
-                GroundTruth(condition=condition, stage=stage, text=datum["text"], label=datum["label"]).save()
+                GroundTruth(condition=condition, stage=stage, datum_id=datum["datum_id"] , text=datum["text"], label=datum["label"]).save()

@@ -153,7 +153,7 @@
                 )
                 if(response["status"]){
                     new_data = response.data.next_batch;
-                    new_ids = new_data.map(datum => datum.id);
+                    new_ids = new_data.map(datum => datum.datum_id);
                     excluded_ids = excluded_ids.concat(new_ids);
                 } else {
                     showAlertModal(response["message"]);
@@ -180,6 +180,21 @@
                 }
             });
         }
+    }
+
+    function save_system(time_spent){
+        let labeled_dataset = dataset.filter(datum => datum.label != null);
+        post_backend(
+            "/store_labels/",
+            {'dataset': labeled_dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, time_spent: time_spent},
+            function(response) {
+                if(!response["status"]){
+                    console.warn(response["message"]);
+                } else {
+                    console.log(`Save the labeled examples successfully at ${time_spent / 1000} seconds.`);
+                }
+            }
+        ); 
     }
 
     function complete(timeout=false, exit=false){

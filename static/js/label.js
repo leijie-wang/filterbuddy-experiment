@@ -28,7 +28,7 @@ function displayLabelingData(new_dataset, new_separator=true){
         // create a new div element for each text with the template below
         let index = i + start_index;
         let text_div_html = `
-            <div id="datum-${index}" x-data="{label: null}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
+            <div id="datum-${index}" x-data="{label: ${new_dataset[i].label || null}}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
                 <div id="text-${index}" class="flex-grow max-w-[80%] p-2">${escape_html(new_dataset[i].text)}</div>
                 <div class="grow-0 flex flex-row w-fit justify-center space-x-2">
                     <button 
@@ -54,16 +54,27 @@ function displayLabelingData(new_dataset, new_separator=true){
     if(new_separator){
         textList.find('.newSeparator').last().get(0).scrollIntoView({behavior: "smooth"});
     }
+
+    for(let i = start_index; i < dataset.length; i++){
+        if(dataset[i].label != null){
+            changeLabel(i, dataset[i].label);
+        }
+    }
 }
 
-function changeLabel(index, new_label){
-    if(new_label === dataset[index].label) return;
+function changeLabel(index, new_label, ){
+    if(new_label !== dataset[index].label){
+        // when these two labels are the same, it means that we are loading the sysetm and the label is already set;
+        // thus, we don't need to log the event
+        logEvents("LabelExamples", {new_label: new_label, text: dataset[index].text, new: dataset[index].label == null});
+        positive_number = positive_number + (new_label === true ? 1 : (dataset[index].label === true ? -1 : 0));
+        label_number = label_number + (dataset[index].label == null ? 1 : 0);
+    } else {
+        label_number = label_number + 1;
+        positive_number = positive_number + (new_label === true ? 1 : 0);
+    }
 
-
-    logEvents("LabelExamples", {new_label: new_label, text: dataset[index].text, new: dataset[index].label == null});
-
-    positive_number = positive_number + (new_label === true ? 1 : (dataset[index].label === true ? -1 : 0));
-    label_number = label_number + (dataset[index].label == null ? 1 : 0);
+    
     $('#positive-number').text(positive_number);
     $('#label-number').text(label_number);
 

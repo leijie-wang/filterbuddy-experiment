@@ -1,4 +1,4 @@
-const DEBUG = true;
+const DEBUG = false;
 let SYSTEM;
 let PARTICIPANT_ID;
 let STAGE;
@@ -13,6 +13,10 @@ function complete(timeout=false){
     throw new Error("complete function is not implemented");
 }
 
+function save_system(time_spent){
+    console.warn("save_system function is not implemented");
+}
+
 function countDownTimer(){
     if (!is_paused) {
         time_left = time_left - 1000;
@@ -23,6 +27,9 @@ function countDownTimer(){
 
         $("#timer").text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
 
+        if(time_spent % 30000 === 0){
+            save_system(time_spent);
+        }
         // If the countdown is over, stop the timer
         if (time_left < 0) {
             clearInterval(interval_id);
@@ -34,7 +41,7 @@ function countDownTimer(){
 
 function startTimer(minutes){
     $("#timer").text(`${minutes}:00`);
-    time_left = minutes * 60 * 1000;
+    time_left = minutes * 60 * 1000 - time_spent;
     interval_id = setInterval(countDownTimer, 1000);
 }
 

@@ -585,10 +585,24 @@
         );
     }
 
+    function save_system(time_spent){
+        let now_instructions = parseContent();
+        post_backend(
+            "/store_rules/", 
+            {'instructions': now_instructions, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, "time_spent": time_spent},
+            function(response) {
+                if(!response["status"]){
+                    console.warn(response["message"]);
+                } else {
+                    console.log(`Save the created rules successfully at ${time_spent / 1000} seconds.`);
+                }
+            }
+        ); 
+    }
     function complete(timeout=false, exit=false){
         /* store the labeled examples and then redirect to the validation page where an ML model will be trained */
         if(!exit && !timeout){
-            showAlertModal("You still have time to label more examples. Are you sure that you want to create your filter now?", "Yes", () => complete(timeout, true));
+            showAlertModal("You still have time to author more rules. Are you sure that you want to create your filter now?", "Yes", () => complete(timeout, true));
             return;
         } 
 
@@ -623,18 +637,23 @@
 
     }
 
-    $(document).ready(function(){
-        
-        
-        if(STAGE === "update"){
-            displayInstructions(JSON.parse(`{{instructions | safe}}`));
-        } else if(DEBUG) {
+    $(document).ready(function(){ 
+        if(DEBUG) {
             displayInstructions(TEST_INSTRUCTIONS);
+        } else {
+            console.log("loading instructions", JSON.parse(`{{instructions | safe}}`));
+            displayInstructions(JSON.parse(`{{instructions | safe}}`));
         }
         
+        time_spent = parseInt("{{time_spent}}");
         startTimer(SESSION_TIME);
         loadMoreData(false);
         logEvents("Start", {})
+
+        if(Object.keys(instructions).length === 0){
+            console.log("No instructions are loaded. We will add a new instruction for the user.");
+            addNewInstruction();
+        }
     })
   
     /* function updatePriority(){

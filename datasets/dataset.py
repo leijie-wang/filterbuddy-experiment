@@ -20,7 +20,7 @@ class Dataset:
             csv_reader = csv.DictReader(file)
             count = 0
             for row in csv_reader:
-                row["id"] = count
+                row["datum_id"] = count
                 self.dataset.append(row)
                 count += 1
         
@@ -62,6 +62,10 @@ class Dataset:
         seeds_ids =  [(random_seed * id % self.size) for id in range(0, size)]
         test_ids = [(random_seed * id % self.size) for id in range(self.size - TEST_SIZE, self.size)]
         return seeds_ids + test_ids
+    
+    def get_test_ids(self, participant_id):
+        random_seed = self._get_random_seed(participant_id)
+        return [(random_seed * id % self.size) for id in range(self.size - TEST_SIZE, self.size)]
     
     def load_data_from_ids(self, excluded_ids):
         return [self.dataset[id] for id in range(0, self.size) if id not in excluded_ids]
