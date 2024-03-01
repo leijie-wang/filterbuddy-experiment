@@ -308,13 +308,22 @@
     
     function removeUnitSection(event){
         let unit_section = $(event.target).closest('.unitSection');
+        let instruction_secton = $(unit_section).closest('.instructionSection');
         let type = $(unit_section).hasClass('includeUnitSection') ? "include" : "exclude";
-        let instruction_id = $(unit_section).closest('.instructionSection').attr('id');
         
+        
+        // if there are only one include unit and the user wants to remove it, we should not remove it
+        if(type === "include" && $(instruction_secton).find('.includeUnitSection').length === 1){
+            showAlertModal("There should at least be one include unit in this rule box");
+            return;
+        }
+
+        let instruction_id = $(unit_section).closest('.instructionSection').attr('id');
         logEvents("RemoveUnit", {type: type, instruction_id: instruction_id});
         $(unit_section).remove();
         // update the title of the second include unit if there are two include units
-        $(unit_section).find(".includeUnitSection").first().find('.unitTitle').text("If they include");
+        
+        $(instruction_secton).find(".includeUnitSection").first().find('.unitTitle').text("If they include");
     }
     
     function addNewUnit(element, type){
@@ -599,6 +608,7 @@
             }
         ); 
     }
+    
     function complete(timeout=false, exit=false){
         /* store the labeled examples and then redirect to the validation page where an ML model will be trained */
         if(!exit && !timeout){
