@@ -1,3 +1,4 @@
+from typing import final
 from sharedsteps.utils import calculate_algorithm_metrics
 import re
 import logging
@@ -82,16 +83,16 @@ class TreesFilter:
         funcs = [(unit["type"], self._build_statement(unit, variants)) for unit in units]
         def rule_function(text):
             patterns = []
+            final_result = True
             for type, func in funcs:
                 result, pattern = func(text)
-                if result:
-                    patterns.append([type, pattern])
+                patterns.append([type, pattern])
 
                 if type == "include" and not result:
-                    return False, patterns
+                    final_result = False
                 if type == "exclude" and result:
-                    return False, patterns
-            return True, patterns
+                    final_result = False
+            return final_result, patterns
         return rule_function
 
     def _test_rule(self, rule, dataset):

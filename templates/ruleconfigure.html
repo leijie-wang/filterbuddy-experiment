@@ -189,6 +189,10 @@
                             "type": "include",
                             "words": ["terrorists", "terrorist", "kill", "killing"]
                         },
+                        {
+                            "type": "exclude",
+                            "words": ["kids"],
+                        }
                     ]
 
                 }
@@ -528,6 +532,82 @@
     }
 
     /* functions that handle the training of the tree classifier */
+
+    function generateExplanation(datum, datum_index){
+    /* generate the explanation for each prediction made by the LLMs */
+        if (datum.total_prediction === null || datum.total_prediction === 0){
+            
+            $(`#datum-${datum_index}`).find('.datumText').html(datum.text);
+            
+            // iterate through datum.predictions (all rules) and find the prediction, of which the patterns has at least one pair of (include, not null objects)
+                
+            let matches = datum.predictions.filter(
+                pred => (
+                    pred.patterns.filter(
+                        ([type, match]) => (type === "include" && match !== null) // if one include unit is matched
+                    ).length > 0) // if at least one include unit is matched
+            ); // find all such rules
+
+            if (matches.length === 0) {
+                return `This comment will not be removed by any of your rules.`;
+            } else {
+                // sort the matches by how many non-null patterns they have in descending order
+                matches.sort((a, b) => {
+                    return b.patterns.filter((_, match) => match !== null).length - a.patterns.filter((_, match) => match !== null).length;
+                });
+                
+                // pick the first match and generate the explanation
+                let match = matches[0];
+                let instruction = instructions[match.id];
+                let explanation = `<p>This comment will not be removed by any of your rules.</br></br>
+                    However, it is almost removed by the rule <span class="font-medium italic font-serif">${instruction.name}</span>.</br>
+                    We highlight the matched words in the comment.</p>`;
+                
+                let replace_text = datum.text
+                match.patterns.forEach(([type, word]) => {
+                    if(word !== null){
+                        replace_text = replace_text.replace(word, `<span class="font-bold text-lg ${type === 'include' ? 'text-red-600' : 'text-emerald-600'}">${word}</span>`);
+                    }
+                });
+
+                $(`#datum-${datum_index}`).find('.datumText').html(replace_text);
+                return explanation;
+            }
+        }
+        else {
+            let explanation = `<p>This comment will be removed by the following ${INSTRUCTION_NAME}s :</p><ul class='list-none pl-0 text-gray-600'>`;
+            let first_instruction = null;
+            for (let i = 0; i < datum.predictions.length; i++) {
+                const pred = datum.predictions[i];
+                if (pred.prediction !== null){
+                    let instruction = instructions[pred.id];
+                    if(first_instruction === null) first_instruction = instruction;
+                    explanation += `
+                        <li class="before:content-['•'] before:mr-2">
+                            ${capitalize(INSTRUCTION_NAME)} <span class="font-medium italic font-serif">${instruction.name}</span>
+                        </li>`;
+                }
+            }
+            explanation += "</ul>";
+
+            
+            // provide text-level explanation for the rule configuration system
+            explanation += `<br/><p>
+                For the ${INSTRUCTION_NAME} <span class="font-bold italic font-serif">${first_instruction.name}</span>, we highlight matched words in the comment.`;
+            
+            
+            let replace_text = datum.text
+            datum.predictions.find(pred => pred.id === first_instruction.id).patterns.forEach((pattern) => {
+                let type = pattern[0];
+                let word = pattern[1]
+                replace_text = replace_text.replace(word, `<span class="font-bold text-red-600 text-lg italic">${word}</span>`);
+            });
+            
+            $(`#datum-${datum_index}`).find('.datumText').html(replace_text);
+
+            return explanation;
+        }
+    }
 
     function parseContent() {
         /* we do not listen to the changes of the instructions actively but instead parse the content when the user clicks the complete or classify button */

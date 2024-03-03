@@ -1,4 +1,4 @@
-const DEBUG = false;
+const DEBUG = true;
 let SYSTEM;
 let PARTICIPANT_ID;
 let STAGE;
@@ -41,7 +41,8 @@ function countDownTimer(){
 
 function startTimer(minutes){
     $("#timer").text(`${minutes}:00`);
-    time_left = minutes * 60 * 1000 - time_spent;
+    // time_left = minutes * 60 * 1000 - time_spent;
+    time_left = minutes * 60 * 1000;
     interval_id = setInterval(countDownTimer, 1000);
 }
 

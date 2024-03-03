@@ -163,8 +163,9 @@ function showFilteredData(){
 function generateExplanation(datum, datum_index){
     /* generate the explanation for each prediction made by the LLMs */
     if (datum.total_prediction === null || datum.total_prediction === 0){
-        if(INSTRUCTION_NAME == "rule") $(`#datum-${datum_index}`).find('.datumText').html(datum.text);
-        return `This comment will not be removed by any of your ${INSTRUCTION_NAME}s`;
+        if(INSTRUCTION_NAME == "rule") {
+            return `This comment will not be removed by any of your ${INSTRUCTION_NAME}s.`;
+        }
     }
     else {
         let explanation = `<p>This comment will be removed by the following ${INSTRUCTION_NAME}s :</p><ul class='list-none pl-0 text-gray-600'>`;
@@ -178,7 +179,7 @@ function generateExplanation(datum, datum_index){
                 
                 explanation += `
                     <li class="before:content-['•'] before:mr-2">
-                        ${capitalize(INSTRUCTION_NAME)} <span class="font-medium italic font-serif">${instruction.name}</span>
+                        ${capitalize(INSTRUCTION_NAME)} <span class="font-medium text-emerald-600 italic font-serif">${instruction.name}</span>
                     </li>`;
                 if (highest_priority_id === null){
                     highest_priority = i;
@@ -187,23 +188,6 @@ function generateExplanation(datum, datum_index){
             }
         }
         explanation += "</ul>";
-
-        if(INSTRUCTION_NAME === "rule"){
-            // provide text-level explanation for the rule configuration system
-            let highest_priority_instruction = instructions[highest_priority_id];
-            explanation += `<br/><p>
-                For the ${INSTRUCTION_NAME} <span class="font-bold italic font-serif">${highest_priority_instruction.name}</span>, we highlight matched words in the comment.`;
-            
-            
-            let replace_text = datum.text
-            datum.predictions.find(pred => pred.id === highest_priority_id).patterns.forEach((pattern) => {
-                let type = pattern[0];
-                let word = pattern[1]
-                replace_text = replace_text.replace(word, `<span class="font-bold text-lg italic">${word}</span>`);
-            });
-            
-            $(`#datum-${datum_index}`).find('.datumText').html(replace_text);
-        }
         return explanation;
     }
 }
