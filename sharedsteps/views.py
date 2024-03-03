@@ -1,11 +1,6 @@
-from math import log
-from os import system
-import time
-from turtle import st
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
-from matplotlib.pylab import cond
 from datasets.dataset import BATCH_SIZE, Dataset, TEST_SIZE
 import sharedsteps.utils as utils
 import logging
