@@ -22,7 +22,7 @@ class LLMFilter:
             return False, "No prompts found for the participant"
         return True, LLMFilter(prompts, debug=False)
 
-    def __init__(self, prompts, batch_size=25, debug=False):
+    def __init__(self, prompts, batch_size=30, debug=False):
         """
             debug: if debug is True, we will not prompt the model to get predictions
         """
@@ -163,20 +163,20 @@ class LLMFilter:
         
         dataset_list = self._generate_dataset_list(X_test)
 
-        for index in range(len(self.prompts)):
-            prompt = self.prompts[index]
+        for prompt in self.prompts:
+            
             prompt_id = prompt["id"]
 
             start_time = time.time()
             prompt_pred = self._test_prompt(prompt, dataset_list)
             end_time = time.time()
-            logger.info(f"LLM model testing time for the {index}-th prompt: {end_time - start_time} seconds")
+            logger.info(f"LLM model testing time for the {prompt_id}-th prompt: {end_time - start_time} seconds")
 
             if prompt_pred is not None:
-                for index in range(len(X_test)):
-                    texts_predictions[index].append({
+                for datum_index in range(len(X_test)):
+                    texts_predictions[datum_index].append({
                         "id": prompt_id,
-                        "prediction": prompt["action"] if prompt_pred.get(index, None) else None,
+                        "prediction": prompt["action"] if prompt_pred.get(datum_index, None) else None,
                     })
 
                     

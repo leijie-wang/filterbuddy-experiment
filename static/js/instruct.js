@@ -139,8 +139,8 @@ function showFilteredData(){
     let approved_counter = 0;
     let removed_counter = 0;
 
-    console.log("selected instructions", selected_instructions);
-    console.log("selected_predictions", selected_prediction)
+    // console.log("selected instructions", selected_instructions);
+    // console.log("selected_predictions", selected_prediction)
     dataset.forEach((datum, index) => {
         let show = expected_prediction.includes(datum.total_prediction);
         

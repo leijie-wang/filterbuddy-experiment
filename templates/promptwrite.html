@@ -398,7 +398,7 @@
                                 <button :disabled="!enabled"  
                                     class="text-sm p-2 rounded-lg"
                                     :class="{'cursor-not-allowed bg-gray-50': !enabled, 'bg-yellow-50': enabled}"
-                                    @click="loading = true; await getRephraseInstruction($el); enabled = false; loading = false"
+                                    @click="loading = true; markChanged(${instruction.id}); await getRephraseInstruction($el); enabled = false; loading = false"
                                 >
                                     <div class="spinner-border text-orange-300 spinner-border-sm" role="status" x-show="loading">
                                         <span class="sr-only">Loading...</span>
@@ -413,6 +413,7 @@
                                 <div 
                                     contenteditable="true" 
                                     class="instructionRubric grow text-base text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                    @input="markChanged(${instruction.id})"
                                 >
                                     ${instruction.rubric}
                                 </div>
@@ -429,6 +430,7 @@
                                 <div 
                                     contenteditable="true" 
                                     class="instructionPositiveExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                    @input="markChanged(${instruction.id})"
                                 >
                                     ${instruction.positives.length > 0 ? instruction.positives[0] : ""}
                                 </div>
@@ -444,6 +446,7 @@
                                 <div 
                                     contenteditable="true" 
                                     class="instructionNegativeExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
+                                    @input="markChanged(${instruction.id})"
                                 >
                                     ${instruction.negatives.length > 0 ? instruction.negatives[0] : ""}
                                 </div>
@@ -454,6 +457,7 @@
                     </div>
                 </div>`;
             $('#instructionList').append(instruction_div_html);
+            instruction["changed"] = true;
             instructions[instruction.id] = instruction;            
         });
     }
@@ -487,6 +491,10 @@
         console.log("parsed out instructions", now_instructions);
         return now_instructions;
 
+    }
+
+    function markChanged(id){
+        instructions[id].changed = true;
     }
 
     function trainLLM() {
@@ -532,7 +540,11 @@
                 type: "GET",
                 success: function(response) {
                     if (response["status"]) {
-                        console.log(response.data.results);
+                        console.log("predictions", response.data.results);
+                        Object.values(instructions).forEach(instruction => {
+                            instruction.changed = false;
+                        });
+
                         updateDataLabels(response.data.results);
                         showFilteredData();
                         hideLoadingModal();

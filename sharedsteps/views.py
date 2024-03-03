@@ -602,9 +602,7 @@ def train_LLM(request):
     
     prompts = request_data.get('instructions')
     dataset = request_data.get('dataset')
-    
-    dataset = [item["text"] for item in dataset]
-    
+        
     task = train_llm_task.delay(prompts, dataset)
     logger.info(f"task {task.id} is started to train the LLM model")
     return JsonResponse({
