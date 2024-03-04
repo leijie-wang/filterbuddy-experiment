@@ -1,5 +1,4 @@
 const BATCH_SIZE = 30;
-const SESSION_TIME = 15;
 var COMPLETE_DATASET = [];
 var INSTRUCTION_NAME = "instruction";
 var dataset = [];

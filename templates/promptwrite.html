@@ -43,19 +43,69 @@
         (JavaScript) or it has been disabled. This study website requires JavaScript.
     </noscript> 
     {% csrf_token %}
-    <div x-data="{}" class="flex flex-col justify-start gap-y-4 py-3 items-stretch h-full">
+    <div x-data="{}" class="flex flex-col justify-start gap-y-3 py-3 items-stretch h-full">
         <div class="flex-grow-0 flex gap-x-2 items-stretch">
-            
-            <div class="flex items-center justify-start bg-slate-100 p-3 rounded-md">
-                <div class="text-xl text-black">
-                    Do you know you can guide a filter like talking to an assistant? 
-                    Just like chatting with ChatGPT, you can outline what comments to remove through clear prompts and examples.
-                    But remember it might take a few minutes to process your prompts, so please be patient!
-                    In the next, please take up to <span class="font-medium">15 minutes</span> to write your prompts, trying to be as clear and specific as possible.
+            {% if tutorial %}
+            <div class="grow flex items-center gap-x-8 bg-blue-50 p-3 rounded-md">
+                <div class="grow-0 text-4xl font-bold text-sky-800 font-serif">
+                    Tutorial
+                </div>
+                <div class="grow flex flex-col">
+                    <div class="text-lg leading-8">
+                        <p class="text-gray-600">
+                            Just like chatting with ChatGPT, you can outline what comments to remove through clear prompts and examples.</br>
+                            But remember it might take a few minutes to process your prompts, so please be patient!
+                        </p>
+                        <p class="font-medium">
+                            In the next step, please spend <span class="text-blue-600">3 minutes</span> first 
+                            reading 
+                            <a 
+                                href="https://docs.google.com/presentation/d/1sINDVJPCSkSTvng5PIIFz3S5AOBYpL4-vjkJhx4B3c4/edit#slide=id.p" 
+                                class="text-blue-500 hover:text-blue-600 underline" target="_blank"
+                            >the tutorial slides</a> 
+                            and then exploring the interface.
+                        </p>
+                    </div>
                 </div>
             </div>
+            {% elif stage == "build" %}
+            <div class="grow flex items-center gap-x-8 bg-green-50 p-3 rounded-md">
+                <div class="grow-0 text-4xl font-bold text-emerald-800 font-serif">
+                    Create
+                </div>
+                <div class="grow flex flex-col">
+                    <div class="text-lg leading-8">
+                        <p class="text-gray-600">
+                            
+                            Just like chatting with ChatGPT, you can outline what comments to remove through clear prompts and examples.</br>
+                            But remember it might take a few minutes to process your prompts, so please be patient!
+                        </p>
+                        <p class="font-medium">
+                            In the next, please take up to <span class="font-medium">15 minutes</span> to write your prompts, trying to be as clear and specific as possible.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% elif stage == "update" %}
+            <div class="grow flex items-center gap-x-8 bg-yellow-50 p-3 rounded-md">
+                <div class="grow-0 text-4xl font-bold text-orange-600 font-serif">
+                    Update
+                </div>
+                <div class="grow flex flex-col">
+                    <div class="text-lg leading-8">
+                        <p class="text-gray-600">
+                            Just like chatting with ChatGPT, you can outline what comments to remove through clear prompts and examples.</br>
+                            But remember it might take a few minutes to process your prompts, so please be patient!
+                        </p>
+                        <p class="font-medium">
+                            To keep up with the latest trends, please spend <span class="font-medium">15 minutes</span> improving your prompts, trying to be as clear and specific as possible.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             <div class="flex flex-col items-center justify-center">
-                <div id="timer" class="flex items-center justify-center grow-0 text-2xl font-bold p-2 rounded-full border border-gray-500 aspect-square min-w-24">
+                <div id="timer" class="flex items-center justify-center grow-0 text-2xl font-bold p-2 rounded-full border-2 border-gray-500 aspect-square min-w-24">
                     15:00
                 </div>
                 <div class="text-base italic whitespace-nowrap">
@@ -66,13 +116,13 @@
 
         <div class="flex items-stretch w-full gap-x-4 flex-grow">
             <!-- the section where users configure instructions -->
-            <div x-data="" class="flex flex-col items-stretch gap-y-4 pt-2 px-4 border border-gray-600 rounded w-1/2 flex-grow">
+            <div x-data="" class="flex flex-col items-stretch gap-y-4 px-2 w-1/2 flex-grow">
                 <!-- <div class="section-header text-xl font-bold text-blue-600 flex-grow-0 self-center">
                 Write Your Instructions
             </div> -->
 
                 <!-- the section where users see all instructions -->
-                <div class="section-body flex flex-col flex-grow gap-y-4 pb-4">
+                <div class="section-body flex flex-col flex-grow gap-y-1 pb-2">
                     <!-- <div class="flex flex-col gap-y-2 flex-grow-0">
                         <div class="text-lg italic">
                             Instruction Introduction
@@ -84,13 +134,13 @@
                        <div id="instructionList" class="flex flex-col gap-y-2">
 
                        </div>
-                       <div @click="addNewInstruction" class="addButton flex justify-center items-center gap-x-4 border border-gray-300 rounded-lg h-10 cursor-pointer">
-                        <div class="text-3xl text-gray-500">+</div>
-                    </div>
+                       <div @click="addNewInstruction" class="addButton flex justify-center items-center gap-x-4 border-2 !border-gray-400 rounded-lg h-10 cursor-pointer">
+                            <div class="text-3xl text-gray-500">+</div>
+                        </div>
                     </div>
                    
                     <div class="bottom flex justify-end gap-x-2 flex-grow-0">
-                        <button @click="trainLLM();" class="bg-emerald-500 text-white font-bold py-2 px-3 rounded">
+                        <button @click="trainLLM();" class="bg-blue-500 text-white font-bold py-2 px-3 rounded">
                             Apply Active Prompts
                         </button>
                     </div>
@@ -104,46 +154,41 @@
                     -->
             </div>
             <!-- the section where users example examples and predictions -->
-            <div class="flex flex-col border border-gray-600 rounded w-1/2 h-full px-3 pt-2 pb-4 gap-y-1">
+            <div class="flex flex-col w-1/2 h-full">
                 <!-- display a set of filter options -->
-                <div class="header text-lg font-bold">
-                    What comments are removed by your active prompts?
-                </div>
-                <div class="self-stretch flex justify-between items-center gap-x-1">
-                    <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
-                    <div class="grow flex justify-start items-center gap-x-2 ">
-                        <!-- <div class="text-sm text-gray-600 ">View Options</div> -->
-                        
-                        
-                        <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
-                            <option value="removed" class=" text-xs text-gray-700">Removed comments</option>
-                            <option value="approved" selected class=" text-xs text-gray-700">Approved comments</option>
-                            <option value="all" selected class=" text-xs text-gray-700">All comments</option>
-                        </select>
-                       
-                        <!-- <div class="w-[45%]">
-                            <select id="instructionFilter" multiple
-                                class="selectpicker data-filter show-tick border rounded" 
-                                title="by rubrics" 
-                                data-width="100%"
-                                data-selected-text-format="count"
-                                data-count-selected-text="{0} rubrics selected"
-                            >
-                                
-                            </select>
-                        </div> -->
+                <div class="grow flex flex-col gap-y-1 h-full pb-2">
+                    <div class="grow flex flex-col gap-y-1 border-2 !border-gray-400 rounded px-3 pt-2">
+                        <div class="header text-lg font-bold">
+                            What comments are removed by your active rules?
+                        </div>
+                        <div class="self-stretch flex justify-between items-center gap-x-1">
+                            <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
+                            <div class="grow flex justify-start items-center gap-x-2 ">
+                                <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
+                                    <option value="removed" class=" text-xs text-gray-700">Removed comments</option>
+                                    <option value="approved" selected class=" text-xs text-gray-700">Approved comments</option>
+                                    <option value="all" selected class=" text-xs text-gray-700">All comments</option>
+                                </select>
+                            </div>
+                            
+                        </div>
+                        <!-- display a list of comments to be reviewed -->
+                        <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
                     </div>
-                </div>
-                <!-- display a list of comments to be reviewed -->
-                <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow ">
-                </div>
-                <div class="bottom flex justify-end gap-x-2 pt-3">
-                    <button @click="loadMoreData" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
-                        Load More Examples
-                    </button>
-                    <button @click="complete();" class="bg-blue-600  text-white font-bold py-2 px-3 rounded">
-                        Create your Filter
-                    </button>
+                    <div class="bottom flex justify-end gap-x-2 pt-3">
+                        <button @click="loadMoreData()" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
+                            Load More Examples
+                        </button>
+                        {% if tutorial %}
+                            <button @click="complete()" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
+                                Finish the Tutorial
+                            </button>
+                        {% else %}
+                            <button @click="complete()" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
+                                Create your Filter
+                            </button>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,7 +226,8 @@
     PARTICIPANT_ID = "{{participant_id}}";
     STAGE = "{{stage}}";
     SYSTEM = "{{system}}";
-    
+    TUTORIAL = "{{ tutorial }}" == "True";
+
     INSTRUCTION_NAME = "prompt";
     COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
     
@@ -320,7 +366,7 @@
                         active: true, 
                         action: ${instruction.action}
                     }" 
-                    class="instructionSection flex flex-col items-stretch border !border-gray-300 rounded-lg px-2" 
+                    class="instructionSection flex flex-col items-stretch border-2 !border-gray-400 rounded-lg px-2" 
                     :class="{ 'activeSection': active, 'bg-gray-100': !active}" 
                     id="instruction-${instruction.id}"
                 >
@@ -579,6 +625,15 @@
     }
 
     function complete(timeout=false, exit=false){
+        if(TUTORIAL){
+            if(!exit && !timeout){
+                showAlertModal("You still have time for your tutorial. Are you sure that you want to skip the tutorial?", "Yes", () => complete(timeout, true));
+                return;
+            } 
+            redirect("/load_system/", {'participant_id': PARTICIPANT_ID});
+            return;
+        }
+
         /* store the labeled examples and then redirect to the validation page where an ML model will be trained */
         if(!exit && !timeout){
             showAlertModal("You still have time to write more prompts. Are you sure that you want to create your filter now?", "Yes", () => complete(timeout, true));
@@ -613,17 +668,23 @@
     $(document).ready(function(){
         $(".copyButton").tooltip();
         
-
-    
         if(DEBUG) {
             displayInstructions(TEST_INSTRUCTIONS);
         } else {
             displayInstructions(JSON.parse(`{{instructions | safe}}`));
         }
 
-        startTimer(SESSION_TIME);
+        time_spent = parseInt("{{time_spent}}");
+        if(TUTORIAL){
+            startTimer(TUTORIAL_TIME)
+        } else {
+            startTimer(SESSION_TIME);
+        }
+
+        
         loadMoreData(false);
         logEvents("Start", {})
+
         if(Object.keys(instructions).length === 0){
             addNewInstruction();
         }

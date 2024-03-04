@@ -35,8 +35,8 @@
 
     <!-- display a list of comments to be reviewed -->
     <div x-data="{ atBottom: false }" class="flex flex-col gap-y-4 h-full w-full pb-4">   
-        <div class="grow-0 flex gap-x-2 items-stretch m">
-            <div class="grow flex flex-col gap-y-2 py-2 px-4 items-start justify-start bg-slate-100  rounded-md">
+        <div class="grow-0 flex gap-x-2 items-stretch">
+            <div class="grow flex flex-col gap-y-2 py-2 px-4 items-start justify-center bg-slate-100  rounded-md">
                 {% if stage == "build" %}
                     <p class="text-2xl font-semibold">Set Your Filter's Goal</p>
                     <p class="text-xl text-start font-sans">
@@ -70,7 +70,7 @@
                 <!-- display a list of comments to be reviewed -->
                 <div id="textList"
                     @scroll="atBottom = $el.scrollHeight - $el.scrollTop - $el.clientHeight < 1"
-                    class="grow flex flex-col px-4 border border-gray-600 rounded h-16 overflow-y-auto"
+                    class="grow flex flex-col px-4 border-2 !border-gray-500 rounded h-16 overflow-y-auto"
                 ></div>
             </div>
             <div x-show="atBottom" class="grow-0 w-[30%] flex flex-col justify-end items-center px-4">

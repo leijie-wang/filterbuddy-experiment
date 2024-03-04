@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 BuildDataSet = Dataset("old.csv")
 UpdateDataSet = Dataset("new.csv")
+TutorialDataset = Dataset("tutorial.csv")
 
 def onboarding(request):
     """
@@ -98,7 +99,8 @@ def store_groundtruth(request):
 
 def load_system(request):
     participant_id = request.GET.get('participant_id', default=None)
-    
+    tutorial = request.GET.get('tutorial', default="false") 
+
     status, error_message = utils.check_parameters(participant_id)
     if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
@@ -107,24 +109,19 @@ def load_system(request):
     stage, system = participant.get_stage_system()
 
     if system == SYSTEMS.EXAMPLES_ML.value:
-        return redirect(f'/examplelabel/?participant_id={participant_id}&system={system}&stage={stage}')
+        return redirect(f'/examplelabel/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}')
     elif system == SYSTEMS.RULES_TREES.value:
-        return redirect(f'/ruleconfigure/?participant_id={participant_id}&system={system}&stage={stage}')
+        return redirect(f'/ruleconfigure/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}')
     elif system == SYSTEMS.PROMPTS_LLM.value:
-        return redirect(f'/promptwrite/?participant_id={participant_id}&system={system}&stage={stage}')
+        return redirect(f'/promptwrite/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}')
     else:
         logging.error("System unsupported yet: {}".format(system))
-
-# def load_more_data(request):
-#     participant_id = request.GET.get('participant_id', default=None)
-#     new_batch = TrainDataSet.load_batch(participant_id)
-#     logger.info(f"participant {participant_id} loaded a new batch of size {len(new_batch)}")
-#     return JsonResponse(json.dumps(new_batch), safe=False)
 
 def examplelabel(request):
     participant_id = request.GET.get('participant_id', default=None)
     stage = request.GET.get('stage', default="build")
     system_name= request.GET.get('system')
+    tutorial = request.GET.get('tutorial', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
@@ -132,27 +129,33 @@ def examplelabel(request):
     
     dataset = []
     excluded_ids = []
-    
-    if stage == "build":
+    if tutorial:
+        dataset = TutorialDataset.load_train_dataset(participant_id, size=BATCH_SIZE)
+        # there is not test dataset for the tutorial stage
+        excluded_ids = TutorialDataset.get_excluded_ids(participant_id, size=BATCH_SIZE, test_include=False)
+    elif stage == "build":
         dataset = BuildDataSet.load_train_dataset(participant_id, size=BATCH_SIZE)
         excluded_ids = BuildDataSet.get_excluded_ids(participant_id, size=BATCH_SIZE)
     elif stage == "update":
         dataset = UpdateDataSet.load_train_dataset(participant_id, size=BATCH_SIZE)
         excluded_ids = UpdateDataSet.get_excluded_ids(participant_id, size=BATCH_SIZE)
 
-    participant = Participant.objects.get(participant_id=participant_id)
-    condition = participant.get_condition(SYSTEMS.EXAMPLES_ML.value)
-    system = condition.get_latest_system(stage=stage)
-    if system:
-        labeled_examples = system.read_examples()
-        labeled_ids = [item["datum_id"] for item in labeled_examples]
-        logger.warning(f"Participant ${participant_id} has already labeled {len(labeled_examples)} examples")
-        for datum in dataset:
-            if datum["datum_id"] not in labeled_ids:
-                labeled_examples.append(datum)
-                labeled_ids.append(datum["datum_id"])
-        dataset = labeled_examples
-        excluded_ids = labeled_ids
+    time_spent = 0
+    if not tutorial:
+        participant = Participant.objects.get(participant_id=participant_id)
+        condition = participant.get_condition(SYSTEMS.EXAMPLES_ML.value)
+        system = condition.get_latest_system(stage=stage)
+        time_spent = condition.get_time_spent(stage)
+        if system:
+            labeled_examples = system.read_examples()
+            labeled_ids = [item["datum_id"] for item in labeled_examples]
+            logger.warning(f"Participant ${participant_id} has already labeled {len(labeled_examples)} examples")
+            for datum in dataset:
+                if datum["datum_id"] not in labeled_ids:
+                    labeled_examples.append(datum)
+                    labeled_ids.append(datum["datum_id"])
+            dataset = labeled_examples
+            excluded_ids = labeled_ids
         
 
     return render(request, 'examplelabel.html', {
@@ -161,6 +164,8 @@ def examplelabel(request):
             "participant_id": participant_id,
             "stage": stage,
             "system": system_name,
+            "time_spent": time_spent,
+            "tutorial": tutorial
         })
 
 def active_learning(request):
@@ -170,14 +175,17 @@ def active_learning(request):
     dataset = request_data.get('dataset')
     excluded_ids = request_data.get('excluded_ids')
     active_learning = request_data.get('active_learning')
+    tutorial = request_data.get('tutorial')
 
     dataset_left = []
-    if stage == "build":
+    if tutorial:
+        dataset_left = TutorialDataset.load_data_from_ids(excluded_ids=excluded_ids)
+    elif stage == "build":
         dataset_left = BuildDataSet.load_data_from_ids(excluded_ids=excluded_ids)
     elif stage == "update":
         dataset_left = UpdateDataSet.load_data_from_ids(excluded_ids=excluded_ids)
     
-    if active_learning:
+    if not tutorial and active_learning:
         X_train = [item["text"] for item in dataset]
         y_train = [item["label"] for item in dataset]
 
@@ -256,31 +264,39 @@ def promptwrite(request):
     participant_id = request.GET.get('participant_id', default=None)
     stage = request.GET.get('stage', default="build")
     system_name = request.GET.get('system')
+    tutorial = request.GET.get('tutorial', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = []
-    if stage == "build":
+    if tutorial:
+        dataset = TutorialDataset.load_train_dataset(participant_id)
+    elif stage == "build":
         dataset = BuildDataSet.load_train_dataset(participant_id)
     elif stage == "update":
         dataset = UpdateDataSet.load_train_dataset(participant_id)
 
-    participant = Participant.objects.get(participant_id=participant_id)
-    condition = participant.get_condition(SYSTEMS.PROMPTS_LLM.value)
-    system = condition.get_latest_system(stage=stage)
-    if system:
-        prompts = system.read_prompts()
-    else:
-        prompts = []
+    prompts = []
+    time_spent = 0
+    if not tutorial:
+        participant = Participant.objects.get(participant_id=participant_id)
+        condition = participant.get_condition(SYSTEMS.PROMPTS_LLM.value)
+        system = condition.get_latest_system(stage=stage)
+        time_spent = condition.get_time_spent(stage)
+        if system:
+            prompts = system.read_prompts()
+
 
     return render(request, 'promptwrite.html', {
         "participant_id": participant_id,
         "stage": stage,
         "system": system_name,
         "dataset": json.dumps(dataset),
-        "instructions": json.dumps(prompts)
+        "instructions": json.dumps(prompts),
+        "time_spent": time_spent,
+        "tutorial": tutorial
     })
 
 def store_prompts(request):
@@ -328,25 +344,30 @@ def ruleconfigure(request):
     participant_id = request.GET.get('participant_id', default=None)
     stage = request.GET.get('stage', default="build")
     system_name = request.GET.get('system')
+    tutorial = request.GET.get('tutorial', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
     dataset = []
-    if stage == "build":
+    if tutorial:
+        dataset = TutorialDataset.load_train_dataset(participant_id)
+    elif stage == "build":
         dataset = BuildDataSet.load_train_dataset(participant_id)
     elif stage == "update":
         dataset = UpdateDataSet.load_train_dataset(participant_id)
 
-    participant = Participant.objects.get(participant_id=participant_id)
-    condition = participant.get_condition(SYSTEMS.RULES_TREES.value)
-    system = condition.get_latest_system(stage=stage)
-    time_spent = condition.get_time_spent(stage)
-    if system:
-        rules = system.read_rules()
-    else:
-        rules = []
+    rules = []
+    time_spent = 0
+    if not tutorial:
+        participant = Participant.objects.get(participant_id=participant_id)
+        condition = participant.get_condition(SYSTEMS.RULES_TREES.value)
+        system = condition.get_latest_system(stage=stage)
+        time_spent = condition.get_time_spent(stage)
+        if system:
+            rules = system.read_rules()
+
 
     return render(request, 'ruleconfigure.html', {
             "participant_id": participant_id,
@@ -354,7 +375,8 @@ def ruleconfigure(request):
             "system": system_name,
             "dataset": json.dumps(dataset),
             "instructions": json.dumps(rules),
-            "time_spent": time_spent
+            "time_spent": time_spent,
+            "tutorial": tutorial
         })
 
 def store_rules(request):

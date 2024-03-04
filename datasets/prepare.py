@@ -115,20 +115,29 @@ def main(dataset_path, clean_function, format="json"):
     validation_set.drop(columns=['score_bucket']).to_csv("validation.csv", index=False)
     test_set.drop(columns=['score_bucket']).to_csv("test.csv", index=False)
 
-def create_balanced_dataset(filename, clean_function, new_filename):
-    dataset_path = f"collected_datasets/{filename}.csv"
+def create_balanced_dataset(filename, clean_function, new_filename, format="csv"):
+    dataset_path = f"collected_datasets/{filename}.{format}"
     dataset = []
-    with open(dataset_path, mode='r', encoding='utf-8') as file:
-        csv_reader = csv.reader(file)
-        header = True
-        for row in csv_reader:
-            if header:
-                print(row)
-                header = False
-            else:
-                comment = clean_function(row)
+    if format == "json":
+        with open(dataset_path) as f:
+            for line in f:
+                comment = line.strip()
+                comment = clean_function(json.loads(comment))
                 if comment is not None:
                     dataset.append(comment)
+        
+    elif format == "csv":
+        with open(dataset_path, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.reader(file)
+            header = True
+            for row in csv_reader:
+                if header:
+                    print(row)
+                    header = False
+                else:
+                    comment = clean_function(row)
+                    if comment is not None:
+                        dataset.append(comment)
                 
     dataset = pd.DataFrame(dataset)
     # print("describe the dataset:", dataset["score"].describe())
@@ -152,5 +161,6 @@ def create_balanced_dataset(filename, clean_function, new_filename):
 
 
 if __name__ == "__main__":
-    create_balanced_dataset("youtube_gun_toxicity_clean", clean_youtube_comment, "old")
-    create_balanced_dataset("youtube_border_toxicity_clean", clean_youtube_comment, "new")
+    # create_balanced_dataset("youtube_gun_toxicity_clean", clean_youtube_comment, "old")
+    # create_balanced_dataset("youtube_border_toxicity_clean", clean_youtube_comment, "new")
+    create_balanced_dataset("jigsaw_sampled", clean_jigsaw_comment, "tutorial", format="json")

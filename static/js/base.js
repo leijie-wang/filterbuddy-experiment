@@ -2,6 +2,9 @@ const DEBUG = true;
 let SYSTEM;
 let PARTICIPANT_ID;
 let STAGE;
+let TUTORIAL = false;
+const SESSION_TIME = 15;
+const TUTORIAL_TIME = 3;
 
 /* time the labeling process */
 var interval_id = null;
@@ -28,7 +31,7 @@ function countDownTimer(){
         $("#timer").text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
 
         if(time_spent % 30000 === 0){
-            save_system(time_spent);
+            if(!TUTORIAL) save_system(time_spent);
         }
         // If the countdown is over, stop the timer
         if (time_left < 0) {
@@ -41,8 +44,11 @@ function countDownTimer(){
 
 function startTimer(minutes){
     $("#timer").text(`${minutes}:00`);
-    // time_left = minutes * 60 * 1000 - time_spent;
-    time_left = minutes * 60 * 1000;
+    if(DEBUG) {
+        time_left = minutes * 60 * 1000;
+    } else {
+        time_left = minutes * 60 * 1000 - time_spent;
+    }
     interval_id = setInterval(countDownTimer, 1000);
 }
 
@@ -94,7 +100,8 @@ function addLog(codename, description){
 }
 
 function logEvents(event, params){
-    // console.log(event, params);
+    if(TUTORIAL) return;
+
     let description = "";
     if(SYSTEM === "examplesML" || SYSTEM === "GroundTruth"){
         switch(event){

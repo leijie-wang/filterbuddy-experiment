@@ -52,29 +52,42 @@ function displayLabelingData(new_dataset, new_separator=true){
     // :class="{'bg-blue-500 hover:bg-blue-600': selected == true, 'bg-gray-300 hover:bg-gray-400': selected == false}" 
     dataset = dataset.concat(new_dataset);
     if(new_separator){
-        textList.find('.newSeparator').last().get(0).scrollIntoView({behavior: "smooth"});
+        textList.find('.newSeparator').last().get(0).scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
     }
 
+    
+    // when users are loading their historical labels
     for(let i = start_index; i < dataset.length; i++){
         if(dataset[i].label != null){
             changeLabel(i, dataset[i].label);
         }
     }
+
+    if(DEBUG){
+        // for testing purposes, using labels in the dataset instead of manual labeling all the data
+        
+        for(let i = start_index; i < dataset.length; i++){
+            if(dataset[i].label == null){
+                let new_label = +parseFloat(dataset[i].score) >= 0.5;
+                changeLabel(i, new_label);
+            }
+        }
+    }
 }
 
-function changeLabel(index, new_label, ){
+function changeLabel(index, new_label){
     if(new_label !== dataset[index].label){
         // when these two labels are the same, it means that we are loading the sysetm and the label is already set;
         // thus, we don't need to log the event
         logEvents("LabelExamples", {new_label: new_label, text: dataset[index].text, new: dataset[index].label == null});
-        positive_number = positive_number + (new_label === true ? 1 : (dataset[index].label === true ? -1 : 0));
+        positive_number = positive_number + (new_label == true ? 1 : (dataset[index].label == true ? -1 : 0));
         label_number = label_number + (dataset[index].label == null ? 1 : 0);
     } else {
         label_number = label_number + 1;
-        positive_number = positive_number + (new_label === true ? 1 : 0);
+        positive_number = positive_number + (new_label == true ? 1 : 0);
     }
 
-    
+   
     $('#positive-number').text(positive_number);
     $('#label-number').text(label_number);
 

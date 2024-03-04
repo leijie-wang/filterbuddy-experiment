@@ -54,14 +54,17 @@ class Dataset:
         # checks are already done in the view
         return participant.random_seed
     
-    def get_excluded_ids(self, participant_id, size):
+    def get_excluded_ids(self, participant_id, size, test_include=True):
         """
             return the list of ids that have already been used in the first batch and the testing set
         """
         random_seed = self._get_random_seed(participant_id)
         seeds_ids =  [(random_seed * id % self.size) for id in range(0, size)]
-        test_ids = [(random_seed * id % self.size) for id in range(self.size - TEST_SIZE, self.size)]
-        return seeds_ids + test_ids
+        if test_include:
+            test_ids = [(random_seed * id % self.size) for id in range(self.size - TEST_SIZE, self.size)]
+            return seeds_ids + test_ids
+        else:
+            return seeds_ids
     
     def get_test_ids(self, participant_id):
         random_seed = self._get_random_seed(participant_id)

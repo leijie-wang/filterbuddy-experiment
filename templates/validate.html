@@ -63,13 +63,13 @@
                     <div id="countDisplay" class="text-base text-blue-600"></div>
                 </div>
                 <!-- display a list of comments to be reviewed --> 
-                <div id="textList-header" class="min-w-[20%] datum flex justify-end gap-x-4 font-serif italic py-0.5 pr-4">   
-                    <div>Your label</div>
-                    <div>Filter decision</div>
+                <div id="textList-header" class="min-w-[20%] datum flex justify-end gap-x-4 font-serif italic py-0.5 pr-3">   
+                    <div class="font-bold">Your label</div>
+                    <div class="font-bold">Filter decision</div>
                     
                 </div>
                 <div id="textList"
-                    class="grow flex flex-col h-16 overflow-y-auto border border-gray-600 rounded"
+                    class="grow flex flex-col h-16 overflow-y-auto border-2 !border-gray-500 rounded"
                 >
                     
                 </div>
@@ -174,7 +174,7 @@
             // You can customize this HTML as needed
             datum.total_prediction = results.prediction[index];
             datum.predictions = results.texts_predictions?.[index] || null;
-            $(`#datum-${index} > :last-child`).append(`<span class="text-gray-300 font-serif"> v.s. </span>`);
+            $(`#datum-${index} > :last-child`).append(`<span class="text-gray-500 font-serif"> v.s. </span>`);
             let new_div = `
                         ${datum.total_prediction ? 
                             "<div class='text-red-500 font-medium text-base rounded ml-1'>Remove</div>" : 

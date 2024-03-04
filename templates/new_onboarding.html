@@ -35,12 +35,50 @@
     <!-- display a list of comments to be reviewed -->
     <div x-data="{progress: {{progress}}}" class="flex flex-col gap-y-4 h-full w-full pb-4">   
         <div class="grow-0 flex flex-col gap-x-2  gap-y-4 items-stretch">
-            <div class="py-4 px-4 bg-slate-100 rounded-md text-2xl leading-8 text-gray-600">
+            <!-- <div class="py-4 px-4 bg-slate-100 rounded-md text-2xl leading-8 text-gray-600">
                 Picture yourself as the creator of YouTube videos focused on politics. Your comment section is bustling, but not all comments are welcome.
                 <span class="font-medium text-blue-500">You can decide which comments stay and which ones go, all based on your personal preferences</span>.
                 <br/> In this experiment, you will create filters that help you to remove comments that you do not want to see. <br/>
+            </div> -->
+            <div class="grow flex items-center gap-x-8 bg-yellow-50 p-3 rounded-md">
+                <div class="min-w-[14%] text-4xl font-bold text-orange-600 font-serif">
+                    Scenario
+                </div>
+                <div class="grow flex flex-col">
+                    <div class="">
+                        <p class="leading-10 text-2xl text-gray-600">
+                            Picture yourself as the creator of YouTube videos focused on politics. <br/>
+                            Your comment section is bustling, but not all comments are welcome.
+                            You can decide which comments stay and which ones go, all based on your personal preferences.
+                        </p>
+                        <p class="leading-10 text-2xl font-medium">
+                            In this experiment, you will create filters that remove comments that you do not want to see.
+                        </p>
+                        
+                    </div>
+                </div>
             </div>
-            <div class="py-4 px-4 bg-yellow-50 rounded-md text-2xl leading-8 text-gray-600 flex flex-col gap-y-4 items-start">
+            <div class="grow flex items-center gap-x-8 bg-blue-50 p-3 rounded-md">
+                <div class="min-w-[14%] text-4xl font-bold text-blue-600 font-serif">
+                    Next Step
+                </div>
+                <div class="grow flex flex-col">
+                    <div class="flex flex-col text-xl gap-y-2">
+                        <p class="text-2xl font-medium">
+                            Your participant ID is <span class="font-medium text-blue-600 px-2">{{participant_id}}</span>.
+                        </p>
+                        <p id="instruction" class="text-2xl font-medium">
+                            In the first step, you are expected to articulate your personal criteria for the comments you want to keep or remove.
+                        </p>
+                        <button 
+                            @click="direct(progress);"
+                            class="self-end grow-0 text-white py-2 px-4 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-xl"
+                            :class="{'hidden': progress > 8}"
+                        >Start</button>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="py-4 px-4 bg-yellow-50 rounded-md text-2xl leading-8 text-gray-600 flex flex-col gap-y-4 items-start">
                 <div>
                     Your participant ID is <span class="font-medium text-blue-500 px-2">{{participant_id}}</span>.
                 </div>
@@ -52,7 +90,7 @@
                     class="self-end grow-0 text-white py-2 px-4 rounded bg-blue-400 hover:bg-blue-500 font-semibold text-xl"
                     :class="{'hidden': progress > 8}"
                 >Start</button>
-            </div>
+            </div> -->
             <!-- <div class="flex flex-start">
                 You are now invited to create your filter from the very beginning.
             </div> -->
@@ -193,8 +231,8 @@
         if (progress === 1 || progress === 5) {
             redirect("/groundtruth/", {'participant_id': PARTICIPANT_ID});
         } else {
-            redirect("/load_system/", {'participant_id': PARTICIPANT_ID});
-        }
+            redirect("/load_system/", {'participant_id': PARTICIPANT_ID, "tutorial": (progress < 5)});
+        } 
     }
     $(document).ready(function() {
         // set the progress
