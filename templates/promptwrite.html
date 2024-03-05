@@ -158,10 +158,10 @@
                 <!-- display a set of filter options -->
                 <div class="grow flex flex-col gap-y-1 h-full pb-2">
                     <div class="grow flex flex-col gap-y-1 border-2 !border-gray-400 rounded px-3 pt-2">
-                        <div class="header text-lg font-bold">
+                        <div class="grow-0 header text-lg font-bold">
                             What comments are removed by your active rules?
                         </div>
-                        <div class="self-stretch flex justify-between items-center gap-x-1">
+                        <div class="grow-0 self-stretch flex justify-between items-center gap-x-1">
                             <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
                             <div class="grow flex justify-start items-center gap-x-2 ">
                                 <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
@@ -173,12 +173,16 @@
                             
                         </div>
                         <!-- display a list of comments to be reviewed -->
-                        <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
+                        <div class="grow body flex flex-col gap-y-2 overflow-y-auto h-1 pb-4">
+                            <div id="textList" class="grow flex flex-col pt-2 mr-2 border-b-2 !border-gray-400 border-dashed"></div>
+                            <button @click="loadMoreData()" class="grow-0 min-w-[50%] bg-slate-400 text-white font-bold py-2 px-3 rounded mx-auto">
+                                Load More Examples
+                            </button>
+                        </div>
+                        
                     </div>
                     <div class="bottom flex justify-end gap-x-2 pt-3">
-                        <button @click="loadMoreData()" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
-                            Load More Examples
-                        </button>
+                        
                         {% if tutorial %}
                             <button @click="complete()" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
                                 Finish the Tutorial
@@ -227,7 +231,7 @@
     STAGE = "{{stage}}";
     SYSTEM = "{{system}}";
     TUTORIAL = "{{ tutorial }}" == "True";
-
+    BATCH_SIZE = 10; // avoid participants to load a lot of data
     INSTRUCTION_NAME = "prompt";
     COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
     
@@ -433,7 +437,7 @@
                             </button>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-y-2 items-start p-4 pt-2" x-show="open">
+                    <div class="flex flex-col gap-y-2 items-stretch p-4 pt-2" x-show="open">
                         <div x-data="{loading: false, enabled: true}" class="flex flex-col items-stretch gap-y-2">
                             <div class="flex justify-between">
                                 <div class="w-fit text-lg italic bg-red-50 py-1 px-3 rounded">
@@ -455,7 +459,7 @@
                                     <span>Improve</span>
                                 </button>
                             </div>
-                            <div class="self-stretch grow flex pl-6">
+                            <div class="self-stretch grow flex pl-6 pr-4">
                                 <div 
                                     contenteditable="true" 
                                     class="instructionRubric grow text-base text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
@@ -472,7 +476,7 @@
                                 <span class="font-bold">removed</span>
                                 
                             </div>
-                            <div class="self-stretch grow flex pl-6">
+                            <div class="self-stretch grow flex pl-6 pr-4">
                                 <div 
                                     contenteditable="true" 
                                     class="instructionPositiveExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
@@ -488,7 +492,7 @@
                                 <span>Provide an example that should </span>
                                 <span class="font-bold">not be removed</span>
                             </div>
-                            <div class="self-stretch grow flex pl-6">
+                            <div class="self-stretch grow flex pl-6 pr-4">
                                 <div 
                                     contenteditable="true" 
                                     class="instructionNegativeExample example grow text-sm text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"

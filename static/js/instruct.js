@@ -1,4 +1,4 @@
-const BATCH_SIZE = 30;
+var BATCH_SIZE = 30;
 var COMPLETE_DATASET = [];
 var INSTRUCTION_NAME = "instruction";
 var dataset = [];

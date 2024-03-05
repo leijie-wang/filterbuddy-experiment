@@ -156,12 +156,15 @@
                             
                         </div>
                         <!-- display a list of comments to be reviewed -->
-                        <div id="textList" class="body flex flex-col overflow-y-auto py-2 h-1 pr-2 flex-grow"></div>
+                        <div class="grow body flex flex-col gap-y-2 overflow-y-auto h-1 pb-4">
+                            <div id="textList" class="grow flex flex-col pt-2 mr-2 border-b-2 !border-gray-400 border-dashed"></div>
+                            <button @click="loadMoreData()" class="grow-0 min-w-[50%] bg-slate-400 text-white font-bold py-2 px-3 rounded mx-auto">
+                                Load More Examples
+                            </button>
+                        </div>
                     </div>
                     <div class="bottom flex justify-end gap-x-2 pt-3">
-                        <button @click="loadMoreData()" class="bg-slate-400 text-white font-bold py-2 px-3 rounded">
-                            Load More Examples
-                        </button>
+                        
                         {% if tutorial %}
                             <button @click="complete()" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
                                 Finish the Tutorial
