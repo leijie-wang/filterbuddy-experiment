@@ -1,4 +1,5 @@
 from os import name
+from turtle import pos
 from django.db import models
 from enum import Enum
 import json, random, sympy, string, logging
@@ -33,6 +34,9 @@ def code2name(code):
 
 def name2code(name):
     return name2code_dict[name]
+
+def sanitize(text):
+    return text.replace('"', '').replace("'", "").replace('`', '').replace("\\", "").replace("\n", " ")
 
 class Participant(models.Model):
     participant_id = models.CharField(max_length=100)
@@ -288,7 +292,7 @@ class System(models.Model):
                 prompts.append({
                     "id": prompt.prompt_id,
                     "name": prompt.name, "action": prompt.action,
-                    "priority": prompt.priority, "rubric": prompt.rubric,
+                    "priority": prompt.priority, "rubric": sanitize(prompt.rubric),
                     "positives": prompt.get_positives(), "negatives": prompt.get_negatives()
                 })
             return prompts
@@ -322,7 +326,7 @@ class System(models.Model):
         counter = 0
         for item in prompts:
             prompt = PromptWrite(system=self, name=item["name"], action=item["action"], 
-                                 prompt_id=counter, priority=item["priority"], rubric=item["rubric"])
+                                 prompt_id=counter, priority=item["priority"], rubric=sanitize(item["rubric"]))
             prompt.set_positives(item["positives"])
             prompt.set_negatives(item["negatives"])
             prompt.save()
@@ -407,14 +411,15 @@ class PromptWrite(models.Model):
     )
     action = models.IntegerField(choices=ACTION_CHOICES)
     
+    
     def set_positives(self, positives):
-        self.positives = json.dumps(positives)
+        self.positives = json.dumps([sanitize(positive) for positive in positives])
 
     def get_positives(self):
         return json.loads(self.positives) if self.positives else []
     
     def set_negatives(self, negatives):
-        self.negatives = json.dumps(negatives)
+        self.negatives = json.dumps([sanitize(negative) for negative in negatives])
     
     def get_negatives(self):
         return json.loads(self.negatives) if self.negatives else []

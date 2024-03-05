@@ -1,0 +1,64 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tell us your criteria</title>
+    <!-- use bootstrap UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- base layout -->
+    <link rel="stylesheet" href="{% static 'css/sharedsteps.css' %}" />
+    <script src="https://kit.fontawesome.com/95a71e9646.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/jquery-3.7.1.js'%}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script src="{% static 'js/base.js' %}"></script>
+</head>
+
+<body x-data="{}" class="flex flex-col py-3 px-4 gap-y-4 h-screen w-screen overflow-y-hidden bg-gray-100">
+    <!-- 
+      The <noscript> tag encloses the content that will be displayed 
+      only if JavaScript is disabled or not supported in the user's browser. 
+    -->
+    <noscript>
+        If you see this text, your browser does not support dynamic content
+        (JavaScript) or it has been disabled. This study website requires JavaScript.
+    </noscript> 
+    {% csrf_token %}
+    <div class="grow-0 flex flex-col text-xl gap-y-2 py-2">
+        <p class="text-2xl font-medium">
+            Your participant ID is <span class="font-medium text-blue-600 px-2">{{participant_id}}</span>.
+        </p>
+    </div>
+    <div class="grow flex justify-center items-stretch gap-x-8 pb-4">
+        <iframe id="survey" src="" class="grow max-w-[50%]">
+            Loading…
+        </iframe>    
+        <button 
+            class="self-end text-white text-xl font-medium bg-blue-600 p-3 rounded-lg"
+            @click="go_to_system();"
+        >
+            Next
+        </button>  
+    </div>
+    
+</body> <!-- closes container -->
+<!-- custom js -->
+<script>
+    PARTICIPANT_ID = "{{participant_id}}";
+    SYSTEM = "{{system}}";
+    STAGE = "{{stage}}";
+
+    function go_to_system(){
+        redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+    }
+
+    $(document).ready(function() {
+        $('#survey').attr("src", "{{survey}}")
+    });
+</script>

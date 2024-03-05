@@ -1,4 +1,5 @@
-const DEBUG = true;
+const DEBUG = false;
+const SURVEY = false;
 let SYSTEM;
 let PARTICIPANT_ID;
 let STAGE;
@@ -69,6 +70,7 @@ function hideLoadingModal(){
 
 let hide_callback = null;
 function showAlertModal(message, button="Okay", callback=null){
+    console.log("showAlertModal");
     $("#alertModalButton").text(button);
     $("#alertModalText").html(message);
     $("#alertModal").removeClass("hidden");    
@@ -81,11 +83,11 @@ function hideAlertModal(){
 }
 
 function nextAlertModal(){
+    $("#alertModal").addClass("hidden");
     if(hide_callback != null){
         hide_callback();
         hide_callback = null;
     }
-    $("#alertModal").addClass("hidden");
 }
 
 var logs = [];

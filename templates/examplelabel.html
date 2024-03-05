@@ -71,8 +71,8 @@
                             you're essentially teaching the filter to understand your standards. 
                         </p>
                         <p class="font-medium">
-                            In the next, please spend <span class="font-medium">15 minutes</span> to label examples as accurately as possible, 
-                            based on what you feel fits your criteria. 
+                            In the next, please spend <span class="font-medium">15 minutes</span> to label examples as many as possible, 
+                            based on your personal preferences.
                         </p>
                     </div>
                 </div>
@@ -90,8 +90,8 @@
                             you're essentially teaching the filter to understand your standards. 
                         </p>
                         <p class="font-medium">
-                            In the next, please take up to <span class="font-medium">15 minutes</span> to label new examples as accurately as possible, 
-                            based on what you feel fits your criteria. 
+                            In the next, please take up to <span class="font-medium">15 minutes</span> to label new examples as many as possible, 
+                            based on your personal preferences.
                         </p>
                     </div>
                 </div>
@@ -266,6 +266,11 @@
             return;
         }
 
+        if(label_number === positive_number || positive_number === 0 || label_number === 0){
+            showAlertModal("You should label at least one example as 'Remove' and one example as 'Keep' before creating your filter.");
+            return;
+        }
+        
         /* store the labeled examples and then redirect to the validation page where an ML model will be trained */
         if(!exit && !timeout){
             showAlertModal("You still have time to label more examples. Are you sure that you want to create your filter now?", "Yes", () => complete(timeout, true));

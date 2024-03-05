@@ -74,9 +74,14 @@
                 ></div>
             </div>
             <div x-show="atBottom" class="grow-0 w-[30%] flex flex-col justify-end items-center px-4">
-                <div class="flex flex-col gap-y-2  bg-slate-100 rounded p-4">
-                    <p class="text-lg">
-                        Thanks for your efforts in labeling these examples.                         
+                <div class="flex flex-col gap-y-6 bg-slate-100 rounded p-4">
+                    <p class="text-2xl">
+                        {% if stage == "build" %}
+                            Now start create your filter!       
+                        {% elif stage == "update" %}
+                            Now start updating your filter!
+                        {% endif %}
+                                        
                     </p>
                     <button 
                         class="text-white text-2xl self-end bg-blue-600 px-4 py-2 rounded-lg"
@@ -161,7 +166,7 @@
     $(document).ready(function(){
         
         displayLabelingData(JSON.parse(`{{dataset | safe}}`), false);
-        startTimer(10);
+        startTimer(SESSION_TIME);
         logEvents("Start", {});
         if(DEBUG){
             // for testing purposes, use the score to simulate the user's label

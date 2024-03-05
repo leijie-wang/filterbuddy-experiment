@@ -160,7 +160,11 @@
     dataset = JSON.parse(`{{dataset | safe}}`);
 
     function go_to_system(){
-        redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+        if(SURVEY){
+            redirect("/survey/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+        } else {
+            redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+        }
     }
 
     function showResults(results, old_results=null){

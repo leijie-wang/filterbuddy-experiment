@@ -20,7 +20,24 @@ function updateName(id, text){
 function addNewInstruction(){
     logEvents("AddNewInstruction", {});
     // read from configuring instruction panel and add this new instruction to the instructions in jquery
-    displayInstructions([{...new_instruction_template}]);
+    if(INSTRUCTION_NAME === "rule"){
+        displayInstructions([{
+            "action": 1,
+            "name": "",
+            "units": [{
+                "type": "include",
+                "words": [],
+            }]   
+        }]);
+    } else if (INSTRUCTION_NAME === "prompt"){
+        displayInstructions([{
+            "name": "",
+            "action": 1,
+            "rubric": "",
+            "positives": [],
+            "negatives": []
+        }]);
+    }
 }
 
 function deleteInstruction(deleted_id) {

@@ -4,6 +4,14 @@ var label_number = 0; // how many examples are labeled
 
 function displayLabelingData(new_dataset, new_separator=true){
     // display data on the page, here we need to add buttons for users to label data
+    for(let i = 0; i < new_dataset.length; i++){
+        if(new_dataset[i].label != null){
+            
+            console.log(`labeling ${i} as ${new_dataset[i].label}`);
+        }
+    }
+
+
     let textList = $('#textList');
 
     if (new_separator) {
@@ -55,10 +63,10 @@ function displayLabelingData(new_dataset, new_separator=true){
         textList.find('.newSeparator').last().get(0).scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
     }
 
-    
     // when users are loading their historical labels
     for(let i = start_index; i < dataset.length; i++){
         if(dataset[i].label != null){
+            
             changeLabel(i, dataset[i].label);
         }
     }

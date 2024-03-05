@@ -16,12 +16,21 @@ BuildDataSet = Dataset("old.csv")
 UpdateDataSet = Dataset("new.csv")
 TutorialDataset = Dataset("tutorial.csv")
 
+SurveyDict = {
+    SYSTEMS.EXAMPLES_ML.value: {
+        "build": "https://docs.google.com/forms/d/e/1FAIpQLSeUp58HnYoXvu2-kbsJgqMYOm4eJMfwi-2HEbc__KkPtRtNvQ/viewform?embedded=true",
+        "update": "https://forms.gle/1d9J6tZd3t8w6J4k8"
+    },
+}
+
 def onboarding(request):
     """
         the starting point of the experiment
     """
     participant_id = request.GET.get('participant_id', default=None)
     group = request.GET.get('group', default=None)
+    restart = "restart" in request.GET
+
     participant = None
     if participant_id is None:
         participant = Participant.create_participant(group)
@@ -32,7 +41,11 @@ def onboarding(request):
         system = request.GET.get('system', default=None)
         if stage is not None and system is not None:
             participant.update_progress(stage, system)
-    
+
+    if restart:
+        participant.progress = 1
+        participant.save() 
+
     progress = participant.progress
     return render(request, 'new_onboarding.html', {
         "participant_id": participant.participant_id,
@@ -63,7 +76,7 @@ def label_ground_truth(request):
     if condition:
         labeled_examples = condition.get_groundtruth_dataset(stage)
         if len(labeled_examples) != 0:
-            logger.warning(f"Participant has only labeled {len(dataset)} examples out of {TEST_SIZE}")
+            logger.warning(f"Participant has only labeled {len(labeled_examples)} examples out of {TEST_SIZE}")
             labeled_ids = [item["datum_id"] for item in labeled_examples]
             for datum in dataset:
                 if datum["datum_id"] in labeled_ids:
@@ -288,7 +301,7 @@ def promptwrite(request):
         if system:
             prompts = system.read_prompts()
 
-
+    logger.info("prompts: ", prompts)
     return render(request, 'promptwrite.html', {
         "participant_id": participant_id,
         "stage": stage,
@@ -435,8 +448,15 @@ def get_similar_phrases(request):
     response = chatbot.chat_completion(
         system_prompt="""
             You are expected to suggest 3 the most similar phrases to a given list of phrases. 
-            These phrases should also be commonly used in social media. You should also take into consideration common typos. 
+            You should first consider different tenses and forms of a word, then synonyms of both words and phrases, and then finally commonly used typos of the given phrases.
+            Only return phrases that are common in everyday users’ social media comments. 
             RETURN YOUR RESULTS in the JSON format {"results": [a list of phrases]}
+
+            Example:
+            1) asshole, stupid, idiot --> dumb, silly, nuts
+            2) fuck --> f**k, fucking motherfucker
+            3) kill, murder --> kills, killed, killing
+            4) redneck, Trump, MAGA --> right-wing, Republican, alt-right
         """,
         user_prompt=f"Given the following phrases: {', '.join(phrases)}",
     )
@@ -702,3 +722,23 @@ def train_trees(request):
                     }
                 }, safe=False
             )
+
+def survey(request):
+    # parse out the participant id fr dom the request GET parameters
+    participant_id = request.GET.get('participant_id', default=None)
+    system_name = request.GET.get('system', default=None)
+    stage = request.GET.get('stage', default=None)
+
+    status, error_message = utils.check_parameters(participant_id, stage, system_name)
+    if not status:
+        return JsonResponse({"status": False, "message": error_message}, safe=False)
+    
+    survey = SurveyDict.get(system_name, {}).get(stage, "")
+    return render(request, 'survey.html', {
+        "participant_id": participant_id,
+        "system": system_name,
+        "stage": stage,
+        "survey": survey
+    })
+    
+    

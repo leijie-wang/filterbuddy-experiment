@@ -640,6 +640,13 @@
             return;
         } 
 
+        let now_instructions = parseContent();
+        if(Object.keys(now_instructions).length === 0){
+            console.log("No instructions to save");
+            showAlertModal("Please write at least one prompt.");
+            return;
+        }
+
         if(timeout){
             message = "This session ends. Thank you for your time. We are now evaluating how your filter performs, so please wait for a moment.";
         } else {
@@ -648,7 +655,6 @@
 
         showLoadingModal(message);
         
-        let now_instructions = parseContent();
         logEvents("Complete", {instruction_len: now_instructions.length, dataset_len: dataset.length});
         post_backend(
             "/store_prompts/", 

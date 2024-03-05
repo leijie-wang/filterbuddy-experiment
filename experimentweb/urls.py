@@ -30,6 +30,7 @@ urlpatterns = [
     
     # path('load_more_data/', sharedviews.load_more_data),
     path('validate_page/', sharedviews.validate_page),
+    path('survey/', sharedviews.survey),
     
     path('examplelabel/', sharedviews.examplelabel),
     path('store_labels/', sharedviews.store_labels),

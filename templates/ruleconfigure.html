@@ -257,7 +257,7 @@
     
     new_instruction_template = {
         "action": 1,
-        "name": [],
+        "name": "",
         "units": [{
             "type": "include",
             "words": [],
@@ -762,6 +762,12 @@
             return;
         } 
 
+        let now_instructions = parseContent();
+        if(Object.keys(now_instructions).length === 0){
+            showAlertModal("Please write at least one rule.");
+            return;
+        }
+
         if(timeout){
             message = "This session ends. Thank you for your time. We are now evaluating how your filter performs, so please wait for a moment.";
         } else {
@@ -771,7 +777,7 @@
        
         showLoadingModal(message);
         
-        let now_instructions = parseContent();
+        
         logEvents("Complete", {instruction_len: now_instructions.length, dataset_len: dataset.length});
         post_backend(
             "/store_rules/", 

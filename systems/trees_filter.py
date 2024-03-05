@@ -51,6 +51,11 @@ class TreesFilter:
         # sorted by priority from small to large
         self.rules = sorted(self.rules, key=lambda x: x["priority"])
     
+    def escape_regex(self, char):
+        if char in "^$.*+?{}[]|()\\":  # List of special characters that need to be escaped
+            return "\\" + char
+        return char
+    
     def _build_word_regex(self, word, variants):
         """
             build a regex for a word
@@ -61,19 +66,25 @@ class TreesFilter:
             if variants and (char.lower() in ALL_VARIANTS):
                 regex += ALL_VARIANTS[char.lower()] + "+"
             else:
-                regex += char
+                regex += self.escape_regex(char)
         regex += r"\b(?!\w)" # matching the end of a word
         return regex
+    
+    
     
     def _build_statement(self, unit, variants=False):
         regex_list = [self._build_word_regex(word, variants) for word in unit["words"]]
         or_regex = "|".join(regex_list) # a regex that checks if any of the words in the list is in the text
         def func(text):
-            match = re.search(or_regex, text, re.IGNORECASE)
-            if match:
-                return True, match.group()  # Return True and the matched pattern
-            else:
-                return False, None  # Return False and None if no match
+            try:
+                match = re.search(or_regex, text, re.IGNORECASE)
+                if match:
+                    return True, match.group()  # Return True and the matched pattern
+                else:
+                    return False, None  # Return False and None if no match
+            except Exception as e:
+                logger.error(f"Error in matching the text: {text} with the regex: {or_regex}. Error: {e}")
+                return False, None
         return func
 
                 
