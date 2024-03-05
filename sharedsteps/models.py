@@ -1,5 +1,3 @@
-from os import name
-from turtle import pos
 from django.db import models
 from enum import Enum
 import json, random, sympy, string, logging
