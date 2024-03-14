@@ -123,10 +123,14 @@ class Participant(models.Model):
                 self.save()
 
     def get_condition(self, system):
-        return self.conditions.get(system_name=system)
+        try: 
+            return self.conditions.get(system_name=system)
+        except Exception as e:
+            logger.error(f"Participant {self.participant_id} does not have a condition for system {system}")
+            return None
     
     def __str__(self):
-        return f"{str(self.condition)}: {self.timestamp}\n{self.codename}\t{self.description[:100]}\n"
+        return f" {self.participant_id} in group {self.group} at stage {self.progress}"
     
 class Condition(models.Model):
     participant = models.ForeignKey(Participant, related_name='conditions', on_delete=models.CASCADE)
@@ -183,6 +187,9 @@ class Condition(models.Model):
         if system is None and stage == "update":
             system = self.systems.filter(stage="build").first()
         return system
+    
+    def get_all_systems(self, stage):
+        return self.systems.filter(stage=stage).all()
     
     def save_test_results(self, stage, predictions, old=False):
         """

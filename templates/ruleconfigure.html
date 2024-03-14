@@ -142,15 +142,15 @@
                 <div class="grow flex flex-col gap-y-1 h-full pb-2">
                     <div class="grow flex flex-col gap-y-1 border-2 !border-gray-400 rounded px-3 pt-2">
                         <div class="header text-lg font-bold">
-                            What comments are removed by your active rules?
+                            How Do Your Active Rules Perform?
                         </div>
                         <div class="self-stretch flex justify-between items-center gap-x-1">
                             <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
                             <div class="grow flex justify-start items-center gap-x-2 ">
                                 <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
-                                    <option value="removed" class=" text-xs text-gray-700">Removed comments</option>
-                                    <option value="approved" selected class=" text-xs text-gray-700">Approved comments</option>
-                                    <option value="all" selected class=" text-xs text-gray-700">All comments</option>
+                                    <option value="removed" class=" text-xs text-gray-700">Review Removed comments</option>
+                                    <option value="approved" selected class=" text-xs text-gray-700">Review Approved comments</option>
+                                    <option value="all" selected class=" text-xs text-gray-700">Review All comments</option>
                                 </select>
                             </div>
                             
@@ -231,17 +231,6 @@
                 },
                 {
                     "action": 1,
-                    "name": "Sexual accusation",
-                    "variants": false,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["sex offender", "rapists", "fuck"],
-                        },
-                    ]   
-                },
-                {
-                    "action": 1,
                     "name": "Terrorist accusation",
                     "variants": true,
                     "units": [
@@ -264,7 +253,8 @@
         "units": [{
             "type": "include",
             "words": [],
-        }]   
+        }],
+        "variants": true,
     };
 
     /* 

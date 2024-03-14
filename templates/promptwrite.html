@@ -159,15 +159,15 @@
                 <div class="grow flex flex-col gap-y-1 h-full pb-2">
                     <div class="grow flex flex-col gap-y-1 border-2 !border-gray-400 rounded px-3 pt-2">
                         <div class="grow-0 header text-lg font-bold">
-                            What comments are removed by your active rules?
+                            How Do Your Active Rules Perform?
                         </div>
                         <div class="grow-0 self-stretch flex justify-between items-center gap-x-1">
                             <div id="countDisplay" class="grow text-sm text-gray-700 italic"></div>
                             <div class="grow flex justify-start items-center gap-x-2 ">
                                 <select id="predictionFilter" class="selectpicker  data-filter border rounded show-tick" title="by predictions" data-width="100%" >
-                                    <option value="removed" class=" text-xs text-gray-700">Removed comments</option>
-                                    <option value="approved" selected class=" text-xs text-gray-700">Approved comments</option>
-                                    <option value="all" selected class=" text-xs text-gray-700">All comments</option>
+                                    <option value="removed" class=" text-xs text-gray-700">Review Removed comments</option>
+                                    <option value="approved" selected class=" text-xs text-gray-700">Review Approved comments</option>
+                                    <option value="all" selected class=" text-xs text-gray-700">Review All comments</option>
                                 </select>
                             </div>
                             
@@ -550,9 +550,12 @@
     function trainLLM() {
         let now_instructions = parseContent();
         
+        let changed_length = Object.values(instructions).filter(instruction => instruction.changed).length;
+        let unchanged_length = Object.values(instructions).length - changed_length;
+        let new_data_length = dataset.filter(datum => datum.predictions === null).length;
 
         // add a countdown timer to the loading modal
-        let estimated_time = Math.ceil(40 / 120 * now_instructions.length * dataset.length);
+        let estimated_time = Math.ceil(40 / 120 * (changed_length * dataset.length + unchanged_length * new_data_length + 20));
         showLoadingModal(`We are evaluating the performance of your filters. <br/> It is estimated to take <b>${estimated_time}</b> seconds, please wait for a moment.`);
 
         let countdown_timer = setInterval(function(){
@@ -594,7 +597,7 @@
                         Object.values(instructions).forEach(instruction => {
                             instruction.changed = false;
                         });
-
+                        console.log("predictions", response.data.results);
                         updateDataLabels(response.data.results);
                         showFilteredData();
                         hideLoadingModal();
@@ -678,7 +681,7 @@
     $(document).ready(function(){
         $(".copyButton").tooltip();
         
-        if(DEBUG) {
+        if(DEBUG || TUTORIAL) {
             displayInstructions(TEST_INSTRUCTIONS);
         } else {
             displayInstructions(JSON.parse(`{{instructions | safe}}`));

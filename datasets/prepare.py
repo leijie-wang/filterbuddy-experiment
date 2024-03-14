@@ -161,6 +161,6 @@ def create_balanced_dataset(filename, clean_function, new_filename, format="csv"
 
 
 if __name__ == "__main__":
-    # create_balanced_dataset("youtube_gun_toxicity_clean", clean_youtube_comment, "old")
+    create_balanced_dataset("youtube_gun_toxicity_clean", clean_youtube_comment, "old")
     # create_balanced_dataset("youtube_border_toxicity_clean", clean_youtube_comment, "new")
-    create_balanced_dataset("jigsaw_sampled", clean_jigsaw_comment, "tutorial", format="json")
+    #create_balanced_dataset("jigsaw_sampled", clean_jigsaw_comment, "tutorial", format="json")

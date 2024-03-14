@@ -22,7 +22,7 @@ class LLMFilter:
             return False, "No prompts found for the participant"
         return True, LLMFilter(prompts, debug=False)
 
-    def __init__(self, prompts, batch_size=30, debug=False):
+    def __init__(self, prompts, batch_size=25, debug=False, retry=False):
         """
             debug: if debug is True, we will not prompt the model to get predictions
         """
@@ -30,6 +30,7 @@ class LLMFilter:
         self.prompts = prompts
         self.prompts = sorted(self.prompts, key=lambda x: x["priority"])
         self.BATCH_SIZE = batch_size
+        self.retry = retry
         self.system_prompt = f"""
             For each text in the dataset, give a 1 (True) or 0 (False) prediction to represent whether the text satisfies the description in the rubrics. 
             Each text starts with “DATA” and a number. Both the number and the text are enclosed by “<” and “>”. 
@@ -58,44 +59,50 @@ class LLMFilter:
         """
         batch_str = "\n".join(batch)
         now_prompt = user_prompt + f"""\n\n\t### DATASETS: "{batch_str}","""
-        response = self.llm_client.chat_completion(self.system_prompt, now_prompt)
-        response = json.loads(response or "{}")
-        if "results" in response:
-            results = response["results"]
-            batch_preds = []
-            try:
-                if type(results[0]) == dict and "index" in results[0] and "prediction" in results[0]:
-                    for item in results:
-                        batch_preds.append((
-                                int(item["index"]), 
-                                int(item["prediction"])
+        while True:
+            response = self.llm_client.chat_completion(self.system_prompt, now_prompt)
+            response = json.loads(response or "{}")
+            if "results" in response:
+                results = response["results"]
+                batch_preds = []
+                try:
+                    if type(results[0]) == dict and "index" in results[0] and "prediction" in results[0]:
+                        for item in results:
+                            batch_preds.append((
+                                    int(item["index"]), 
+                                    int(item["prediction"])
+                                ))
+                    elif type(results[0]) == dict and len(results[0]) == 1:
+                        for item in results:
+                            (index, prediction), = item.items()
+                            batch_preds.append((
+                                int(index), 
+                                int(prediction)
                             ))
-                elif type(results[0]) == dict and len(results[0]) == 1:
-                    for item in results:
-                        (index, prediction), = item.items()
-                        batch_preds.append((
-                            int(index), 
-                            int(prediction)
-                        ))
-                elif type(results[0]) == list and len(results[0]) == 2:
-                    for item in results:
-                        batch_preds.append((
-                            int(item[0]), 
-                            int(item[1])
-                        ))
-                elif type(results[0]) == tuple and len(results[0]) == 2:
-                    batch_preds = results
-                else:
-                    logger.warning(f"response {results} is not in any expected format")
-            except Exception as e:
-                logger.warning(f"reading individual predictions from results {results} raise an error: {e}")
-            
+                    elif type(results[0]) == list and len(results[0]) == 2:
+                        for item in results:
+                            batch_preds.append((
+                                int(item[0]), 
+                                int(item[1])
+                            ))
+                    elif type(results[0]) == tuple and len(results[0]) == 2:
+                        batch_preds = results
+                    else:
+                        logger.warning(f"response {results} is not in any expected format")
+                except Exception as e:
+                    logger.warning(f"reading individual predictions from results {results} raise an error: {e}")
+            else:
+                logger.warning(f"batch_response does not have 'results' key: {response}")
+
             if len(batch_preds) != len(batch):
                 logger.warning(f"response length {len(results)} does not match batch length {len(batch)}\nresults: {results}")
-            predictions += batch_preds
-        else:
-            logger.warning(f"batch_response does not have 'results' key: {response}")
-        return predictions
+            
+            if self.retry and len(batch_preds) != len(batch):
+                logger.warning(f"retrying to prompt the model with the batch again")
+                continue
+            else:
+                predictions += batch_preds
+                return predictions
     
     def _test_prompt(self, prompt, dataset_list):
         rubric = f"Rubric: <{prompt['rubric']}>\n"
@@ -173,10 +180,11 @@ class LLMFilter:
             logger.info(f"LLM model testing time for the {prompt_id}-th prompt: {end_time - start_time} seconds")
 
             if prompt_pred is not None:
+                print(f"prompt_pred: {prompt_pred}")
                 for datum_index in range(len(X_test)):
                     texts_predictions[datum_index].append({
                         "id": prompt_id,
-                        "prediction": prompt["action"] if prompt_pred.get(datum_index, None) else None,
+                        "prediction": prompt_pred.get(datum_index, 0) # if no prediction is given, we use 0 as the default value
                     })
 
                     
@@ -185,17 +193,10 @@ class LLMFilter:
         for index in range(len(X_test)):
             text_pred = texts_predictions[index]
             """ 
-                we have already sorted the rules by priority in the constructor
-                use the action of the first rule has a True prediction and the highest priority as the final prediction
+                the final prediction is 1 if at least one prompt gives a positive prediction
             """
-            for pred in text_pred:
-                if pred["prediction"] is not None:
-                    prediction[index] = pred["prediction"]
-                    break
+            prediction[index] = 1 if any([pred["prediction"] == 1 for pred in text_pred]) else 0
         
-        # we treat None (not affected texts) as approved texts, which is 0
-        prediction = [(0 if pred is None else pred) for pred in prediction]
-
         # if the user builds the model interactively, then y_test will be None
         if y_test is not None:            
             performance = calculate_algorithm_metrics(y_test, prediction)

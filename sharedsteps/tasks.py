@@ -37,7 +37,7 @@ def train_llm_task(prompts, dataset):
                 cached_prediction = cached_prediction["prediction"] if cached_prediction is not None else None
                 texts_predictions[datum_index].append({
                     "id": prompt_id,
-                    "prediction": prompt["action"] if cached_prediction else None,
+                    "prediction": cached_prediction,
                 })
         results["texts_predictions"] = texts_predictions
 

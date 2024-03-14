@@ -143,7 +143,11 @@
                 // if users run out of time but not all examples are labeled
                 showAlertModal("Time's up! Please label all the examples before proceeding");
                 return;
+            } else if(label_number === positive_number || positive_number === 0){
+                showAlertModal("You should label at least one example as 'Remove' and one example as 'Keep' before creating your filter.");
+                return;
             }
+
             logEvents("Complete", {"positive_number": positive_number, "label_number": label_number});
             showAlertModal("Thank you for your efforts in labeling these examples. You can now proceed to the next step.", "Continue", () => complete(true, true));
             return;

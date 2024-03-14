@@ -109,7 +109,7 @@
                         <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl"
                             :class="{'bg-blue-500 hover:bg-blue-600 cursor-pointer': progress === 1, 'bg-gray-300 cursor-not-allowed': progress > 1, 'bg-white text-gray-600': progress < 1}"
                         > 1 </div>
-                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 1, 'text-white': progress < 1}">Articulate your <br/> personal criteria</div>
+                        <div class="text-lg text-center text-gray-600" :class="{'text-gray-600': progress >= 1, 'text-white': progress < 1}">Articulate your <br/> personal preferences</div>
                     </div>
                     <div class="w-[8%] flex-auto border-t-1 -mt-12 border-gray-50"></div>
                     <div class="w-[19%] flex flex-col items-center space-y-2">
@@ -202,7 +202,7 @@
     }
 
     const Instructions = {
-        1: "In the first step, you are expected to articulate your personal criteria for the comments you want to keep or remove.",
+        1: "In the first step, you are expected to articulate your personal preferences for the comments you want to keep or remove.",
         5: "The world of social media is always changing, and so are the types of comments you see. Now you are expected to articulate your personal criteria for new comments."
     }
     function setGroupProgress() {

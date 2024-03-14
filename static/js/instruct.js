@@ -27,7 +27,8 @@ function addNewInstruction(){
             "units": [{
                 "type": "include",
                 "words": [],
-            }]   
+            }],
+            "variants": true,   
         }]);
     } else if (INSTRUCTION_NAME === "prompt"){
         displayInstructions([{
@@ -179,28 +180,22 @@ function showFilteredData(){
 function generateExplanation(datum, datum_index){
     /* generate the explanation for each prediction made by the LLMs */
     if (datum.total_prediction === null || datum.total_prediction === 0){
-        if(INSTRUCTION_NAME == "rule") {
-            return `This comment will not be removed by any of your ${INSTRUCTION_NAME}s.`;
-        }
+        return `This comment will not be removed by any of your ${INSTRUCTION_NAME}s.`;
+        
     }
     else {
         let explanation = `<p>This comment will be removed by the following ${INSTRUCTION_NAME}s :</p><ul class='list-none pl-0 text-gray-600'>`;
 
-        let highest_priority_id = null;
-        let highest_priority = 0;
+        
         for (let i = 0; i < datum.predictions.length; i++) {
             const pred = datum.predictions[i];
-            if (pred.prediction !== null){
+            if (pred.prediction === 1){
                 let instruction = instructions[pred.id];
                 
                 explanation += `
                     <li class="before:content-['•'] before:mr-2">
-                        ${capitalize(INSTRUCTION_NAME)} <span class="font-medium text-emerald-600 italic font-serif">${instruction.name}</span>
+                        ${capitalize(INSTRUCTION_NAME)} <span class="font-bold text-gray-600 italic font-serif">${instruction.name}</span>
                     </li>`;
-                if (highest_priority_id === null){
-                    highest_priority = i;
-                    highest_priority_id = pred.id;
-                }
             }
         }
         explanation += "</ul>";
