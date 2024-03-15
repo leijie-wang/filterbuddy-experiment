@@ -169,8 +169,19 @@
     dataset = JSON.parse(`{{dataset | safe}}`);
 
     function go_to_system(){
+        console.log("go_to_system survey", SURVEY);
         if(SURVEY){
-            redirect("/survey/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+            // get the first example of false removal and false approve
+            let false_removal_example = dataset.find(datum => datum.label == 0 && datum.total_prediction == 1)?.text || "";
+            let false_approve_example = dataset.find(datum => datum.label == 1 && datum.total_prediction == 0)?.text || "";
+            localStorage.setItem("examples", JSON.stringify({
+                'false_remove': false_removal_example,
+                'false_approve': false_approve_example
+            }));
+            redirect("/survey/", {
+                    'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM, 
+                }
+            );
         } else {
             redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
         }
@@ -258,7 +269,6 @@
     }
 
     $(document).ready(function(){
-        
         let textList = $('#textList');
         // for testing purposes, use the score to simulate the user's label
         dataset.forEach((datum, index) => {

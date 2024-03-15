@@ -82,28 +82,25 @@ class Participant(models.Model):
             )
             condition.save()
 
-    def update_conditions(self):
-        conditions = self.conditions.all()
-        for condition in conditions:
-            condition.stage = "update"
-            condition.save()
-        
-
     def get_stage_system(self):
-        stage = "build" if self.progress < 5 else "update"
-        if self.progress == 1 or self.progress == 5:
+        stage = "build"
+        if self.progress == 1:
             system = "GroundTruth"
+        elif self.progress == 5:
+            system = "FinalSurvey"
         else:
-            system_index = self.progress - 2 if self.progress < 5 else self.progress - 6 # turn to 0, 1, 2
+            system_index = self.progress - 2
             system_code = self.group[system_index]
             system = code2name(system_code)
         return stage, system
     
     def get_progress(self, stage, system):
-        if stage == "build":
-            return 1 if system == "GroundTruth" else 2 + self.group.find(name2code(system))
+        if system == "GroundTruth":
+            return 1
+        elif system == "FinalSurvey":
+            return 5
         else:
-            return 5 if system == "GroundTruth" else 6 + self.group.find(name2code(system))
+            return 2 + self.group.find(name2code(system))
         
     def validate_stage_system(self, stage, system):
         now_stage, now_system = self.get_stage_system()
@@ -118,8 +115,6 @@ class Participant(models.Model):
                 return
             else:
                 self.progress += 1
-                if self.progress >= 5:
-                    self.update_conditions()
                 self.save()
 
     def get_condition(self, system):

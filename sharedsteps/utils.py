@@ -47,7 +47,7 @@ def check_parameters(participant_id, stage=None, system=None):
             if stage != now_stage:
                 return False, f"The participant is at the {now_stage} stage, not the {stage} stage"
         if system is not None:
-            if system not in [SYSTEMS.EXAMPLES_ML.value, SYSTEMS.RULES_TREES.value, SYSTEMS.PROMPTS_LLM.value]:
+            if system not in [SYSTEMS.EXAMPLES_ML.value, SYSTEMS.RULES_TREES.value, SYSTEMS.PROMPTS_LLM.value, "FinalSurvey"]:
                 return False, f"Invalid system: {system}"
             if system != now_system:
                 return False, f"The participant is using the {now_system} system, not the {system} system"

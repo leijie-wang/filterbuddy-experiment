@@ -1,5 +1,5 @@
 const DEBUG = true;
-const SURVEY = false;
+const SURVEY = true;
 let SYSTEM;
 let PARTICIPANT_ID;
 let STAGE;

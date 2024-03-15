@@ -20,7 +20,7 @@
     <script src="{% static 'js/base.js' %}"></script>
 </head>
 
-<body x-data="{}" class="flex flex-col py-3 px-4 gap-y-4 h-screen w-screen overflow-y-hidden bg-gray-100">
+<body x-data="{}" class="flex py-3 px-4 gap-y-4 h-screen w-screen overflow-y-hidden bg-gray-100">
     <!-- 
       The <noscript> tag encloses the content that will be displayed 
       only if JavaScript is disabled or not supported in the user's browser. 
@@ -30,22 +30,44 @@
         (JavaScript) or it has been disabled. This study website requires JavaScript.
     </noscript> 
     {% csrf_token %}
-    <div class="grow-0 flex flex-col text-xl gap-y-2 py-2">
-        <p class="text-2xl font-medium">
-            Your participant ID is <span class="font-medium text-blue-600 px-2">{{participant_id}}</span>.
-        </p>
-    </div>
     <div class="grow flex justify-center items-stretch gap-x-8 pb-4">
-        <iframe id="survey" src="" class="grow max-w-[50%]">
+        <iframe id="survey" src="" class="grow">
             Loading…
-        </iframe>    
+        </iframe>       
+    </div>
+    <div class="max-w-[50%] flex flex-col gap-y-4 py-2 px-4 justify-between">
+        <div class="flex flex-col gap-y-12">
+            <p class="text-2xl font-medium">
+                Your participant ID is <span class="font-medium text-blue-600 px-2">{{participant_id}}</span>.
+            </p>
+            <div class="flex flex-col gap-y-8">
+                <div class="flex flex-col gap-y-4">
+                    <p class="text-xl font-medium">
+                        One comment <span class="text-emerald-600">you want to approve</span> gets removed by your filter:<br/>
+                    </p>
+                    <p id="falseRemove" class="bg-emerald-50 rounded px-4 py-2">
+            
+                    </p>
+                </div>
+                <div class="flex flex-col gap-y-4">
+                    <p class="text-xl font-medium">
+                        One comment <span class="text-red-600">you want to remove</span> gets approve by your filter:<br/>
+                    </p>
+                    <p id="falseApprove" class="bg-red-50 rounded px-4 py-2">
+            
+                    </p>
+                </div>
+            </div>
+        </div>
         <button 
-            class="self-end text-white text-xl font-medium bg-blue-600 p-3 rounded-lg"
+            class="self-end text-white text-xl font-medium bg-blue-600 p-3 rounded-lg hidden"
+            id="nextButton"
             @click="go_to_system();"
         >
             Next
-        </button>  
+        </button> 
     </div>
+    
     
 </body> <!-- closes container -->
 <!-- custom js -->
@@ -60,5 +82,21 @@
 
     $(document).ready(function() {
         $('#survey').attr("src", "{{survey}}")
+        const examples = JSON.parse(localStorage.getItem('examples'));
+        if(SYSTEM !== "FinalSurvey"){
+            // console.log("examples", examples);
+            if (examples){
+                $('#falseRemove').text(examples.false_remove);
+                $('#falseApprove').text(examples.false_approve);
+            } 
+        } else {
+            // hide all related divs
+            $('#falseRemove').parent().hide();
+            $('#falseApprove').parent().hide();
+        }
+        
+        setTimeout(function(){
+            $('#nextButton').removeClass('hidden');
+        }, 5000);
     });
 </script>

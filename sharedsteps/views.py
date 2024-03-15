@@ -1,3 +1,4 @@
+from re import S
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -16,11 +17,12 @@ BuildDataSet = Dataset("old.csv")
 UpdateDataSet = Dataset("new.csv")
 TutorialDataset = Dataset("tutorial.csv")
 
+
 SurveyDict = {
-    SYSTEMS.EXAMPLES_ML.value: {
-        "build": "https://docs.google.com/forms/d/e/1FAIpQLSeUp58HnYoXvu2-kbsJgqMYOm4eJMfwi-2HEbc__KkPtRtNvQ/viewform?embedded=true",
-        "update": "https://forms.gle/1d9J6tZd3t8w6J4k8"
-    },
+    SYSTEMS.EXAMPLES_ML.value: "https://docs.google.com/forms/d/e/1FAIpQLSeUp58HnYoXvu2-kbsJgqMYOm4eJMfwi-2HEbc__KkPtRtNvQ/viewform?embedded=true",
+    SYSTEMS.RULES_TREES.value: "https://docs.google.com/forms/d/e/1FAIpQLSd3Lxs1QFkA1CZekWv9lyeFLNVagzbNZkIja54kJ_FVLHKuxA/viewform?embedded=true",
+    SYSTEMS.PROMPTS_LLM.value: "https://docs.google.com/forms/d/e/1FAIpQLSe7ugiUFFx9ix3czO8P49oVXmhd9sINgaMcTEestWLX10-2HQ/viewform?embedded=true",
+    "FinalSurvey": "https://docs.google.com/forms/d/e/1FAIpQLSetHVEbgCSLB-XpityPUaCLX6y1p959hO8NwUJwSo_AnV0VtA/viewform?embedded=true"
 }
 
 def onboarding(request):
@@ -733,7 +735,7 @@ def survey(request):
     if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
     
-    survey = SurveyDict.get(system_name, {}).get(stage, "")
+    survey = SurveyDict.get(system_name, "")
     return render(request, 'survey.html', {
         "participant_id": participant_id,
         "system": system_name,
