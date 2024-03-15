@@ -5,6 +5,7 @@ let PARTICIPANT_ID;
 let STAGE;
 let TUTORIAL = false;
 const SESSION_TIME = 15;
+const MUST_SPENT_TIME = DEBUG ? 0.1 : 10;
 const TUTORIAL_TIME = 3;
 
 /* time the labeling process */

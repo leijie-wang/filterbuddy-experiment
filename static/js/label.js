@@ -4,13 +4,7 @@ var label_number = 0; // how many examples are labeled
 
 function displayLabelingData(new_dataset, new_separator=true){
     // display data on the page, here we need to add buttons for users to label data
-    for(let i = 0; i < new_dataset.length; i++){
-        if(new_dataset[i].label != null){
-            
-            console.log(`labeling ${i} as ${new_dataset[i].label}`);
-        }
-    }
-
+    
 
     let textList = $('#textList');
 
@@ -37,7 +31,7 @@ function displayLabelingData(new_dataset, new_separator=true){
         let index = i + start_index;
         let text_div_html = `
             <div id="datum-${index}" x-data="{label: ${new_dataset[i].label || null}}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
-                <div id="text-${index}" class="flex-grow max-w-[80%] p-2">${escape_html(new_dataset[i].text)}</div>
+                <div id="text-${index}" class="flex-grow max-w-[90%] p-2">${escape_html(new_dataset[i].text)}</div>
                 <div class="grow-0 flex flex-row w-fit justify-center space-x-2">
                     <button 
                         @click="label = true; changeLabel(${index}, true);"

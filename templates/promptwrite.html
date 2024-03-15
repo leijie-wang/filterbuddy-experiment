@@ -188,7 +188,7 @@
                                 Finish the Tutorial
                             </button>
                         {% else %}
-                            <button @click="complete()" class="bg-green-600 text-white font-bold py-2 px-3 rounded">
+                            <button id="createFilterButton" @click="complete()" class="invisible bg-green-600 text-white font-bold py-2 px-3 rounded opacity-50 cursor-not-allowed">
                                 Create your Filter
                             </button>
                         {% endif %}
@@ -700,6 +700,14 @@
 
         if(Object.keys(instructions).length === 0){
             addNewInstruction();
+        }
+
+        if(TUTORIAL || time_spent > (MUST_SPENT_TIME * 60 * 1000)){
+            $('#createFilterButton').removeClass("invisible").removeClass('opacity-50 cursor-not-allowed').addClass('hover:bg-green-700');
+        } else {
+            setTimeout(function() {
+                $('#createFilterButton').removeClass("invisible").removeClass('opacity-50 cursor-not-allowed').addClass('hover:bg-green-700');
+            }, MUST_SPENT_TIME * 60 * 1000 - time_spent);
         }
     })
     
