@@ -449,13 +449,13 @@ def get_similar_phrases(request):
         
     response = chatbot.chat_completion(
         system_prompt="""
-            You are expected to suggest 3 the most similar phrases to a given list of phrases. 
-            You should first consider different tenses and forms of a word, then synonyms of both words and phrases, and then finally commonly used typos of the given phrases.
+            You are expected to suggest 5 the most similar phrases to a given list of phrases. 
+            You should first consider different tenses and forms of a word (such as plural or singular forms for a noun; past/participle tense for a verb), then synonyms of both words and phrases, and then finally commonly used typos of the given phrases.
             Only return phrases that are common in everyday users’ social media comments. 
             RETURN YOUR RESULTS in the JSON format {"results": [a list of phrases]}
 
             Example:
-            1) asshole, stupid, idiot --> dumb, silly, nuts
+            1) asshole, stupid, idiot --> idiots, stupidity, assholes
             2) fuck --> f**k, fucking motherfucker
             3) kill, murder --> kills, killed, killing
             4) redneck, Trump, MAGA --> right-wing, Republican, alt-right
