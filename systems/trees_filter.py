@@ -81,6 +81,7 @@ class TreesFilter:
         self.rules = rules
         # sorted by priority from small to large
         self.rules = sorted(self.rules, key=lambda x: x["priority"])
+        self.relevant_punctuation = "!?." 
 
         """
             To resolve the StopIteration error in the pattern library, 
@@ -131,15 +132,23 @@ class TreesFilter:
             build a regex for a word
             @param word: a word
         """
-        regex = r"\b(?=\w)" # matching the beginning of a word
-        for char in word:
-            if variants and (char.lower() in ALL_VARIANTS):
-                regex += ALL_VARIANTS[char.lower()] + "+"
-            else:
-                regex += self.escape_regex(char)
-        regex += r"\b(?!\w)" # matching the end of a word
-        print(f"regex: {regex} for word: {word}")
-        return regex
+        if all(char in self.relevant_punctuation for char in word):
+            # Escape each character (since some punctuation marks are special in regex) and join them
+            regex = "".join(self.escape_regex(char) for char in word)
+            # Wrap the escaped sequence in a regex that matches one or more occurrences
+            regex = f"({regex})+"
+            logger.info(f"regex: {regex} for word: {word}")
+            return regex
+        else:
+            regex = r"\b(?=\w)" # matching the beginning of a word
+            for char in word:
+                if variants and (char.lower() in ALL_VARIANTS):
+                    regex += ALL_VARIANTS[char.lower()] + "+"
+                else:
+                    regex += self.escape_regex(char)
+            regex += r"(?=\W(?!_)|$)" # matching the end of a word
+            logger.info(f"regex: {regex} for word: {word}")
+            return regex
     
     def _build_statement(self, unit, variants=False):
         word_list = [self._get_word_variants(word) for word in unit["words"]]

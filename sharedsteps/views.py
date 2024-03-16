@@ -480,12 +480,21 @@ def get_similar_phrases(request):
 def get_rephrase_instruction(request):
     request_data = json.loads(request.body)
     instruction = request_data.get("instruction")
+    positives = request_data.get("positives")
+    negatives = request_data.get("negatives")
+
     chatbot = utils.ChatCompletion()
-        
+    user_prompt = f"Given the following prompt: {instruction}"
+    if len(positives) > 0:
+        user_prompt += "\nExamples users want to remove with this prompt:" +  '\n\t'.join(positives[:2])
+    if len(negatives) > 0:
+        user_prompt += "\nExamples users do not want to remove with this prompt:" +  '\n\t'.join(negatives[:2])
+    
     response = chatbot.chat_completion(
         system_prompt="""
             Users are writing prompts to decide which content they want to keep or remove from their social media. You are expected to improve their prompts. 
             Specifically, you should find out ambiguous concepts or phrases and add annotations. You should only make changes under 10 words.
+            Users will also sometimes provide a list of positive examples and negative examples to help you understand the context.
 
             ##### Examples
             1. Catch all comments that promote hate speech ==> Remove comments that promote hate speech targeting races, genders, or religions
@@ -494,7 +503,7 @@ def get_rephrase_instruction(request):
 
             RETURN YOUR RESULTS in the JSON format {"results": "the improved prompt"}. REMEMBER to keep your changes under 10 words.
         """,
-        user_prompt=f"Given the following prompt: {instruction}",
+        user_prompt= user_prompt
     )
 
     response = json.loads(response or "{}")

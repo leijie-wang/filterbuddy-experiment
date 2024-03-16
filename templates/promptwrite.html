@@ -290,6 +290,17 @@
         }
     }
     
+    function readCleanPhrases(instruction_input){
+        // only read spans without the deletion class
+        let phrases = "";
+        $(instruction_input).find("span").each(function(){
+            if(!$(this).hasClass("deletion")){
+                phrases += $(this).text() + " ";
+            }
+        });
+        return phrases;
+    }
+
     function acceptNewPhrases(element){
         logEvents("AcceptNewPhrases", {instruction_id: $(element).closest('.instructionSection').attr('id')});
         let instruction_input = $(element).closest('.instructionRubric');
@@ -305,14 +316,22 @@
     }
 
     async function getRephraseInstruction(element){
-        let instruction_id = $(element).closest('.instructionSection').attr('id');
-        let instruction_input = $(element).closest('.instructionSection').find('.instructionRubric');
+        let instruction_section = $(element).closest('.instructionSection');
+        let instruction_id = $(instruction_section).attr('id');
+        let instruction_input = $(instruction_section).find('.instructionRubric');
         let instruction = instruction_input.text().trim();
+        
+        let positive_examples = $(instruction_section).find('.instructionPositiveExample').text().trim();
+        // split by newlines
+        positive_examples = positive_examples.split('\n').map(escape_single_quote).filter(example => example.length > 0);
+        
+        let negative_examples = $(instruction_section).find('.instructionNegativeExample').text().trim();
+        negative_examples = negative_examples.split('\n').map(escape_single_quote).filter(example => example.length > 0);
         
         
         let response = await post_backend(
             "/get_rephrase_instruction/", 
-            {'instruction': instruction}
+            {'instruction': instruction, 'positives': positive_examples, 'negatives': negative_examples},
         )
     
         if(!response["status"]){
@@ -524,8 +543,10 @@
                 instruction.name = escape_single_quote($(this).find('.instructionName').text());
                 instruction.priority = index;
                 instruction.action =  $(this).find('.removeButton').hasClass('active') ? 1 : 0; // we consider removing a text as 1 and approving a text as 0
-                getCleanPhrases($(this).find('.instructionRubric'), true); // accept by default
-                instruction.rubric = escape_single_quote($(this).find('.instructionRubric').text(), remove_newline=true);
+                
+                let clean_rubric = readCleanPhrases($(this).find('.instructionRubric'));
+                
+                instruction.rubric = escape_single_quote(clean_rubric, remove_newline=true);
                 
                 let positive_example = $(this).find('.instructionPositiveExample').text();
                 if(positive_example) instruction.positives[0] = escape_single_quote(positive_example, remove_newline=true);
