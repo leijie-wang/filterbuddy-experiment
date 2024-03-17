@@ -39,7 +39,7 @@ function countDownTimer(){
         if (time_left < 0) {
             clearInterval(interval_id);
             $("#timer").text("00:00");
-            complete(true);
+            if(!DEBUG) complete(true);
         }
     }
 }
