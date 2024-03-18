@@ -1,4 +1,4 @@
-const DEBUG = true;
+const DEBUG = false;
 const SURVEY = true;
 let SYSTEM;
 let PARTICIPANT_ID;

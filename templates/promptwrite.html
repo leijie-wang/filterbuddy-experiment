@@ -606,7 +606,7 @@
                         Object.values(instructions).forEach(instruction => {
                             instruction.changed = false;
                         });
-                        console.log("predictions", response.data.results);
+                        
                         updateDataLabels(response.data.results);
                         showFilteredData();
                         hideLoadingModal();
