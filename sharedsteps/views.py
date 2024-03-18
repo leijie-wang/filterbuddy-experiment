@@ -1,4 +1,5 @@
 from re import S
+import re
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -32,6 +33,7 @@ def onboarding(request):
     participant_id = request.GET.get('participant_id', default=None)
     group = request.GET.get('group', default=None)
     restart = "restart" in request.GET
+    debug = request.GET.get('debug', default="false") == "true"
 
     participant = None
     if participant_id is None:
@@ -52,7 +54,8 @@ def onboarding(request):
     return render(request, 'new_onboarding.html', {
         "participant_id": participant.participant_id,
         "group": participant.group,
-        "progress": progress
+        "progress": progress,
+        "debug": debug
     })
     # return redirect(f"/groundtruth/?participant_id={participant.participant_id}&stage={participant.stage}")
 
@@ -61,7 +64,8 @@ def label_ground_truth(request):
         for both build and update stages, the participant will label the ground truth as the first step
     """
     participant_id = request.GET.get('participant_id', default=None)
-    
+    debug = request.GET.get('debug', default="false") == "true"
+
     status, error_message = utils.check_parameters(participant_id)
     if not status:
         return JsonResponse({"status": False, "message": error_message}, safe=False)
@@ -89,7 +93,8 @@ def label_ground_truth(request):
     return render(request, 'groundtruth.html', {
             "dataset": json.dumps(dataset),
             "participant_id": participant_id,
-            "stage": stage
+            "stage": stage,
+            "debug": debug
         })
 
 def store_groundtruth(request):
@@ -115,6 +120,7 @@ def store_groundtruth(request):
 def load_system(request):
     participant_id = request.GET.get('participant_id', default=None)
     tutorial = request.GET.get('tutorial', default="false") 
+    debug = request.GET.get('debug', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id)
     if not status:
@@ -123,12 +129,13 @@ def load_system(request):
     participant = Participant.objects.get(participant_id=participant_id)
     stage, system = participant.get_stage_system()
 
+    debug_parameter = f"&debug=true" if debug else ""
     if system == SYSTEMS.EXAMPLES_ML.value:
-        return redirect(f'/examplelabel/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}')
+        return redirect(f'/examplelabel/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}' + debug_parameter)
     elif system == SYSTEMS.RULES_TREES.value:
-        return redirect(f'/ruleconfigure/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}')
+        return redirect(f'/ruleconfigure/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}' + debug_parameter)
     elif system == SYSTEMS.PROMPTS_LLM.value:
-        return redirect(f'/promptwrite/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}')
+        return redirect(f'/promptwrite/?participant_id={participant_id}&system={system}&stage={stage}&tutorial={tutorial}' + debug_parameter)
     else:
         logging.error("System unsupported yet: {}".format(system))
 
@@ -137,6 +144,7 @@ def examplelabel(request):
     stage = request.GET.get('stage', default="build")
     system_name= request.GET.get('system')
     tutorial = request.GET.get('tutorial', default="false") == "true"
+    debug = request.GET.get('debug', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
@@ -180,7 +188,8 @@ def examplelabel(request):
             "stage": stage,
             "system": system_name,
             "time_spent": time_spent,
-            "tutorial": tutorial
+            "tutorial": tutorial,
+            "debug": debug
         })
 
 def active_learning(request):
@@ -280,6 +289,7 @@ def promptwrite(request):
     stage = request.GET.get('stage', default="build")
     system_name = request.GET.get('system')
     tutorial = request.GET.get('tutorial', default="false") == "true"
+    debug = request.GET.get('debug', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
@@ -311,7 +321,8 @@ def promptwrite(request):
         "dataset": json.dumps(dataset),
         "instructions": json.dumps(prompts),
         "time_spent": time_spent,
-        "tutorial": tutorial
+        "tutorial": tutorial,
+        "debug": debug
     })
 
 def store_prompts(request):
@@ -360,6 +371,7 @@ def ruleconfigure(request):
     stage = request.GET.get('stage', default="build")
     system_name = request.GET.get('system')
     tutorial = request.GET.get('tutorial', default="false") == "true"
+    debug = request.GET.get('debug', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
@@ -391,7 +403,8 @@ def ruleconfigure(request):
             "dataset": json.dumps(dataset),
             "instructions": json.dumps(rules),
             "time_spent": time_spent,
-            "tutorial": tutorial
+            "tutorial": tutorial,
+            "debug": debug
         })
 
 def store_rules(request):
@@ -526,6 +539,7 @@ def validate_page(request):
     participant_id = request.GET.get('participant_id', default=None)
     system_name = request.GET.get('system', default=None)
     stage = request.GET.get('stage', default=None)
+    debug = request.GET.get('debug', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
@@ -553,6 +567,7 @@ def validate_page(request):
             "stage": stage,
             "old_task_id": old_task_id,
             "task_id": task_id,
+            "debug": debug
         })
     else:
         test_results = response
@@ -571,7 +586,8 @@ def validate_page(request):
             "stage": stage,
             "test_results": json.dumps(test_results),
             "old_test_results": json.dumps(old_test_results),
-            "task_id": ""
+            "task_id": "",
+            "debug": debug
         })
         
 def test_filter(request):
@@ -739,6 +755,7 @@ def survey(request):
     participant_id = request.GET.get('participant_id', default=None)
     system_name = request.GET.get('system', default=None)
     stage = request.GET.get('stage', default=None)
+    debug = request.GET.get('debug', default="false") == "true"
 
     status, error_message = utils.check_parameters(participant_id, stage, system_name)
     if not status:
@@ -749,7 +766,8 @@ def survey(request):
         "participant_id": participant_id,
         "system": system_name,
         "stage": stage,
-        "survey": survey
+        "survey": survey,
+        "debug": debug
     })
     
     

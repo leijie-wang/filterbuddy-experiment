@@ -170,7 +170,7 @@
     STAGE = "{{stage}}";
     SYSTEM = "{{system}}";
     TUTORIAL = "{{ tutorial }}" == "True";
-    
+    DEBUG = "{{debug}}" === "True"
     
     const ACTIVE_LEARNING = true;
     /* which examples have already been displayed */
@@ -262,7 +262,7 @@
                 showAlertModal("You still have time for your tutorial. Are you sure that you want to skip the tutorial?", "Yes", () => complete(timeout, true));
                 return;
             } 
-            redirect("/load_system/", {'participant_id': PARTICIPANT_ID});
+            redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'debug': DEBUG});
             return;
         }
 
@@ -297,7 +297,7 @@
                     showAlertModal(response["message"]);
                 } else {
                     // we do not hide the loading modal here, because redirecting to the validation page will take some time
-                    redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
+                    redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE, "debug": DEBUG});
                 }
             }
         ); 

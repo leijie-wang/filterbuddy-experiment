@@ -164,6 +164,8 @@
     PARTICIPANT_ID = "{{participant_id}}";
     SYSTEM = "{{system}}";
     STAGE = "{{stage}}";
+    DEBUG = "{{debug}}" === "True"
+
     const TASK_ID = "{{task_id}}";
 
     dataset = JSON.parse(`{{dataset | safe}}`);
@@ -179,11 +181,11 @@
                 'false_approve': false_approve_example
             }));
             redirect("/survey/", {
-                    'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM, 
+                    'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM, 'debug': DEBUG
                 }
             );
         } else {
-            redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+            redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM, 'debug': DEBUG});
         }
     }
 

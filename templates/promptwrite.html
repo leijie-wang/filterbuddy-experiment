@@ -231,6 +231,7 @@
     STAGE = "{{stage}}";
     SYSTEM = "{{system}}";
     TUTORIAL = "{{ tutorial }}" == "True";
+    DEBUG = "{{debug}}" === "True"
 
     BATCH_SIZE = 10; // avoid participants to load a lot of data
     INSTRUCTION_NAME = "prompt";
@@ -646,7 +647,7 @@
                 showAlertModal("You still have time for your tutorial. Are you sure that you want to skip the tutorial?", "Yes", () => complete(timeout, true));
                 return;
             } 
-            redirect("/load_system/", {'participant_id': PARTICIPANT_ID});
+            redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'debug': DEBUG});
             return;
         }
 
@@ -680,7 +681,7 @@
                     hideLoadingModal();
                     showAlertModal(response["message"]);
                 } else {
-                    redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
+                    redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE, "debug": DEBUG});
                 }
                     
             }
@@ -711,7 +712,7 @@
             addNewInstruction();
         }
 
-        if(TUTORIAL || time_spent > (MUST_SPENT_TIME * 60 * 1000)){
+        if(TUTORIAL || DEBUG || time_spent > (MUST_SPENT_TIME * 60 * 1000)){
             $('#createFilterButton').removeClass("invisible").removeClass('opacity-50 cursor-not-allowed').addClass('hover:bg-green-700');
         } else {
             setTimeout(function() {

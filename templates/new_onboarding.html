@@ -156,6 +156,7 @@
     PARTICIPANT_ID = "{{participant_id}}";
     GROUP = "{{group}}";
     PROGRESS = +parseInt("{{progress}}");
+    DEBUG = "{{debug}}" === "True"
 
     const Group2Name = {
         "A": "labeling examples",
@@ -168,6 +169,7 @@
         5: "In the final step, you are expected to complete the final survey.",
         6: "Congratulations! You have completed the experiment. Thank you for your participation."
     }
+
     function setGroupProgress() {
         console.log("Setting group progress", GROUP);
        // make sure that the group is valid: it can only include A, B, C, and exactly once for each
@@ -189,14 +191,14 @@
 
     function direct(progress) {
         if (progress === 1) {
-            redirect("/groundtruth/", {'participant_id': PARTICIPANT_ID});
+            redirect("/groundtruth/", {'participant_id': PARTICIPANT_ID, "debug": DEBUG});
         } else if(progress === 5){
             redirect("/survey/", {
-                    'participant_id': PARTICIPANT_ID, 'system': "FinalSurvey", 
+                    'participant_id': PARTICIPANT_ID, 'system': "FinalSurvey", "debug": DEBUG
                 }
             );
         }else {
-            redirect("/load_system/", {'participant_id': PARTICIPANT_ID, "tutorial": true});
+            redirect("/load_system/", {'participant_id': PARTICIPANT_ID, "tutorial": true, "debug": DEBUG});
         } 
     }
     $(document).ready(function() {

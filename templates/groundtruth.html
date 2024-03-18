@@ -117,6 +117,7 @@
     PARTICIPANT_ID = "{{participant_id}}";
     STAGE = "{{stage}}";
     SYSTEM= "GroundTruth"
+    DEBUG = "{{debug}}" == "True";
 
     function save_system(time_spent){
         let labeled_dataset = dataset.filter(datum => datum.label != null);
@@ -161,7 +162,7 @@
                         showAlertModal(response['message']);
                         return;
                     }
-                    redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+                    redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM, 'debug': DEBUG});
                 }
             );
     }

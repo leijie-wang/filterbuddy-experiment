@@ -212,6 +212,7 @@
     STAGE = "{{stage}}";
     SYSTEM = "{{system}}";
     TUTORIAL = "{{ tutorial }}" == "True";
+    DEBUG = "{{debug}}" === "True"
 
     INSTRUCTION_NAME = "rule";
     COMPLETE_DATASET = JSON.parse(`{{dataset | safe}}`);
@@ -745,7 +746,7 @@
                 showAlertModal("You still have time for your tutorial. Are you sure that you want to skip the tutorial?", "Yes", () => complete(timeout, true));
                 return;
             } 
-            redirect("/load_system/", {'participant_id': PARTICIPANT_ID});
+            redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'debug': DEBUG});
             return;
         }
 
@@ -783,7 +784,7 @@
                     // the rule training is too fast, so we add a delay to show the loading modal
                     console.log("System: ", SYSTEM, "Stage: ", STAGE);
                     setTimeout(function(){
-                        redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE});
+                        redirect("/validate_page/", {'participant_id': PARTICIPANT_ID, 'system': SYSTEM, 'stage': STAGE, "debug": DEBUG});
                     }, 3000);
                    
                 }
@@ -814,7 +815,7 @@
             addNewInstruction();
         }
 
-        if(TUTORIAL || time_spent > (MUST_SPENT_TIME * 60 * 1000)){
+        if(TUTORIAL || DEBUG || time_spent > (MUST_SPENT_TIME * 60 * 1000)){
             $('#createFilterButton').removeClass("invisible").removeClass('opacity-50 cursor-not-allowed').addClass('hover:bg-green-700');
         } else {
             setTimeout(function() {

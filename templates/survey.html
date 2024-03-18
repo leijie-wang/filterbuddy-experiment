@@ -75,9 +75,10 @@
     PARTICIPANT_ID = "{{participant_id}}";
     SYSTEM = "{{system}}";
     STAGE = "{{stage}}";
+    DEBUG = "{{debug}}" === "True";
 
     function go_to_system(){
-        redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM});
+        redirect("/onboarding/", {'participant_id': PARTICIPANT_ID, 'stage': STAGE, 'system': SYSTEM, 'debug': DEBUG});
     }
 
     $(document).ready(function() {
