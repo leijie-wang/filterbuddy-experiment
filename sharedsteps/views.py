@@ -313,7 +313,6 @@ def promptwrite(request):
         if system:
             prompts = system.read_prompts()
 
-    logger.info("prompts: ", prompts)
     return render(request, 'promptwrite.html', {
         "participant_id": participant_id,
         "stage": stage,
