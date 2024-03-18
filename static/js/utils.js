@@ -69,14 +69,18 @@ function post_backend(url, data, success_function=null){
     });
 }
 
-function redirect(url, parameters){
+function redirect(url, parameters, new_tab=false){
     let new_url = url + '?';
     // iterature through the dict and add parameters to the url
     Object.keys(parameters).forEach(function(key) {
         new_url += `${key}=${parameters[key]}&`;
     });
     new_url = new_url.slice(0, -1); // remove the last '&' or "?" when there is no parameter
-    window.location.href = new_url;
+    if (new_tab) {
+        window.open(new_url, '_blank');
+    } else {
+        window.location.href = new_url;
+    }
 }
 
 function diff_wordMode(text1, text2) {
