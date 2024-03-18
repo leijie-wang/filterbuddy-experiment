@@ -262,14 +262,14 @@
             $(instruction_input).find(".deletion").remove();
             $(instruction_input).find(".insertion").each(function(){
                 let text = $(this).text();
-                $(this).replaceWith(text);
+                $(this).replaceWith(`<span>${text}</span>`);
             });
             $(instruction_input).find("button").remove();
         } else {
             $(instruction_input).find(".insertion").remove();
             $(instruction_input).find(".deletion").each(function(){
                 let text = $(this).text();
-                $(this).replaceWith(text);
+                $(this).replaceWith(`<span>${text}</span>`);
             });
             $(instruction_input).find("button").remove();
         }
@@ -280,7 +280,7 @@
         let phrases = "";
         $(instruction_input).find("span").each(function(){
             if(!$(this).hasClass("deletion")){
-                phrases += $(this).text() + " ";
+                phrases += $(this).text();
             }
         });
         return phrases;
@@ -420,7 +420,7 @@
                             <!-- <div class="flex items-center sortHandle focus:outline-none">
                                 <i class="fa-solid fa-up-down-left-right"></i>
                             </div> -->
-                            <button @click="active = !active; open=false; logEvents('ActivateInstruction', {active: active, instruction_id: ${instruction.id}});" class="focus:outline-none">
+                            <button @click="markChanged(${instruction.id}); active = !active; open=false; logEvents('ActivateInstruction', {active: active, instruction_id: ${instruction.id}});" class="focus:outline-none">
                                 <i :class="active ? 'fa-solid fa-lg fa-toggle-on' : 'fa-solid fa-lg fa-toggle-off'"></i>
                             </button>
                             <button @click="deleteInstruction(${instruction.id})" class="focus:outline-none">
@@ -469,7 +469,7 @@
                                     class="instructionRubric grow text-base text-gray-700 border-b-2 border-t-0 border-l-0 border-r-0 mb-2 px-2 py-1"
                                     @input="markChanged(${instruction.id})"
                                 >
-                                    ${instruction.rubric}
+                                    <span>${instruction.rubric}</span>
                                 </div>
                             </div>
                         </div>
@@ -533,18 +533,15 @@
                 
                 instruction.rubric = escape_single_quote(clean_rubric, remove_newline=true);
                 
-                let positive_example = $(this).find('.instructionPositiveExample').text();
-                if(positive_example) 
-                    instruction.positives[0] = escape_single_quote(positive_example, remove_newline=true);
-                else 
-                    instruction.positives = [];
+                let positive_examples = $(this).find('.instructionPositiveExample').text().trim();
+                // split by newlines
+                positive_examples = positive_examples.split('\n').map(escape_single_quote).filter(example => example.length > 0);
+                instruction.positives = positive_examples;
 
-                let negative_example = $(this).find('.instructionNegativeExample').text();
-                if(negative_example) 
-                    instruction.negatives[0] = escape_single_quote(negative_example, remove_newline=true);
-                else
-                    instruction.negatives = [];
-
+                let negative_examples = $(this).find('.instructionNegativeExample').text().trim();
+                negative_examples = negative_examples.split('\n').map(escape_single_quote).filter(example => example.length > 0);
+                instruction.negatives = negative_examples;
+                
                 if(instruction.rubric.length > 0) now_instructions.push(instruction);
             }
             

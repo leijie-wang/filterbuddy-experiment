@@ -1,6 +1,3 @@
-from math import e
-from exceptiongroup import catch
-from regex import F
 from sharedsteps.utils import calculate_algorithm_metrics
 from openai import OpenAI
 from django.conf import settings
@@ -100,6 +97,9 @@ class LLMFilter:
             if self.retry and len(batch_preds) != len(batch):
                 logger.warning(f"retrying to prompt the model with the batch again")
                 continue
+            elif len(batch) > 0 and len(batch_preds) / len(batch) < 0.5:
+                logger.warning(f"response length {len(batch_preds)} is less than half of the batch length {len(batch)}")
+                continue
             else:
                 predictions += batch_preds
                 return predictions
@@ -114,7 +114,7 @@ class LLMFilter:
             rubric += f"\tExamples that should be marked as False: <{prompt['negatives'][0]}>\n"
         
         user_prompt = f"""\t### RUBRIC\n\t{rubric}"""
-        logger.debug(f"prompt: {user_prompt}")
+        logger.info(f"prompt: {user_prompt}")
 
         predictions = []
         threads = []
@@ -131,7 +131,12 @@ class LLMFilter:
         else:
             # generate a random number either 0 or 1
             predictions = [(index, random.randint(0, 1)) for index in range(len(dataset_list))]
-    
+
+            
+                
+        if len(predictions) != len(dataset_list):
+            logger.warning(f"response length {len(predictions)} does not match dataset length {len(dataset_list)}")
+        
         predictions_in_dict = {}
         """
             we use a dict rather than a list to store predictions of individual prompts
@@ -139,9 +144,6 @@ class LLMFilter:
             refering the prediction of a prompt based on its index may lead to wrong predictions
         """
         
-        if len(predictions) != len(dataset_list):
-            logger.warning(f"response length {len(predictions)} does not match dataset length {len(dataset_list)}")
-            
         for item in predictions:
             try:
                 predictions_in_dict[item[0]] = item[1]
