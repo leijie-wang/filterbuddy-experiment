@@ -220,12 +220,16 @@
     TEST_INSTRUCTIONS = [
                 {
                     "action": 1,
-                    "name": "Personal attack",
-                    "variants": false,
+                    "name": "Personal attack related to political supports",
+                    "variants": true,
                     "units": [
                         {
                             "type": "include",
                             "words": ["nonsense", "asshole", "stupid", "idiot", "fool", "stupidity"],
+                        },
+                        {
+                            "type": "include",
+                            "words": ["Republican", "Democrat", "Trump", "Biden",],
                         },
                     ]
                 }
@@ -233,7 +237,7 @@
     
     new_instruction_template = {
         "action": 1,
-        "name": "Give it a name",
+        "name": "",
         "units": [{
             "type": "include",
             "words": [],
