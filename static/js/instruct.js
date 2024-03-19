@@ -34,7 +34,7 @@ function addNewInstruction(){
         displayInstructions([{
             "name": "",
             "action": 1,
-            "rubric": "",
+            "rubric": "Remove texts that ...",
             "positives": [],
             "negatives": []
         }]);

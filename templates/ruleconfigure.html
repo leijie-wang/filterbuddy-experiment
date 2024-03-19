@@ -227,30 +227,13 @@
                             "type": "include",
                             "words": ["nonsense", "asshole", "stupid", "idiot", "fool", "stupidity"],
                         },
-
                     ]
-                },
-                {
-                    "action": 1,
-                    "name": "Terrorist accusation",
-                    "variants": true,
-                    "units": [
-                        {
-                            "type": "include",
-                            "words": ["terrorists", "terrorist", "kill", "killing"]
-                        },
-                        {
-                            "type": "exclude",
-                            "words": ["kids"],
-                        }
-                    ]
-
                 }
             ]
     
     new_instruction_template = {
         "action": 1,
-        "name": "",
+        "name": "Give it a name",
         "units": [{
             "type": "include",
             "words": [],
