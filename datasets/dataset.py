@@ -73,9 +73,13 @@ class Dataset:
     def load_data_from_ids(self, excluded_ids):
         return [self.dataset[id] for id in range(0, self.size) if id not in excluded_ids]
     
-    def load_train_dataset(self, participant_id, size=DATASET_SIZE-TEST_SIZE):
+    def load_train_dataset(self, participant_id, size=None):
+        if size is None:
+            size = self.train_size
         random_seed = self._get_random_seed(participant_id)
+        print(f"random seed: {random_seed}")
         train_ids = [(random_seed * id % self.size) for id in range(0, size)]
+        print(f"train ids: {train_ids[:10]}")
         train_dataset = [self.dataset[id] for id in train_ids]
         return train_dataset
 

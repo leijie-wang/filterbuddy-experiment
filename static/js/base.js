@@ -6,7 +6,7 @@ let STAGE;
 let TUTORIAL = false;
 const SESSION_TIME = 15;
 const MUST_SPENT_TIME = 10;
-const TUTORIAL_TIME = 3;
+const TUTORIAL_TIME = 4;
 
 /* time the labeling process */
 var interval_id = null;
@@ -39,7 +39,7 @@ function countDownTimer(){
         if (time_left < 0) {
             clearInterval(interval_id);
             $("#timer").text("00:00");
-            if(!DEBUG) complete(true);
+            if(!DEBUG && !TUTORIAL) complete(true);
         }
     }
 }

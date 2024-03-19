@@ -62,11 +62,13 @@ class Participant(models.Model):
     def create_participant(cls, group):
         participant = Participant.objects.create(
             participant_id = Participant.generate_userid(),
-            random_seed = sympy.randprime(1, DATASET_SIZE),
+            random_seed = sympy.randprime(1, 600),
             group = group,
             progress = 1
         )
+        
         participant.save()
+        print("Random seed", participant.random_seed)
         participant.create_conditions()
         return participant
     

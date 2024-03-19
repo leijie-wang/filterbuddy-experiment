@@ -477,8 +477,8 @@
                         <div class="flex flex-col gap-y-2">
                             <div class="w-fit text-lg italic bg-red-50 py-1 px-3 rounded">
                                 <span><i class="fa-solid fa-sm fa-magnifying-glass text-red-400 mr-1"></i></span>
-                                <span>Provide an example that should be </span>
-                                <span class="font-bold">removed</span>
+                                <span>Provide examples that should be </span>
+                                <span class="font-bold">removed</span> <span class="text-gray-400">(optional)</span>
                                 
                             </div>
                             <div class="self-stretch grow flex pl-6 pr-4">
@@ -494,8 +494,8 @@
                         <div class="flex flex-col gap-y-2">
                             <div class="w-fit text-lg italic bg-emerald-50 py-1 px-3 rounded">
                                 <span><i class="fa-solid fa-check fa text-emerald-600 mr-1"></i></span>
-                                <span>Provide an example that should </span>
-                                <span class="font-bold">not be removed</span>
+                                <span>Provide examples that should </span>
+                                <span class="font-bold">not be removed</span> <span class="text-gray-400">(optional)</span>
                             </div>
                             <div class="self-stretch grow flex pl-6 pr-4">
                                 <div 
@@ -646,7 +646,8 @@
             if(!exit && !timeout){
                 showAlertModal("You still have time for your tutorial. Are you sure that you want to skip the tutorial?", "Yes", () => complete(timeout, true));
                 return;
-            } 
+            }
+            
             redirect("/load_system/", {'participant_id': PARTICIPANT_ID, 'debug': DEBUG});
             return;
         }
