@@ -1,5 +1,4 @@
-from re import S
-import re
+import copy
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -223,7 +222,10 @@ def active_learning(request):
         # get the indices of the most uncertain samples
         selected_indices = sorted(range(len(uncertainties)), key=lambda i: uncertainties[i], reverse=True)[:BATCH_SIZE]
         logger.info(f"selected {BATCH_SIZE} samples with the uncertainties greater than {uncertainties[selected_indices[-1]]}")
-        next_batch = [dataset_left[i] for i in selected_indices]
+        next_batch = [dataset_left[i].copy() for i in selected_indices]
+        for index in range(len(selected_indices)):
+            data_index = selected_indices[index]
+            next_batch[index]["suggested_label"] = int(y_prob[data_index][1] > 0.5)
     else:
         # randomly select the next batch
         next_batch = random.sample(dataset_left, BATCH_SIZE)

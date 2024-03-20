@@ -2,10 +2,10 @@ var dataset = [];
 var positive_number = 0; // how many examples are labeled as toxic   
 var label_number = 0; // how many examples are labeled
 
-function displayLabelingData(new_dataset, new_separator=true){
+function displayLabelingData(new_dataset, new_separator=true, show_suggestion=false){
     // display data on the page, here we need to add buttons for users to label data
     
-
+    
     let textList = $('#textList');
 
     if (new_separator) {
@@ -29,10 +29,19 @@ function displayLabelingData(new_dataset, new_separator=true){
     for (let i = 0; i < new_dataset.length; i++) {
         // create a new div element for each text with the template below
         let index = i + start_index;
+        let show_suggestion_html = "";
+        if(show_suggestion == true && new_dataset[i].suggested_label != null){
+            const color = new_dataset[i].suggested_label == 1 ? 'bg-green-400' : 'bg-red-400';
+            show_suggestion_html = `
+                <div class="data-suggestion w-2.5 h-2.5 ${color} rounded-full mr-4"></div>
+            `;
+        }
         let text_div_html = `
             <div id="datum-${index}" x-data="{label: ${new_dataset[i].label || null}}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
                 <div id="text-${index}" class="flex-grow max-w-[90%] p-2">${escape_html(new_dataset[i].text)}</div>
-                <div class="grow-0 flex flex-row w-fit justify-center space-x-2">
+                
+                <div class="grow-0 flex flex-row w-fit justify-center space-x-2 items-center">
+                    ${show_suggestion_html}
                     <button 
                         @click="label = true; changeLabel(${index}, true);"
                         :disabled="label == true"
@@ -47,6 +56,7 @@ function displayLabelingData(new_dataset, new_separator=true){
                     >
                         Keep
                     </button>
+                    
                 </div>
             </div>`
         textList.append(text_div_html);
