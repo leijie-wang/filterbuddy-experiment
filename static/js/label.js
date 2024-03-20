@@ -29,34 +29,34 @@ function displayLabelingData(new_dataset, new_separator=true, show_suggestion=fa
     for (let i = 0; i < new_dataset.length; i++) {
         // create a new div element for each text with the template below
         let index = i + start_index;
-        let show_suggestion_html = "";
+        let show_suggestion_html = '';
         if(show_suggestion == true && new_dataset[i].suggested_label != null){
             const color = new_dataset[i].suggested_label == 1 ? 'bg-green-400' : 'bg-red-400';
             show_suggestion_html = `
-                <div class="data-suggestion w-2.5 h-2.5 ${color} rounded-full"></div>
+                <div class="data-suggestion w-2.5 h-2.5 ${color} rounded-full mr-2" :class="{ 'visible': suggestion, 'invisible': !suggestion}" >
+                </div>
             `;
         }
         let text_div_html = `
-            <div id="datum-${index}" x-data="{label: ${new_dataset[i].label || null}}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
-                ${show_suggestion_html}
+            <div id="datum-${index}" x-data="{label: ${new_dataset[i].label || null}, suggestion: false}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
+                
                 <div id="text-${index}" class="flex-grow max-w-[85%] p-2">${escape_html(new_dataset[i].text)}</div>
                 <div class="grow-0 flex flex-row w-fit justify-center space-x-2 items-center">
-                    
+                    ${show_suggestion_html}
                     <button 
-                        @click="label = true; changeLabel(${index}, true);"
+                        @click="label = true; changeLabel(${index}, true); suggestion = true;"
                         :disabled="label == true"
                         class="text-white py-1 px-3 rounded unselected-button yes-button"
                     >
                         Remove
                     </button>
                     <button
-                        @click="label = false; changeLabel(${index}, false);" 
+                        @click="label = false; changeLabel(${index}, false); suggestion = true;" 
                         :disabled="label == false"
                         class="text-white py-1 px-3 rounded unselected-button no-button"
                     >
                         Keep
                     </button>
-                    
                 </div>
             </div>`
         textList.append(text_div_html);
