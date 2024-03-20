@@ -33,15 +33,15 @@ function displayLabelingData(new_dataset, new_separator=true, show_suggestion=fa
         if(show_suggestion == true && new_dataset[i].suggested_label != null){
             const color = new_dataset[i].suggested_label == 1 ? 'bg-green-400' : 'bg-red-400';
             show_suggestion_html = `
-                <div class="data-suggestion w-2.5 h-2.5 ${color} rounded-full mr-4"></div>
+                <div class="data-suggestion w-2.5 h-2.5 ${color} rounded-full"></div>
             `;
         }
         let text_div_html = `
             <div id="datum-${index}" x-data="{label: ${new_dataset[i].label || null}}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
-                <div id="text-${index}" class="flex-grow max-w-[90%] p-2">${escape_html(new_dataset[i].text)}</div>
-                
+                ${show_suggestion_html}
+                <div id="text-${index}" class="flex-grow max-w-[85%] p-2">${escape_html(new_dataset[i].text)}</div>
                 <div class="grow-0 flex flex-row w-fit justify-center space-x-2 items-center">
-                    ${show_suggestion_html}
+                    
                     <button 
                         @click="label = true; changeLabel(${index}, true);"
                         :disabled="label == true"
