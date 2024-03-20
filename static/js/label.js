@@ -33,7 +33,7 @@ function displayLabelingData(new_dataset, new_separator=true, show_suggestion=fa
         if(show_suggestion == true && new_dataset[i].suggested_label != null){
             const color = new_dataset[i].suggested_label == 1 ? 'bg-green-400' : 'bg-red-400';
             show_suggestion_html = `
-                <div class="data-suggestion w-2.5 h-2.5 ${color} rounded-full mr-2" :class="{ 'visible': suggestion, 'invisible': !suggestion}" >
+                <div class="data-suggestion w-2.5 h-2.5 ${color} rounded-full mr-2 invisible" >
                 </div>
             `;
         }
@@ -112,5 +112,10 @@ function changeLabel(index, new_label){
         $(`#datum-${index} .no-button`).removeClass('unselected-button').addClass('selected-button');
         $(`#datum-${index} .yes-button`).removeClass('selected-button').addClass('unselected-button');
 
+    }
+
+    if(label_number == dataset.length){
+        
+        $('.data-suggestion').removeClass('invisible');
     }
 }
