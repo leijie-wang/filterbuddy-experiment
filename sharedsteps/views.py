@@ -14,7 +14,7 @@ from systems.ml_filter import MLFilter
 logger = logging.getLogger(__name__)
 
 
-BuildDataSet = Dataset("new.csv")
+BuildDataSet = Dataset("old.csv")
 UpdateDataSet = Dataset("new.csv")
 TutorialDataset = Dataset("tutorial.csv")
 
