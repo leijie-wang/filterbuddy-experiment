@@ -44,10 +44,10 @@
     </noscript>
     {% csrf_token %}
 
-    <div x-data="{}" class="flex flex-col justify-start gap-y-3 py-3 items-stretch h-full">
+    <div x-data="{}" class="flex flex-col justify-start gap-y-2 py-2 items-stretch h-full">
         <div class="flex-grow-0 flex gap-x-2 items-stretch">
             {% if tutorial %}
-            <div class="grow flex items-center gap-x-8 bg-blue-50 p-3 rounded-md">
+            <div class="grow flex items-center gap-x-8 bg-blue-50 p-2 rounded-md">
                 <div class="grow-0 text-4xl font-bold text-sky-800 font-serif">
                     Tutorial
                 </div>
@@ -70,7 +70,7 @@
                 </div>
             </div>
             {% elif stage == "build" %}
-            <div class="grow flex items-center gap-x-8 bg-green-50 p-3 rounded-md">
+            <div class="grow flex items-center gap-x-8 bg-green-50 p-2 rounded-md">
                 <div class="grow-0 text-4xl font-bold text-emerald-800 font-serif">
                     Create
                 </div>
@@ -404,6 +404,7 @@
         new_instructions.forEach((instruction) => {
             // only the first instruction is open by default
             let open = instructionList.children().length === 0 ? "true" : "false";
+            if(new_instructions.length === 1) open = "true";
             // the priority is the existing number of instructionSection items in the instructionList div
             instruction.priority = instructionList.children().length;
             instruction.id = instruction_counter++;
