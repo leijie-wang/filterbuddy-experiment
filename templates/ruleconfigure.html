@@ -784,7 +784,7 @@
     }
 
     $(document).ready(function(){ 
-        if(DEBUG) {
+        if(DEBUG || TUTORIAL) {
             displayInstructions(TEST_INSTRUCTIONS);
         } else {
             console.log("loading instructions", JSON.parse(`{{instructions | safe}}`));

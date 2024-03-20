@@ -104,6 +104,10 @@ class TreesFilter:
             for a verb, return its base form, present third person, past, present participle, past participle
             note that the pos algorithm is not perfect, so we may not always get what we want, for instance, catching is considered a noun but not a verb
         """
+        # determine if it is actuall a word as opposed to a string of several words, or punctuation
+        if len(word.split()) > 1 or not word.isalpha():
+            return [word]
+
         doc = nlp(word)
         word_data = doc.sentences[0].words[0]
         pos_tag = word_data.xpos
