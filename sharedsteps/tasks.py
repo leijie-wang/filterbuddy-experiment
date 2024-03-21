@@ -68,7 +68,7 @@ def train_llm_task(prompts, dataset):
 def test_llm_classifier(prompts, X, y):
     try:
         logger.info(f"Initializing LLM model with {len(prompts)} prompts.")
-        llm_filter = LLMFilter(prompts, debug=settings.LLM_DEBUG)
+        llm_filter = LLMFilter(prompts, debug=settings.LLM_DEBUG, retry=True)
         logger.info(f"Testing LLM model with {len(X)} examples.")
         return llm_filter.test_model(X, y)
     except Exception as e:
