@@ -19,7 +19,7 @@ class LLMFilter:
             return False, "No prompts found for the participant"
         return True, LLMFilter(prompts, debug=False)
 
-    def __init__(self, prompts, batch_size=25, debug=False, retry=False):
+    def __init__(self, prompts, batch_size=10, debug=False, retry=False):
         """
             debug: if debug is True, we will not prompt the model to get predictions
         """
@@ -97,7 +97,7 @@ class LLMFilter:
             if self.retry and len(batch_preds) != len(batch):
                 logger.warning(f"retrying to prompt the model with the batch again")
                 continue
-            elif len(batch) > 0 and len(batch_preds) / len(batch) < 0.5:
+            elif len(batch) > 0 and len(batch_preds) / len(batch) < 0.8:
                 logger.warning(f"response length {len(batch_preds)} is less than half of the batch length {len(batch)}")
                 continue
             else:
