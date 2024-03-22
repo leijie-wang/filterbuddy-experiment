@@ -97,7 +97,7 @@ class LLMFilter:
             if self.retry and len(batch_preds) != len(batch):
                 logger.warning(f"retrying to prompt the model with the batch again")
                 continue
-            elif len(batch) > 0 and len(batch_preds) / len(batch) < 0.8:
+            elif len(batch) > 0 and len(batch_preds) / len(batch) < 0.9:
                 logger.warning(f"response length {len(batch_preds)} is less than half of the batch length {len(batch)}")
                 continue
             else:
