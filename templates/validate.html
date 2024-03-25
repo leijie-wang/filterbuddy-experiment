@@ -170,12 +170,16 @@
 
     dataset = JSON.parse(`{{dataset | safe}}`);
 
+    function randomly_select(examples){
+        let random_index = Math.floor(Math.random() * examples.length);
+        return examples[random_index]?.text || "";
+    }
     function go_to_system(){
         console.log("go_to_system survey", SURVEY);
         if(SURVEY){
             // get the first example of false removal and false approve
-            let false_removal_example = dataset.find(datum => datum.label == 0 && datum.total_prediction == 1)?.text || "";
-            let false_approve_example = dataset.find(datum => datum.label == 1 && datum.total_prediction == 0)?.text || "";
+            let false_removal_example = randomly_select(dataset.filter(datum => datum.label == 0 && datum.total_prediction == 1));
+            let false_approve_example = randomly_select(dataset.filter(datum => datum.label == 1 && datum.total_prediction == 0));
             localStorage.setItem("examples", JSON.stringify({
                 'false_remove': false_removal_example,
                 'false_approve': false_approve_example
