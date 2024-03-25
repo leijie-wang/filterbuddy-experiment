@@ -203,6 +203,7 @@
             showAlertModal("Please label all the examples before loading more.");
             return;
         }
+        
         let new_data = [];
         if(dataset.length === 0){
             new_data = JSON.parse(`{{dataset | safe}}`);

@@ -84,7 +84,7 @@ class Dataset:
     def load_test_dataset(self, participant_id):
         random_seed = self._get_random_seed(participant_id)
         test_ids = [(random_seed * id % self.size) for id in range(self.size - TEST_SIZE, self.size)]
-        test_dataset = [self.dataset[id] for id in test_ids]
+        test_dataset = [self.dataset[id].copy() for id in test_ids]
         return test_dataset
     
     # def load_batch(self, participant_id, start=False):

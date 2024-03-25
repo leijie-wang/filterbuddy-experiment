@@ -40,7 +40,7 @@ function displayLabelingData(new_dataset, new_separator=true, show_suggestion=fa
         let text_div_html = `
             <div id="datum-${index}" x-data="{label: ${new_dataset[i].label || null}, suggestion: false}" class="flex flex-row items-center space-x-1 py-1 border-b border-gray-300">   
                 
-                <div id="text-${index}" class="flex-grow max-w-[85%] p-2">${escape_html(new_dataset[i].text)}</div>
+                <div id="text-${index}" class="flex-grow max-w-[80%] p-2 break-words">${escape_html(new_dataset[i].text)}</div>
                 <div class="grow-0 flex flex-row w-fit justify-center space-x-2 items-center">
                     ${show_suggestion_html}
                     <button 
@@ -114,8 +114,13 @@ function changeLabel(index, new_label){
 
     }
 
-    if(label_number == dataset.length){
-        
+    if(dataset.length == label_number){
         $('.data-suggestion').removeClass('invisible');
+        // show the modal if there are divs with the class data-suggestion
+        if ($('.data-suggestion').length > 0) {
+            showAlertModal(
+                `These green or red dots represent how the filter has learned from your past ${label_number - 30} labels. Take a brief look at them!`,
+            )
+        }
     }
 }
