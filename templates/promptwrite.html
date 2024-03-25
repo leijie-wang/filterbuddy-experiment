@@ -535,12 +535,15 @@
                 
                 instruction.rubric = escape_single_quote(clean_rubric, remove_newline=true);
                 
-                let positive_examples = $(this).find('.instructionPositiveExample').text().trim();
+                let positive_examples_content = $(this).find('.instructionPositiveExample').html();
+                // Replace <div> and <br> tags with \n, then trim
+                let positive_examples = positive_examples_content.replace(/<div>/gi, '\n').replace(/<\/div>/gi, '').replace(/<br\s*\/?>/gi, '\n').trim();
                 // split by newlines
                 positive_examples = positive_examples.split('\n').map(escape_single_quote).filter(example => example.length > 0);
                 instruction.positives = positive_examples;
-
-                let negative_examples = $(this).find('.instructionNegativeExample').text().trim();
+                
+                let negative_examples_content = $(this).find('.instructionNegativeExample').html();
+                let negative_examples = negative_examples_content.replace(/<div>/gi, '\n').replace(/<\/div>/gi, '').replace(/<br\s*\/?>/gi, '\n').trim();
                 negative_examples = negative_examples.split('\n').map(escape_single_quote).filter(example => example.length > 0);
                 instruction.negatives = negative_examples;
                 
@@ -608,7 +611,7 @@
                         Object.values(instructions).forEach(instruction => {
                             instruction.changed = false;
                         });
-                        
+                        console.log("results", response.data.results);
                         updateDataLabels(response.data.results);
                         showFilteredData();
                         hideLoadingModal();

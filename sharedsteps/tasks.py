@@ -44,13 +44,8 @@ def train_llm_task(prompts, dataset):
         prediction = [None for _ in range(len(old_dataset))] # overall predictions
         for index in range(len(old_dataset)):
             text_pred = texts_predictions[index]
-            for pred in text_pred:
-                if pred["prediction"] is not None:
-                    prediction[index] = pred["prediction"]
-                    break
+            prediction[index] = 1 if any([pred["prediction"] == 1 for pred in text_pred]) else 0
         
-        # we treat None (not affected texts) as approved texts, which is 0
-        prediction = [(0 if pred is None else pred) for pred in prediction]
         results["prediction"] = prediction
 
 

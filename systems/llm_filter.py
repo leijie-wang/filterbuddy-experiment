@@ -1,3 +1,5 @@
+import enum
+from sklearn.linear_model import enet_path
 from sharedsteps.utils import calculate_algorithm_metrics
 from openai import OpenAI
 from django.conf import settings
@@ -109,9 +111,16 @@ class LLMFilter:
 
         # we assume there is only one positive and one negative example for each prompt
         if len(prompt["positives"]) > 0:
-            rubric += f"\tExamples that should be marked as True: <{prompt['positives'][0]}>\n"
+            positive_examples = f"\tExamples that should be marked by this rubric as True:"
+            for index, example in enumerate(prompt["positives"]):
+                positive_examples += f" {index}. <{example}>; "
+            rubric += f"{positive_examples}\n"
+
         if len(prompt["negatives"]) > 0:
-            rubric += f"\tExamples that should be marked as False: <{prompt['negatives'][0]}>\n"
+            negative_examples = f"\tExamples that should be marked by this rubric as False:"
+            for index, example in enumerate(prompt["negatives"]):
+                negative_examples += f" {index}. <{example}>; "
+            rubric += f"{negative_examples}\n"
         
         user_prompt = f"""\t### RUBRIC\n\t{rubric}"""
         logger.info(f"prompt: {user_prompt}")

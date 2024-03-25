@@ -77,9 +77,7 @@ class Dataset:
         if size is None:
             size = self.train_size
         random_seed = self._get_random_seed(participant_id)
-        print(f"random seed: {random_seed}")
         train_ids = [(random_seed * id % self.size) for id in range(0, size)]
-        print(f"train ids: {train_ids[:10]}")
         train_dataset = [self.dataset[id] for id in train_ids]
         return train_dataset
 
