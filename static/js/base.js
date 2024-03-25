@@ -35,6 +35,10 @@ function countDownTimer(){
         if(time_spent % 30000 === 0){
             if(!TUTORIAL) save_system(time_spent);
         }
+        if(time_spent > MUST_SPENT_TIME * 60 * 1000){
+            $('#createFilterButton').removeClass("hidden invisible").removeClass('opacity-50 cursor-not-allowed').addClass('hover:bg-green-700');
+        }
+
         // If the countdown is over, stop the timer
         if (time_left < 0) {
             clearInterval(interval_id);
