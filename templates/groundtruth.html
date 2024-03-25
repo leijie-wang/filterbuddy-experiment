@@ -41,8 +41,8 @@
                     <p class="text-2xl font-semibold">Set Your Filter's Goal</p>
                     <p class="text-xl text-start font-sans leading-8">
                        Before building your filter, please take a moment to label these comments as <span class="text-emerald-600 font-medium">Keep</span> or <span class="text-red-600 font-medium ">Remove</span>.
-                       <br/> We'll use your labeled examples to assess how effectively your filter works. 
-                       Feel free to take your time. There's no need to rush.
+                       We'll use your labeled examples to assess how effectively your filter works. 
+                       Please make sure that <span class="font-semibold text-blue-600">similar examples are labeled in a consistent manner</span>.
                     </p>
                 {% elif stage == "update" %}
                     <p class="text-2xl font-semibold">Update Your Word Filters!</p>
@@ -118,6 +118,8 @@
     STAGE = "{{stage}}";
     SYSTEM= "GroundTruth"
     DEBUG = "{{debug}}" == "True";
+    
+    let CONSIST_REMINDER = false;
 
     function save_system(time_spent){
         let labeled_dataset = dataset.filter(datum => datum.label != null);
@@ -133,6 +135,7 @@
             }
         ); 
     }
+
     function complete(timeout, exit=false){
         
         if(!exit){
@@ -149,9 +152,20 @@
                 return;
             }
 
-            logEvents("Complete", {"positive_number": positive_number, "label_number": label_number});
-            showAlertModal("Thank you for your efforts in labeling these examples. You can now proceed to the next step.", "Continue", () => complete(true, true));
-            return;
+            if(!CONSIST_REMINDER){
+                showAlertModal(
+                    "Please spend the following <span class='font-semibold'>three minutes</span> reviewing your labels</br>to ensure that similar examples are labeled in a consistent manner.",
+                    "Continue",
+                    () => { startTimer(3);}
+                );
+
+                CONSIST_REMINDER = true;
+                return;
+            } else {
+                logEvents("Complete", {"positive_number": positive_number, "label_number": label_number});
+                showAlertModal("Thank you for your efforts in labeling these examples. You can now proceed to the next step.", "Continue", () => complete(true, true));
+                return;
+            }
         }
         
         post_backend(
