@@ -124,7 +124,7 @@ class TreesFilter:
             word_list.extend([base_form, present_third_person, past, present_participle, past_participle])
         elif pos_tag.startswith('NN'):
             if pos_tag == 'NNS':
-                word_list.append(singularize(base_form))
+                word_list.append(singularize(word))
             else:
                 word_list.append(pluralize(base_form))
         word_list = [word for word in list(set(word_list)) if word is not None]
@@ -141,7 +141,7 @@ class TreesFilter:
             regex = "".join(self.escape_regex(char) for char in word)
             # Wrap the escaped sequence in a regex that matches one or more occurrences
             regex = f"({regex})+"
-            logger.info(f"regex: {regex} for word: {word}")
+            # logger.info(f"regex: {regex} for word: {word}")
             return regex
         else:
             regex = r"\b(?=\w)" # matching the beginning of a word
