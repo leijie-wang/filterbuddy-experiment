@@ -114,13 +114,13 @@ function changeLabel(index, new_label){
 
     }
 
-    if(dataset.length == label_number){
-        $('.data-suggestion').removeClass('invisible');
-        // show the modal if there are divs with the class data-suggestion
-        if ($('.data-suggestion').length > 0) {
-            showAlertModal(
-                `These green or red dots represent how the filter has learned from your past ${label_number - 30} labels. Take a brief look at them!`,
-            )
-        }
-    }
+    // if(dataset.length == label_number){
+    //     $('.data-suggestion').removeClass('invisible');
+    //     // show the modal if there are divs with the class data-suggestion
+    //     if ($('.data-suggestion').length > 0) {
+    //         showAlertModal(
+    //             `These green or red dots represent how the filter has learned from your past ${label_number - 30} labels. Take a brief look at them!`,
+    //         )
+    //     }
+    // }
 }

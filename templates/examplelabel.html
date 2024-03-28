@@ -210,7 +210,7 @@
         } else {
             // remove all divs with the data-suggestion class
             $('.data-suggestion').remove();
-
+            console.log("labeled dataset", dataset);
             showLoadingModal("Loading more examples...");
             try {
                 let response = await post_backend(
@@ -236,7 +236,7 @@
         
         logEvents("LoadExamples", {"active_learning": active_learning, "dataset_len": new_data.length});
         console.log(new_data);
-        displayLabelingData(new_data, new_separator, true);
+        displayLabelingData(new_data, new_separator);
         console.log(`positive_number: ${positive_number}, label_number: ${label_number}`);
         $('#countDisplay').html(`<span id="label-number">${label_number}</span> / ${dataset.length} labeled examples; <span id="positive-number">${positive_number}</span> example(s) labeled as "Remove".`);
         
@@ -247,6 +247,7 @@
 
     function save_system(time_spent){
         let labeled_dataset = dataset.filter(datum => datum.label != null);
+        
         post_backend(
             "/store_labels/",
             {'dataset': labeled_dataset, 'participant_id': PARTICIPANT_ID, 'stage': STAGE, time_spent: time_spent},
