@@ -151,7 +151,7 @@ class TreesFilter:
                 else:
                     regex += self.escape_regex(char)
             regex += r"(?=\W(?!_)|$)" # matching the end of a word
-            logger.info(f"regex: {regex} for word: {word}")
+            # logger.info(f"regex: {regex} for word: {word}")
             return regex
     
     def _build_statement(self, unit, variants=False):

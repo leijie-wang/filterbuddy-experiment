@@ -56,7 +56,7 @@ def check_parameters(participant_id, stage=None, system=None):
 
 def calculate_algorithm_metrics(y, y_pred):
     accuracy = accuracy_score(y, y_pred)
-    precision = precision_score(y, y_pred)
+    precision = precision_score(y, y_pred, zero_division=0)
     recall = recall_score(y, y_pred)
     
     
