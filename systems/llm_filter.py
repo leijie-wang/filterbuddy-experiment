@@ -123,7 +123,7 @@ class LLMFilter:
             rubric += f"{negative_examples}\n"
         
         user_prompt = f"""\t### RUBRIC\n\t{rubric}"""
-        logger.info(f"prompt: {user_prompt}")
+        logger.debug(f"from the filter prompt: {user_prompt}")
 
         predictions = []
         threads = []
@@ -191,7 +191,7 @@ class LLMFilter:
             logger.info(f"LLM model testing time for the {prompt_id}-th prompt: {end_time - start_time} seconds")
 
             if prompt_pred is not None:
-                print(f"prompt_pred: {prompt_pred}")
+                # print(f"prompt_pred: {prompt_pred}")
                 for datum_index in range(len(X_test)):
                     texts_predictions[datum_index].append({
                         "id": prompt_id,

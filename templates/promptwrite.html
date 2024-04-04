@@ -720,6 +720,22 @@
         if(TUTORIAL || DEBUG || time_spent > (MUST_SPENT_TIME * 60 * 1000)){
             $('#createFilterButton').removeClass("invisible").removeClass('opacity-50 cursor-not-allowed').addClass('hover:bg-green-700');
         }
+
+        $('.datumText').on('copy', function(e) {
+            console.log("copying text");
+            // Prevent the default copy behavior
+            e.preventDefault();
+
+            // Get the selection
+            var text = window.getSelection().toString();
+
+            // Use the originalEvent property to access the clipboardData
+            if (e.originalEvent.clipboardData) {
+                e.originalEvent.clipboardData.setData('text/plain', text);
+            } else if (window.clipboardData) { // For IE
+                window.clipboardData.setData('Text', text);
+            }
+        });
     })
     
 

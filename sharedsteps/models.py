@@ -123,7 +123,7 @@ class Participant(models.Model):
         try: 
             return self.conditions.get(system_name=system)
         except Exception as e:
-            logger.error(f"Participant {self.participant_id} does not have a condition for system {system}")
+            # logger.debug(f"Participant {self.participant_id} does not have a condition for system {system}")
             return None
     
     def __str__(self):
@@ -186,7 +186,7 @@ class Condition(models.Model):
         return system
     
     def get_all_systems(self, stage):
-        return self.systems.filter(stage=stage).all()
+        return self.systems.filter(stage=stage).order_by('spent_time').all()
     
     def save_test_results(self, stage, predictions, old=False):
         """
@@ -240,7 +240,7 @@ class System(models.Model):
 
     class Meta:
         # when querying the system related to a condition,  they are returned with the most recent one first
-        ordering = ['-spent_time'] # in increasing order of created_at
+        ordering = ['-spent_time'] # in increasing order of spent_time
     
     def __str__(self):
         return f"created at {self.spent_time} seconds in the {self.stage} stage"
