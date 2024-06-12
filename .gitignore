@@ -12,9 +12,6 @@ datasets/youtube_data.ipynb
 datasets/collected_datasets/*
 datasets/youtube_gun_toxicity.csv
 .DS_Store
-experiment.ipynb
 db.sqlite3.old
 db.sqlite3.existing
-analysis.ipynb
-interactions.ipynb
-survey.ipynb
+analysis/
