@@ -16,3 +16,5 @@ experiment.ipynb
 db.sqlite3.old
 db.sqlite3.existing
 analysis.ipynb
+interactions.ipynb
+survey.ipynb
