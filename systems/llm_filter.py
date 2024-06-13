@@ -130,7 +130,7 @@ class LLMFilter:
         if not self.debug:
             for index in range(0, len(dataset_list), self.BATCH_SIZE):
                 batch = dataset_list[index: index + self.BATCH_SIZE]
-                logger.info(f"now predicting batch from index {index} to {len(batch) + index}")
+                logger.debug(f"now predicting batch from index {index} to {len(batch) + index}")
                 # self._handle_batch_prompt(batch, predictions, user_prompt)
                 thread = threading.Thread(target=self._handle_batch_prompt, args=(batch, predictions, user_prompt))
                 threads.append(thread)

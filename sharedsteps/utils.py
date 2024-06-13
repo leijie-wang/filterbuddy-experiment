@@ -1,5 +1,5 @@
 from django.conf import settings
-from sklearn.metrics import accuracy_score, recall_score, precision_score, confusion_matrix
+from sklearn.metrics import accuracy_score, recall_score, precision_score, confusion_matrix, f1_score
 from openai import OpenAI
 from django.conf import settings
 import logging
@@ -11,10 +11,10 @@ class ChatCompletion:
     def __init__(self):
         self.llm_client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-    def chat_completion(self, system_prompt, user_prompt):
+    def chat_completion(self, system_prompt, user_prompt, type="json_object"):
         response = self.llm_client.chat.completions.create(
             model="gpt-4-1106-preview",
-            response_format={"type": "json_object"},
+            response_format={"type": type},
             messages=[
                 {
                     "role": "system",
@@ -58,19 +58,20 @@ def calculate_algorithm_metrics(y, y_pred):
     accuracy = accuracy_score(y, y_pred)
     precision = precision_score(y, y_pred, zero_division=0)
     recall = recall_score(y, y_pred)
-    
+    f1 = f1_score(y, y_pred)
     
     tn, fp, fn, tp = confusion_matrix(y, y_pred).ravel()
     # Calculate FNR and FPR
     fnr = fn / (fn + tp)  # False Negative Rate
     fpr = fp / (fp + tn)  # False Positive Rate
-
+   
     return {
         "accuracy": accuracy, 
         "precision": precision, 
         "recall": recall,
         "fnr": fnr,
-        "fpr": fpr
+        "fpr": fpr,
+        "f1": f1
     }
 
 # def calculate_stage_performance(participant_id, stage):

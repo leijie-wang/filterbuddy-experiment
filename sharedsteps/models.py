@@ -180,7 +180,7 @@ class Condition(models.Model):
     
     def get_latest_system(self, stage):
         # there might not be a system in the given stage
-        system = self.systems.filter(stage=stage).first()
+        system = self.systems.filter(stage=stage).order_by('-spent_time').first()
         if system is None and stage == "update":
             system = self.systems.filter(stage="build").first()
         return system
@@ -240,7 +240,7 @@ class System(models.Model):
 
     class Meta:
         # when querying the system related to a condition,  they are returned with the most recent one first
-        ordering = ['-spent_time'] # in increasing order of spent_time
+        ordering = ['-spent_time'] # in decreasing order of spent_time
     
     def __str__(self):
         return f"created at {self.spent_time} seconds in the {self.stage} stage"

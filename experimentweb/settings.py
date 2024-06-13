@@ -190,7 +190,7 @@ LOGGING = {
             "propagate": False,
         },
         "systems": {
-            "level": 'INFO',
+            "level": 'ERROR',
             "handlers": ['console'] if DEBUG else ['file'],
             "propagate": False,
         },
